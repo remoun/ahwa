@@ -61,6 +61,42 @@ describe('CouncilSchema', () => {
 		}
 	});
 
+	it('parses a council with model_config', () => {
+		const result = CouncilSchema.safeParse({
+			id: 'configured',
+			name: 'Configured Council',
+			personas: [{ id: 'p1', name: 'P', emoji: '!', system_prompt: 'test' }],
+			round_structure: { rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }], synthesize: false },
+			synthesis_prompt: 'Summarize.',
+			model_config: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' }
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.model_config).toEqual({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' });
+		}
+	});
+
+	it('parses a council without model_config (auto-detect fallback)', () => {
+		const raw = JSON.parse(readFileSync('councils/default.json', 'utf-8'));
+		const result = CouncilSchema.safeParse(raw);
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.model_config).toBeUndefined();
+		}
+	});
+
+	it('rejects a council with invalid provider in model_config', () => {
+		const result = CouncilSchema.safeParse({
+			id: 'bad',
+			name: 'Bad Provider',
+			personas: [{ id: 'p1', name: 'P', emoji: '!', system_prompt: 'test' }],
+			round_structure: { rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }], synthesize: false },
+			synthesis_prompt: 'n/a',
+			model_config: { provider: 'fake-provider', model: 'some-model' }
+		});
+		expect(result.success).toBe(false);
+	});
+
 	it('rejects a council with empty personas array', () => {
 		const result = CouncilSchema.safeParse({
 			id: 'empty',

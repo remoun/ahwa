@@ -53,6 +53,7 @@ export function seedFromDisk(
 
 		// Upsert the council
 		const personaIds = parsed.personas.map((p) => p.id);
+		const modelConfig = parsed.model_config ? JSON.stringify(parsed.model_config) : null;
 		db.insert(schema.councils)
 			.values({
 				id: parsed.id,
@@ -60,6 +61,7 @@ export function seedFromDisk(
 				personaIds: JSON.stringify(personaIds),
 				synthesisPrompt: parsed.synthesis_prompt,
 				roundStructure: JSON.stringify(parsed.round_structure),
+				modelConfig,
 				ownerParty: null
 			})
 			.onConflictDoUpdate({
@@ -68,7 +70,8 @@ export function seedFromDisk(
 					name: parsed.name,
 					personaIds: JSON.stringify(personaIds),
 					synthesisPrompt: parsed.synthesis_prompt,
-					roundStructure: JSON.stringify(parsed.round_structure)
+					roundStructure: JSON.stringify(parsed.round_structure),
+					modelConfig
 				}
 			})
 			.run();

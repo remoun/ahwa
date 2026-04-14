@@ -57,6 +57,7 @@ export const councils = sqliteTable('councils', {
 	personaIds: text('persona_ids'), // JSON array
 	synthesisPrompt: text('synthesis_prompt'),
 	roundStructure: text('round_structure'), // JSON
+	modelConfig: text('model_config'), // JSON: { provider, model }
 	ownerParty: text('owner_party'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });

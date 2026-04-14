@@ -22,13 +22,21 @@ export const RoundStructureSchema = z.object({
 	synthesize: z.boolean()
 });
 
+export const ModelConfigSchema = z.object({
+	provider: z.enum(['anthropic', 'openai', 'openrouter', 'ollama']),
+	model: z.string()
+});
+
+export type ModelConfig = z.infer<typeof ModelConfigSchema>;
+
 export const CouncilSchema = z.object({
 	id: z.string(),
 	name: z.string(),
 	description: z.string().optional(),
 	personas: z.array(PersonaSchema).min(1),
 	round_structure: RoundStructureSchema,
-	synthesis_prompt: z.string()
+	synthesis_prompt: z.string(),
+	model_config: ModelConfigSchema.optional()
 });
 
 export type Council = z.infer<typeof CouncilSchema>;

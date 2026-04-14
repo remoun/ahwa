@@ -61,6 +61,7 @@ client.exec(`
 		persona_ids TEXT,
 		synthesis_prompt TEXT,
 		round_structure TEXT,
+		model_config TEXT,
 		owner_party TEXT,
 		created_at INTEGER
 	);
