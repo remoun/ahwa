@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { nanoid } from 'nanoid';
 import { complete as defaultComplete, resolveModelConfig, type CompleteRequest, type CompleteResult, type ModelConfig } from './llm';
+import { filterPersonas } from './features';
 import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
 
@@ -45,17 +46,20 @@ export async function* runDeliberation(
 		: undefined;
 	const resolvedConfig = resolveModelConfig(modelConfig);
 
-	// Load personas
+	// Load personas, filtering out those with unmet feature requirements
 	const allPersonas = db.select().from(schema.personas).all();
-	const personas: PersonaRow[] = personaIds
+	const requestedPersonas: PersonaRow[] = personaIds
 		.map((id) => allPersonas.find((p) => p.id === id))
 		.filter((p): p is PersonaRow => p !== undefined);
+	const { eligible: personas } = filterPersonas(requestedPersonas);
 
 	// Mark the pre-created table as running
 	db.update(schema.tables)
 		.set({ status: 'running', updatedAt: Date.now() })
 		.where(eq(schema.tables.id, tableId))
 		.run();
+
+	try {
 
 	yield { type: 'table_opened', tableId };
 
@@ -161,6 +165,15 @@ export async function* runDeliberation(
 	}
 
 	yield { type: 'table_closed' };
+
+	} catch (err) {
+		// Mark table as failed so it doesn't stay stuck in 'running'
+		db.update(schema.tables)
+			.set({ status: 'failed', updatedAt: Date.now() })
+			.where(eq(schema.tables.id, tableId))
+			.run();
+		throw err;
+	}
 }
 
 function buildMessages(

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Multi-stage build: compile with Bun, run the binary standalone.
+# Multi-stage build: build with Bun, run with Bun on a minimal base.
 
 FROM oven/bun:1 AS build
 WORKDIR /app
@@ -11,14 +11,18 @@ RUN bun install --frozen-lockfile
 # Copy source
 COPY . .
 
-# Build SvelteKit + compile to single binary
+# Build SvelteKit (adapter-node output in build/)
+# --bun forces Bun's module resolver so bun:sqlite is understood during build
 RUN bun run build
 
-# Production stage — no Bun needed at runtime
-FROM debian:bookworm-slim AS runtime
+# Production stage
+FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# Copy Bun runtime
+COPY --from=build /usr/local/bin/bun /usr/local/bin/bun
 
 # Copy built output (adapter-node produces build/)
 COPY --from=build /app/build ./build
@@ -36,7 +40,4 @@ VOLUME /data
 
 EXPOSE 3000
 
-# Run with Bun (included in oven/bun image) — or if binary compiled:
-# For now, use the adapter-node output with Bun
-COPY --from=build /usr/local/bin/bun /usr/local/bin/bun
 CMD ["bun", "build/index.js"]

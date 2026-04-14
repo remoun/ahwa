@@ -40,3 +40,31 @@ export const CouncilSchema = z.object({
 });
 
 export type Council = z.infer<typeof CouncilSchema>;
+
+/** Zod schema for council create/update API request bodies */
+export const CouncilBodySchema = z.object({
+	name: z.string().min(1),
+	description: z.string().optional(),
+	personaIds: z.array(z.string()).min(1),
+	synthesisPrompt: z.string().min(1),
+	roundStructure: z.object({
+		rounds: z.array(z.object({
+			kind: z.string(),
+			prompt_suffix: z.string()
+		})).min(1),
+		synthesize: z.boolean()
+	}),
+	modelConfig: ModelConfigSchema.optional()
+});
+
+export type CouncilBody = z.infer<typeof CouncilBodySchema>;
+
+/** Zod schema for persona create/update API request bodies */
+export const PersonaBodySchema = z.object({
+	name: z.string().min(1),
+	emoji: z.string().min(1),
+	systemPrompt: z.string().min(1),
+	requires: z.array(z.string()).optional()
+});
+
+export type PersonaBody = z.infer<typeof PersonaBodySchema>;

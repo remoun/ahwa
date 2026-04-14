@@ -31,11 +31,16 @@ export const GET: RequestHandler = async ({ params }) => {
 		? db.select().from(schema.councils).where(eq(schema.councils.id, table.councilId)).get()
 		: null;
 
+	// Look up persona emojis for richer markdown
+	const personas = db.select().from(schema.personas).all();
+	const emojiByName = new Map(personas.map((p) => [p.name, p.emoji]));
+
 	const md = generateMarkdown(
 		table,
 		turns.map((t) => ({
 			round: t.round,
 			personaName: t.personaName,
+			emoji: emojiByName.get(t.personaName ?? '') ?? null,
 			text: t.text
 		})),
 		{ name: council?.name ?? null },

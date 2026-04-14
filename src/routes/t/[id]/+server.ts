@@ -18,6 +18,15 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		return new Response('party parameter required', { status: 400 });
 	}
 
+	// Verify party belongs to this table
+	const link = db.select().from(schema.tableParties)
+		.where(eq(schema.tableParties.tableId, tableId))
+		.all()
+		.find((tp) => tp.partyId === partyId);
+	if (!link) {
+		return new Response('party is not a member of this table', { status: 403 });
+	}
+
 	// Only start deliberation for pending tables
 	if (table.status !== 'pending') {
 		return new Response(

@@ -18,9 +18,9 @@
 	},
 	"private": true,
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
+		"dev": "bun --bun vite dev",
+		"build": "bun --bun vite build",
+		"preview": "bun --bun vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -28,7 +28,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
-		"build:binary": "vite build && bun build --compile build/index.js --outfile ahwa"
+		"build:binary": "bun --bun vite build && bun build --compile build/index.js --outfile ahwa"
 	},
 	"type": "module",
 	"dependencies": {
