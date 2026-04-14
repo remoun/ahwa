@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import * as schema from './db/schema';
 
@@ -17,8 +17,12 @@ export interface GuardSuccess {
 }
 
 /**
- * Validate that a deliberation can be started for the given table and party.
- * Returns the table row on success, or an error with HTTP status on failure.
+ * Validate and atomically claim a table for deliberation.
+ *
+ * The status transition (pending → running) happens inside this function
+ * via a conditional UPDATE, not in the orchestrator. This eliminates the
+ * race window between "check status" and "set running" — if two requests
+ * hit a pending table simultaneously, exactly one wins.
  */
 export function validateDeliberationRequest(
 	db: Db,
@@ -42,9 +46,19 @@ export function validateDeliberationRequest(
 		return { ok: false, status: 403, message: 'party is not a member of this table' };
 	}
 
-	if (table.status !== 'pending') {
-		return { ok: false, status: 409, message: `Table is already ${table.status}` };
+	// Atomic claim: only transitions pending → running.
+	// If another request already claimed it, changes === 0.
+	const result = db.update(schema.tables)
+		.set({ status: 'running', updatedAt: Date.now() })
+		.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'pending')))
+		.run();
+
+	if (result.changes === 0) {
+		// Re-read to get current status for the error message
+		const current = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
+		return { ok: false, status: 409, message: `Table is already ${current?.status ?? 'unknown'}` };
 	}
 
-	return { ok: true, table };
+	// Return the table with the updated status
+	return { ok: true, table: { ...table, status: 'running' } };
 }

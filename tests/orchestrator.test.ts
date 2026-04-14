@@ -157,10 +157,9 @@ describe('orchestrator', () => {
 		expect(table!.status).toBe('completed');
 	});
 
-	it('updates table status to running when deliberation starts', async () => {
+	it('transitions table from pending to running to completed', async () => {
 		createTable(db, 'tbl-7', 'Test dilemma', 'test-council', 'party-1');
 
-		// Verify starts as pending
 		const before = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-7')).get();
 		expect(before!.status).toBe('pending');
 
@@ -173,12 +172,14 @@ describe('orchestrator', () => {
 			completeFn: mockComplete
 		})) {
 			events.push(event);
-			// Check status after first event
 			if (events.length === 1) {
 				const during = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-7')).get();
 				expect(during!.status).toBe('running');
 			}
 		}
+
+		const after = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-7')).get();
+		expect(after!.status).toBe('completed');
 	});
 
 	it('passes council model_config to completeFn', async () => {

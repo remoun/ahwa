@@ -53,7 +53,9 @@ export async function* runDeliberation(
 		.filter((p): p is PersonaRow => p !== undefined);
 	const { eligible: personas } = filterPersonas(requestedPersonas);
 
-	// Mark the pre-created table as running
+	// Defensively set status to 'running'. The HTTP guard already does this
+	// atomically to prevent races, but the orchestrator shouldn't assume the
+	// guard ran — it's called directly by tests and potentially future code.
 	db.update(schema.tables)
 		.set({ status: 'running', updatedAt: Date.now() })
 		.where(eq(schema.tables.id, tableId))

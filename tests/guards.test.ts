@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect, beforeEach } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { validateDeliberationRequest } from '../src/lib/server/guards';
 import { createTestDb, type TestDb } from './helpers';
@@ -158,5 +159,31 @@ describe('validateDeliberationRequest', () => {
 		if (!result.ok) {
 			expect(result.status).toBe(403);
 		}
+	});
+
+	it('atomic claim: second call on same pending table gets 409', () => {
+		// First call claims it
+		const first = validateDeliberationRequest(db, 'pending-table', 'alice');
+		expect(first.ok).toBe(true);
+
+		// Second call should fail — table is now running
+		const second = validateDeliberationRequest(db, 'pending-table', 'alice');
+		expect(second.ok).toBe(false);
+		if (!second.ok) {
+			expect(second.status).toBe(409);
+			expect(second.message).toContain('running');
+		}
+	});
+
+	it('atomic claim: table status is running after successful validation', () => {
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice');
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.table.status).toBe('running');
+		}
+
+		// Confirm in DB too
+		const row = db.select().from(schema.tables).where(eq(schema.tables.id, 'pending-table')).get();
+		expect(row!.status).toBe('running');
 	});
 });
