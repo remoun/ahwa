@@ -5,31 +5,13 @@
  * provider always"). Covers everything except the thin SvelteKit HTTP layer.
  */
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { Database } from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
 import { runDeliberation } from '../src/lib/server/orchestrator';
 import type { SseEvent } from '../src/lib/schemas/events';
 import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
-
-function createTestDb() {
-	const client = new Database(':memory:');
-	const ddl = `
-		CREATE TABLE parties (id TEXT PRIMARY KEY, display_name TEXT, created_at INTEGER);
-		CREATE TABLE tables (id TEXT PRIMARY KEY, title TEXT, dilemma TEXT, council_id TEXT, status TEXT DEFAULT 'pending', synthesis TEXT, is_demo INTEGER DEFAULT 0, created_at INTEGER, updated_at INTEGER);
-		CREATE TABLE table_parties (table_id TEXT NOT NULL, party_id TEXT NOT NULL, role TEXT, PRIMARY KEY (table_id, party_id));
-		CREATE TABLE turns (id TEXT PRIMARY KEY, table_id TEXT NOT NULL, round INTEGER NOT NULL, party_id TEXT, persona_name TEXT, text TEXT, visible_to TEXT, created_at INTEGER);
-		CREATE TABLE personas (id TEXT PRIMARY KEY, name TEXT, emoji TEXT, system_prompt TEXT, requires TEXT, owner_party TEXT, created_at INTEGER);
-		CREATE TABLE councils (id TEXT PRIMARY KEY, name TEXT, persona_ids TEXT, synthesis_prompt TEXT, round_structure TEXT, owner_party TEXT, created_at INTEGER);
-		CREATE TABLE memory (party_id TEXT PRIMARY KEY, content TEXT, updated_at INTEGER);
-	`;
-	for (const stmt of ddl.split(';').filter((s) => s.trim())) {
-		client.run(stmt);
-	}
-	return drizzle(client, { schema });
-}
+import { createTestDb, type TestDb } from './helpers';
 
 // Deterministic mock: each persona returns a distinct response
 async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
@@ -51,7 +33,7 @@ async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
 }
 
 describe('e2e: full deliberation with real councils', () => {
-	let db: ReturnType<typeof drizzle>;
+	let db: TestDb;
 
 	beforeEach(() => {
 		db = createTestDb();

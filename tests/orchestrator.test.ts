@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { Database } from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { runDeliberation } from '../src/lib/server/orchestrator';
 import type { SseEvent } from '../src/lib/schemas/events';
 import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
+import { createTestDb, type TestDb } from './helpers';
 
 // Mock completeFn via dependency injection — no global mock.module needed
 async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
@@ -20,19 +19,7 @@ async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
 	};
 }
 
-function createTestDb() {
-	const client = new Database(':memory:');
-	client.run(`CREATE TABLE parties (id TEXT PRIMARY KEY, display_name TEXT, created_at INTEGER)`);
-	client.run(`CREATE TABLE tables (id TEXT PRIMARY KEY, title TEXT, dilemma TEXT, council_id TEXT, status TEXT DEFAULT 'pending', synthesis TEXT, is_demo INTEGER DEFAULT 0, created_at INTEGER, updated_at INTEGER)`);
-	client.run(`CREATE TABLE table_parties (table_id TEXT, party_id TEXT, role TEXT, PRIMARY KEY (table_id, party_id))`);
-	client.run(`CREATE TABLE turns (id TEXT PRIMARY KEY, table_id TEXT NOT NULL, round INTEGER NOT NULL, party_id TEXT, persona_name TEXT, text TEXT, visible_to TEXT, created_at INTEGER)`);
-	client.run(`CREATE TABLE personas (id TEXT PRIMARY KEY, name TEXT, emoji TEXT, system_prompt TEXT, requires TEXT, owner_party TEXT, created_at INTEGER)`);
-	client.run(`CREATE TABLE councils (id TEXT PRIMARY KEY, name TEXT, persona_ids TEXT, synthesis_prompt TEXT, round_structure TEXT, owner_party TEXT, created_at INTEGER)`);
-	client.run(`CREATE TABLE memory (party_id TEXT PRIMARY KEY, content TEXT, updated_at INTEGER)`);
-	return drizzle(client, { schema });
-}
-
-function seedMiniCouncil(db: ReturnType<typeof drizzle>) {
+function seedMiniCouncil(db: TestDb) {
 	db.insert(schema.personas).values([
 		{ id: 'elder', name: 'The Elder', emoji: '🌿', systemPrompt: 'You are an elder.' },
 		{ id: 'mirror', name: 'The Mirror', emoji: '🪞', systemPrompt: 'You are a mirror.' }
@@ -56,7 +43,7 @@ function seedMiniCouncil(db: ReturnType<typeof drizzle>) {
 }
 
 describe('orchestrator', () => {
-	let db: ReturnType<typeof drizzle>;
+	let db: TestDb;
 
 	beforeEach(() => {
 		db = createTestDb();
