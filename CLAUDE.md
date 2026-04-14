@@ -426,14 +426,11 @@ milestone in the plan; budget accordingly.
 
 ## Directory layout
 
-> **Note:** This layout shows the target structure. Files marked with
-> `(planned)` do not exist yet; create them as M0/M1 tasks require.
-
 ```
 /
   CLAUDE.md                    -- this file
   README.md                    -- user-facing
-  LICENSE                      -- AGPL-3.0 (planned)
+  LICENSE                      -- AGPL-3.0
   package.json                 -- name: "ahwa"
   svelte.config.js
   tailwind.config.ts
@@ -445,7 +442,7 @@ milestone in the plan; budget accordingly.
     dsa-praxis.json               -- M1+
   personas/                    -- standalone personas users can add to any council
     historian.json                -- requires memory (M3)
-  packaging/                     -- (planned)
+  packaging/
     docker/
       Dockerfile
       compose.yaml
@@ -467,24 +464,24 @@ milestone in the plan; budget accordingly.
           schema.ts            -- Drizzle schema
           client.ts
           migrations/
-        llm.ts                 -- single provider abstraction (planned)
-        orchestrator.ts        -- debate state machine (planned)
-        events.ts              -- SSE event Zod types (planned)
-        features.ts            -- feature-flag registry (planned)
-        identity.ts            -- reads reverse-proxy identity headers (M2+, planned)
-      schemas/                 -- shared Zod (persona, council, etc.) (planned)
-      components/              -- (planned)
+        llm.ts                 -- single provider abstraction
+        orchestrator.ts        -- debate state machine
+        events.ts              -- SSE event Zod types
+        features.ts            -- feature-flag registry
+        identity.ts            -- reads reverse-proxy identity headers (M2+)
+      schemas/                 -- shared Zod (persona, council, etc.)
+      components/
     routes/
       +layout.svelte
       +page.svelte             -- table list + new table
-      t/[id]/                    -- (planned)
+      t/[id]/
         +page.svelte           -- table view
         +server.ts             -- SSE stream endpoint
-      api/                       -- (planned)
+      api/
         tables/
         councils/
         personas/
-  tests/                         -- (planned)
+  tests/
     orchestrator.test.ts
     llm.test.ts
     schemas.test.ts
@@ -501,8 +498,8 @@ accordingly.
 Strict red-green TDD (see "How to work on this repo"). Testing is not a
 step after coding; it is the way coding happens.
 
-**Framework:** `bun test` (Bun's built-in test runner, Jest/expect-compatible).
-Auto-discovers `*.test.ts` files.
+**Framework:** Vitest via `bun test` (runs Vitest-compatible specs natively;
+confirm compatibility during M0 setup).
 
 **What to test:**
 
@@ -535,11 +532,6 @@ spec. If the test name doesn't describe observable behavior, rewrite it.
 
 **CI.** `bun test` runs on every push; no merge without green. A single
 failing test blocks the commit claiming "done."
-
-## Gotchas
-
-- `LICENSE` file is referenced in this doc but not yet created — add AGPL-3.0 full text as an early M0 task
-- DB schema currently has a placeholder `task` table from scaffolding; replace with the real data model
 
 ## Reporting back to the user
 
