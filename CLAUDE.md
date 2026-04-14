@@ -1,10 +1,23 @@
 ## Project Configuration
 
 - **Language**: TypeScript
-- **Package Manager**: npm
+- **Package Manager**: bun
 - **Add-ons**: tailwindcss, drizzle
 
 ---
+
+## Commands
+
+```bash
+bun install              # install deps
+bun run dev              # start dev server
+bun run build            # production build
+bun run check            # svelte-check + type checking
+bun run db:push          # push schema to SQLite
+bun run db:generate      # generate Drizzle migration
+bun run db:studio        # open Drizzle Studio
+bun test                 # run tests (Bun's built-in test runner)
+```
 
 # Ahwa
 
@@ -340,7 +353,7 @@ and re-examine the invariants rather than push through.
 
 **Definition of done:** A single deliberation runs start-to-finish locally,
 the schema matches the invariants, typed SSE events drive the UI, and
-Vitest is wired up with at least one red-then-green test cycle completed
+`bun test` is wired up with at least one red-then-green test cycle completed
 (proving the TDD loop works before the real work begins).
 
 ### M1 — Self-host v1
@@ -413,11 +426,14 @@ milestone in the plan; budget accordingly.
 
 ## Directory layout
 
+> **Note:** This layout shows the target structure. Files marked with
+> `(planned)` do not exist yet; create them as M0/M1 tasks require.
+
 ```
 /
   CLAUDE.md                    -- this file
   README.md                    -- user-facing
-  LICENSE                      -- AGPL-3.0
+  LICENSE                      -- AGPL-3.0 (planned)
   package.json                 -- name: "ahwa"
   svelte.config.js
   tailwind.config.ts
@@ -429,7 +445,7 @@ milestone in the plan; budget accordingly.
     dsa-praxis.json               -- M1+
   personas/                    -- standalone personas users can add to any council
     historian.json                -- requires memory (M3)
-  packaging/
+  packaging/                     -- (planned)
     docker/
       Dockerfile
       compose.yaml
@@ -451,24 +467,24 @@ milestone in the plan; budget accordingly.
           schema.ts            -- Drizzle schema
           client.ts
           migrations/
-        llm.ts                 -- single provider abstraction
-        orchestrator.ts        -- debate state machine
-        events.ts              -- SSE event Zod types
-        features.ts            -- feature-flag registry
-        identity.ts            -- reads reverse-proxy identity headers (M2+)
-      schemas/                 -- shared Zod (persona, council, etc.)
-      components/
+        llm.ts                 -- single provider abstraction (planned)
+        orchestrator.ts        -- debate state machine (planned)
+        events.ts              -- SSE event Zod types (planned)
+        features.ts            -- feature-flag registry (planned)
+        identity.ts            -- reads reverse-proxy identity headers (M2+, planned)
+      schemas/                 -- shared Zod (persona, council, etc.) (planned)
+      components/              -- (planned)
     routes/
       +layout.svelte
       +page.svelte             -- table list + new table
-      t/[id]/
+      t/[id]/                    -- (planned)
         +page.svelte           -- table view
         +server.ts             -- SSE stream endpoint
-      api/
+      api/                       -- (planned)
         tables/
         councils/
         personas/
-  tests/
+  tests/                         -- (planned)
     orchestrator.test.ts
     llm.test.ts
     schemas.test.ts
@@ -485,8 +501,8 @@ accordingly.
 Strict red-green TDD (see "How to work on this repo"). Testing is not a
 step after coding; it is the way coding happens.
 
-**Framework:** Vitest via `bun test` (runs Vitest-compatible specs natively;
-confirm compatibility during M0 setup).
+**Framework:** `bun test` (Bun's built-in test runner, Jest/expect-compatible).
+Auto-discovers `*.test.ts` files.
 
 **What to test:**
 
@@ -519,6 +535,11 @@ spec. If the test name doesn't describe observable behavior, rewrite it.
 
 **CI.** `bun test` runs on every push; no merge without green. A single
 failing test blocks the commit claiming "done."
+
+## Gotchas
+
+- `LICENSE` file is referenced in this doc but not yet created — add AGPL-3.0 full text as an early M0 task
+- DB schema currently has a placeholder `task` table from scaffolding; replace with the real data model
 
 ## Reporting back to the user
 
