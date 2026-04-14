@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  FLY_REGION: iad
+  FLY_ORG: personal
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+
+    # Only one deploy at a time per PR
+    concurrency:
+      group: pr-${{ github.event.number }}
+
+    # Expose the preview URL in the GitHub UI
+    environment:
+      name: pr-${{ github.event.number }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy preview app
+        id: deploy
+        uses: superfly/fly-pr-review-apps@1.5.0
+        with:
+          config: fly.toml
+          vmsize: shared-cpu-1x
+          memory: 256
