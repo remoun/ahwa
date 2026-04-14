@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Multi-stage build: build with Bun, run with Bun on a minimal base.
+# Multi-stage build: compile with Bun into a standalone binary.
 
 FROM oven/bun:1 AS build
 WORKDIR /app
@@ -11,27 +11,25 @@ RUN bun install --frozen-lockfile
 # Copy source
 COPY . .
 
-# Build SvelteKit (adapter-node output in build/)
+# Build SvelteKit then compile to standalone binary
 # --bun forces Bun's module resolver so bun:sqlite is understood during build
-RUN bun run build
+RUN bun run build && bun build --compile build/index.js --outfile ahwa
 
-# Production stage
+# Production stage — no Bun, no Node, just the binary
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy Bun runtime
-COPY --from=build /usr/local/bin/bun /usr/local/bin/bun
-
-# Copy built output (adapter-node produces build/)
-COPY --from=build /app/build ./build
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./
+# Copy the standalone binary
+COPY --from=build /app/ahwa ./ahwa
 
 # Copy council and persona JSON files for seeding
 COPY --from=build /app/councils ./councils
 COPY --from=build /app/personas ./personas
+
+# SvelteKit adapter-node serves static assets from build/client
+COPY --from=build /app/build/client ./build/client
 
 # Data directory — mount a volume here for persistence
 ENV AHWA_DATA_DIR=/data
@@ -40,4 +38,4 @@ VOLUME /data
 
 EXPOSE 3000
 
-CMD ["bun", "build/index.js"]
+CMD ["./ahwa"]
