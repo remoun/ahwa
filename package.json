@@ -31,7 +31,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@ai-sdk/anthropic": "^3.0.69",
+		"@openrouter/ai-sdk-provider": "^2.5.1",
 		"ai": "^6.0.159",
 		"nanoid": "^5.1.7",
 		"zod": "^4.3.6"

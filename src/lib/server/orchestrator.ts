@@ -2,7 +2,7 @@
 import { eq } from 'drizzle-orm';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { nanoid } from 'nanoid';
-import { complete as defaultComplete, type CompleteRequest, type CompleteResult } from './llm';
+import { complete as defaultComplete, DEFAULT_MODEL, type CompleteRequest, type CompleteResult } from './llm';
 import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
 
@@ -92,7 +92,7 @@ export async function* runDeliberation(
 
 			// Call LLM
 			const result = await completeFn({
-				model: 'claude-sonnet-4-5',
+				model: DEFAULT_MODEL,
 				system: persona.systemPrompt ?? '',
 				messages,
 				stream: true
@@ -136,7 +136,7 @@ export async function* runDeliberation(
 			.join('\n\n');
 
 		const result = await completeFn({
-			model: 'claude-sonnet-4-5',
+			model: DEFAULT_MODEL,
 			system: council.synthesisPrompt,
 			messages: [{ role: 'user', content: `Here is the full deliberation:\n\n${deliberationText}` }],
 			stream: true

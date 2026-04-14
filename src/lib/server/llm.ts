@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { streamText } from 'ai';
-import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
-const anthropic = createAnthropic();
+const openrouter = createOpenRouter({
+	apiKey: process.env.OPENROUTER_API_KEY
+});
+
+// M0 default: free-tier model on OpenRouter
+export const DEFAULT_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
 
 export interface CompleteRequest {
 	model: string;
@@ -18,14 +23,14 @@ export interface CompleteResult {
 /**
  * Single provider abstraction per invariant #6.
  * The orchestrator calls this and nothing else.
- * M0: hardcoded Anthropic. M1: multi-provider routing.
+ * M0: OpenRouter (free tier). M1: multi-provider routing.
  */
 export async function complete(request: CompleteRequest): Promise<CompleteResult> {
 	const result = streamText({
-		model: anthropic(request.model),
+		model: openrouter(request.model),
 		system: request.system,
 		messages: request.messages
 	});
 
-	return { textStream: (await result).textStream };
+	return { textStream: result.textStream };
 }
