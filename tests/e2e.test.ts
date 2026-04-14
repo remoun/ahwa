@@ -31,12 +31,20 @@ describe('e2e: full deliberation with real councils', () => {
 		const personas = db.select().from(schema.personas).all();
 		expect(personas.length).toBeGreaterThanOrEqual(5);
 
-		// Create a party
+		// Create a party and table (orchestrator no longer creates these)
 		db.insert(schema.parties).values({ id: 'e2e-party', displayName: 'me' }).run();
+		db.insert(schema.tables).values({
+			id: 'e2e-table-1',
+			dilemma: 'Should I quit my job to start a cooperative?',
+			councilId: 'default',
+			status: 'pending'
+		}).run();
+		db.insert(schema.tableParties).values({ tableId: 'e2e-table-1', partyId: 'e2e-party', role: 'initiator' }).run();
 
 		// Run the full deliberation
 		const events: SseEvent[] = [];
 		for await (const event of runDeliberation(db, {
+			tableId: 'e2e-table-1',
 			dilemma: 'Should I quit my job to start a cooperative?',
 			councilId: 'default',
 			partyId: 'e2e-party',
@@ -91,19 +99,26 @@ describe('e2e: full deliberation with real councils', () => {
 
 	it('persists all turns and synthesis to the database', async () => {
 		db.insert(schema.parties).values({ id: 'e2e-party', displayName: 'me' }).run();
+		db.insert(schema.tables).values({
+			id: 'e2e-table-2',
+			dilemma: 'Test dilemma for persistence check',
+			councilId: 'default',
+			status: 'pending'
+		}).run();
+		db.insert(schema.tableParties).values({ tableId: 'e2e-table-2', partyId: 'e2e-party', role: 'initiator' }).run();
 
-		let tableId = '';
 		for await (const event of runDeliberation(db, {
+			tableId: 'e2e-table-2',
 			dilemma: 'Test dilemma for persistence check',
 			councilId: 'default',
 			partyId: 'e2e-party',
 			completeFn: mockComplete
 		})) {
-			if (event.type === 'table_opened') tableId = event.tableId;
+			// consume all events
 		}
 
 		// Verify table row
-		const table = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
+		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'e2e-table-2')).get();
 		expect(table).toBeDefined();
 		expect(table!.status).toBe('completed');
 		expect(table!.synthesis).toBeTruthy();

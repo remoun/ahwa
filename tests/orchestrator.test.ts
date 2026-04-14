@@ -29,6 +29,17 @@ function seedMiniCouncil(db: TestDb) {
 	db.insert(schema.parties).values({ id: 'party-1', displayName: 'me' }).run();
 }
 
+/** Pre-create a table row so the orchestrator can use it */
+function createTable(db: TestDb, id: string, dilemma: string, councilId: string, partyId: string) {
+	db.insert(schema.tables).values({
+		id,
+		dilemma,
+		councilId,
+		status: 'pending'
+	}).run();
+	db.insert(schema.tableParties).values({ tableId: id, partyId, role: 'initiator' }).run();
+}
+
 describe('orchestrator', () => {
 	let db: TestDb;
 
@@ -38,8 +49,10 @@ describe('orchestrator', () => {
 	});
 
 	it('emits table_opened before the first round', async () => {
+		createTable(db, 'tbl-1', 'Should I take the job?', 'test-council', 'party-1');
 		const events: SseEvent[] = [];
 		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-1',
 			dilemma: 'Should I take the job?',
 			councilId: 'test-council',
 			partyId: 'party-1',
@@ -49,11 +62,14 @@ describe('orchestrator', () => {
 		}
 
 		expect(events[0].type).toBe('table_opened');
+		expect((events[0] as any).tableId).toBe('tbl-1');
 	});
 
 	it('emits round_started for each round', async () => {
+		createTable(db, 'tbl-2', 'Test dilemma', 'test-council', 'party-1');
 		const events: SseEvent[] = [];
 		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-2',
 			dilemma: 'Test dilemma',
 			councilId: 'test-council',
 			partyId: 'party-1',
@@ -69,8 +85,10 @@ describe('orchestrator', () => {
 	});
 
 	it('emits persona_turn_started and persona_turn_completed for each persona in each round', async () => {
+		createTable(db, 'tbl-3', 'Test dilemma', 'test-council', 'party-1');
 		const events: SseEvent[] = [];
 		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-3',
 			dilemma: 'Test dilemma',
 			councilId: 'test-council',
 			partyId: 'party-1',
@@ -87,8 +105,10 @@ describe('orchestrator', () => {
 	});
 
 	it('emits synthesis_started and table_closed at the end', async () => {
+		createTable(db, 'tbl-4', 'Test dilemma', 'test-council', 'party-1');
 		const events: SseEvent[] = [];
 		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-4',
 			dilemma: 'Test dilemma',
 			councilId: 'test-council',
 			partyId: 'party-1',
@@ -103,7 +123,9 @@ describe('orchestrator', () => {
 	});
 
 	it('persists all turns to the database', async () => {
+		createTable(db, 'tbl-5', 'Test dilemma', 'test-council', 'party-1');
 		for await (const _ of runDeliberation(db, {
+			tableId: 'tbl-5',
 			dilemma: 'Test dilemma',
 			councilId: 'test-council',
 			partyId: 'party-1',
@@ -118,19 +140,44 @@ describe('orchestrator', () => {
 	});
 
 	it('stores synthesis on the table row', async () => {
-		let tableId = '';
+		createTable(db, 'tbl-6', 'Test dilemma', 'test-council', 'party-1');
 		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-6',
 			dilemma: 'Test dilemma',
 			councilId: 'test-council',
 			partyId: 'party-1',
 			completeFn: mockComplete
 		})) {
-			if (event.type === 'table_opened') tableId = event.tableId;
+			// consume all events
 		}
 
-		const table = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
+		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-6')).get();
 		expect(table).toBeDefined();
 		expect(table!.synthesis).toBeTruthy();
 		expect(table!.status).toBe('completed');
+	});
+
+	it('updates table status to running when deliberation starts', async () => {
+		createTable(db, 'tbl-7', 'Test dilemma', 'test-council', 'party-1');
+
+		// Verify starts as pending
+		const before = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-7')).get();
+		expect(before!.status).toBe('pending');
+
+		const events: SseEvent[] = [];
+		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-7',
+			dilemma: 'Test dilemma',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: mockComplete
+		})) {
+			events.push(event);
+			// Check status after first event
+			if (events.length === 1) {
+				const during = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-7')).get();
+				expect(during!.status).toBe('running');
+			}
+		}
 	});
 });

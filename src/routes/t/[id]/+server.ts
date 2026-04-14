@@ -18,11 +18,20 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		return new Response('party parameter required', { status: 400 });
 	}
 
+	// Only start deliberation for pending tables
+	if (table.status !== 'pending') {
+		return new Response(
+			JSON.stringify({ error: `Table is already ${table.status}` }),
+			{ status: 409, headers: { 'Content-Type': 'application/json' } }
+		);
+	}
+
 	const encoder = new TextEncoder();
 	const stream = new ReadableStream({
 		async start(controller) {
 			try {
 				for await (const event of runDeliberation(db, {
+					tableId,
 					dilemma: table.dilemma!,
 					councilId: table.councilId!,
 					partyId

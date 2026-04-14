@@ -10,6 +10,7 @@ type Db = BunSQLiteDatabase<typeof schema>;
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
 
 export interface DeliberationRequest {
+	tableId: string;
 	dilemma: string;
 	councilId: string;
 	partyId: string;
@@ -36,7 +37,7 @@ export async function* runDeliberation(
 	db: Db,
 	request: DeliberationRequest
 ): AsyncGenerator<SseEvent> {
-	const { dilemma, councilId, partyId, completeFn = defaultComplete } = request;
+	const { tableId, dilemma, councilId, partyId, completeFn = defaultComplete } = request;
 
 	// Load the council
 	const council = db.select().from(schema.councils).where(eq(schema.councils.id, councilId)).get();
@@ -51,20 +52,10 @@ export async function* runDeliberation(
 		.map((id) => allPersonas.find((p) => p.id === id))
 		.filter((p): p is PersonaRow => p !== undefined);
 
-	// Create the table row
-	const tableId = nanoid();
-	db.insert(schema.tables)
-		.values({
-			id: tableId,
-			dilemma,
-			councilId,
-			status: 'running'
-		})
-		.run();
-
-	// Link party to table
-	db.insert(schema.tableParties)
-		.values({ tableId, partyId, role: 'initiator' })
+	// Mark the pre-created table as running
+	db.update(schema.tables)
+		.set({ status: 'running', updatedAt: Date.now() })
+		.where(eq(schema.tables.id, tableId))
 		.run();
 
 	yield { type: 'table_opened', tableId };
