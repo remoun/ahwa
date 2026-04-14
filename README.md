@@ -14,20 +14,6 @@ but forkable, self-hostable, and built around user-owned data.
 > coffeehouse — where friends gather to think through problems together.
 > Pronounced "AH-wah."
 
-## Try it (coming soon)
-
-Ahwa is not yet packaged for install. To try it from source:
-
-```bash
-git clone https://github.com/remoun/ahwa && cd ahwa
-bun install
-cp .env.example .env      # add your OpenRouter API key
-bun run dev                # http://localhost:5173
-```
-
-Self-host via [Docker](#install-via-docker) and
-[YunoHost](#install-via-yunohost) is planned for M1/M2.
-
 ## What it does
 
 You describe a decision you're wrestling with. A council of AI personas —
@@ -40,39 +26,31 @@ whole deliberation and gives you back:
 - A specific recommended next step
 - How confident the synthesizer is, and what would change that
 
-The defaults ship with two councils:
+The defaults ship with four councils:
 
 - **The Default Council** — Elder, Mirror, Engineer, Weaver, Instigator.
   A balanced five-persona set for any dilemma.
 - **The Federation Council** — Federation Delegate, Ancestor, Organizer,
   Therapist, Trickster. Opinionated on purpose: collectivist, long-horizon,
-  unafraid of the absurd. A demonstration of what a forked council looks
-  like.
+  unafraid of the absurd.
+- **The Praxis Council** — Organizer, Historical Materialist, Abolitionist,
+  Caucus Skeptic, Comrade. Class analysis and democratic socialism.
+- **The Relationship Anarchist Council** — for decisions about relationships,
+  autonomy, and interdependence.
 
-You can edit both, fork either, write your own from scratch, or combine
+You can edit them, fork them, write your own from scratch, or combine
 personas from the standalone `personas/` library. Councils are plain JSON.
 Fork one, share it, put it in a GitHub repo for your friends.
 
 ## What makes it different
 
 **Privacy by design.** No telemetry. No analytics. No phone-home. Not even
-anonymous. Your tables and memory live on your server, encrypted at rest
-(optional), synced across your devices end-to-end encrypted (optional).
-When you self-host with your own API keys, Ahwa itself knows nothing about
-you beyond what you type into it.
+anonymous. Your tables live on your server. When you self-host with your own
+API keys, Ahwa itself knows nothing about you beyond what you type into it.
 
 **Bring your own model.** Anthropic, OpenAI, OpenRouter, or a fully local
 Ollama install. Switch providers per council. Run entirely offline if you
 want.
-
-**Memory that's yours.** Your memory file is plain markdown, editable by
-hand, visible in the UI, exportable anytime. Personas that use it (like the
-Historian, who remembers your patterns across time) read from it, but you
-own it — not us, not the model provider.
-
-**Two-party mediation.** Share a table with another person. You each talk
-to the council separately, on your own time. The synthesizer sees both
-sides. Raw turns stay party-scoped until you both opt in to share.
 
 **Forkable councils, forkable personas.** The best councils will come from
 the community, not from us. Ship JSON. Open a pull request. The tool
@@ -91,15 +69,6 @@ If you're in crisis, please reach out to a real person. In the US:
 988 (Suicide and Crisis Lifeline). In the UK: Samaritans on 116 123.
 Internationally: [findahelpline.com](https://findahelpline.com).
 
-## Install via YunoHost
-
-1. In your YunoHost admin panel, go to **Applications → Install**
-2. Search for "Ahwa"
-3. Click install, enter your domain, confirm
-4. Set your Anthropic API key (or skip and configure Ollama later)
-5. Done — Ahwa is running at your chosen domain, with Let's Encrypt TLS
-   and SSOwat single sign-on already set up
-
 ## Install via Docker
 
 ```bash
@@ -109,7 +78,7 @@ curl -O https://raw.githubusercontent.com/remoun/ahwa/main/packaging/docker/comp
 # Create a data directory
 mkdir -p ./ahwa-data
 
-# Set your API key
+# Set your API key (pick one)
 export ANTHROPIC_API_KEY=your-key-here
 
 # Run it
@@ -118,7 +87,7 @@ docker compose up -d
 
 Ahwa is now running at `http://localhost:3000`. Point your reverse proxy
 (Caddy recommended) at it. See [docs/self-host.md](./docs/self-host.md)
-for TLS, backups, and running with Ollama for fully local operation.
+for TLS, backups, and environment variables.
 
 ## Install with Ollama (fully local)
 
@@ -126,12 +95,14 @@ for TLS, backups, and running with Ollama for fully local operation.
 # Install Ollama, pull a capable model
 ollama pull qwen2.5:14b
 
-# Point Ahwa at Ollama in your config
-# See docs/ollama.md for the details
+# Clone and run Ahwa — it will auto-detect Ollama
+git clone https://github.com/remoun/ahwa && cd ahwa
+bun install
+bun run dev
 ```
 
 Everything runs on your machine. No external API calls. No costs beyond
-the electricity.
+the electricity. See [docs/ollama.md](./docs/ollama.md) for details.
 
 ## Development
 
@@ -166,17 +137,23 @@ repo. Open a PR to add yours. Good candidates:
 The council library is the project's center of gravity. The tool is the
 frame; the councils are the picture.
 
+## Zero telemetry
+
+Ahwa collects nothing. No analytics. No crash reporting. No phone-home.
+Not even anonymous usage metrics. This is a core product promise — it will
+never change.
+
 ## Status
 
-Ahwa is pre-release. The core deliberation loop works locally (M0 complete):
-you can pose a dilemma, watch five personas deliberate across two rounds,
-and read a synthesis. 37 tests cover the invariants.
+Ahwa is pre-release (M1). The deliberation loop works end-to-end: table
+list, council selection, multi-provider LLM routing, SSE streaming,
+markdown export. 72 tests cover the invariants.
 
-**What's built:** Drizzle schema, typed SSE streaming, orchestrator state
-machine, OpenRouter provider, seed loader for council/persona JSON files.
+**What's built:** table list UI, council picker, persona/council CRUD,
+markdown export, multi-provider routing (Anthropic/OpenAI/OpenRouter/Ollama),
+Docker packaging, GitHub Actions CI.
 
-**What's next (M1):** table list UI, persona/council CRUD, markdown export,
-multi-provider routing, Docker image, self-host README.
+**What's next (M2):** public demo at ahwa.app, YunoHost package.
 
 See [CLAUDE.md](./CLAUDE.md) for the full milestone plan.
 
