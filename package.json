@@ -31,9 +31,12 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@ai-sdk/anthropic": "^3.0.69",
+		"@ai-sdk/openai": "^3.0.52",
 		"@openrouter/ai-sdk-provider": "^2.5.1",
 		"ai": "^6.0.159",
 		"nanoid": "^5.1.7",
+		"ollama-ai-provider": "^1.2.0",
 		"zod": "^4.3.6"
 	}
 }

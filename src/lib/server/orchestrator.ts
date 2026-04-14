@@ -2,7 +2,7 @@
 import { eq } from 'drizzle-orm';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { nanoid } from 'nanoid';
-import { complete as defaultComplete, DEFAULT_MODEL, type CompleteRequest, type CompleteResult } from './llm';
+import { complete as defaultComplete, resolveModelConfig, type CompleteRequest, type CompleteResult, type ModelConfig } from './llm';
 import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
 
@@ -45,6 +45,10 @@ export async function* runDeliberation(
 
 	const personaIds: string[] = JSON.parse(council.personaIds!);
 	const roundStructure: { rounds: RoundDef[]; synthesize: boolean } = JSON.parse(council.roundStructure!);
+	const modelConfig: ModelConfig | undefined = council.modelConfig
+		? JSON.parse(council.modelConfig)
+		: undefined;
+	const resolvedConfig = resolveModelConfig(modelConfig);
 
 	// Load personas
 	const allPersonas = db.select().from(schema.personas).all();
@@ -83,10 +87,11 @@ export async function* runDeliberation(
 
 			// Call LLM
 			const result = await completeFn({
-				model: DEFAULT_MODEL,
+				model: resolvedConfig.model,
 				system: persona.systemPrompt ?? '',
 				messages,
-				stream: true
+				stream: true,
+				modelConfig: resolvedConfig
 			});
 
 			// Collect the full text while streaming tokens
@@ -127,10 +132,11 @@ export async function* runDeliberation(
 			.join('\n\n');
 
 		const result = await completeFn({
-			model: DEFAULT_MODEL,
+			model: resolvedConfig.model,
 			system: council.synthesisPrompt,
 			messages: [{ role: 'user', content: `Here is the full deliberation:\n\n${deliberationText}` }],
-			stream: true
+			stream: true,
+			modelConfig: resolvedConfig
 		});
 
 		let synthesisText = '';

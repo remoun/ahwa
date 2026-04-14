@@ -180,4 +180,41 @@ describe('orchestrator', () => {
 			}
 		}
 	});
+
+	it('passes council model_config to completeFn', async () => {
+		// Create a council with explicit model_config
+		db.insert(schema.councils).values({
+			id: 'configured-council',
+			name: 'Configured',
+			personaIds: JSON.stringify(['elder']),
+			synthesisPrompt: 'Synthesize.',
+			roundStructure: JSON.stringify({
+				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+				synthesize: false
+			}),
+			modelConfig: JSON.stringify({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' })
+		}).run();
+
+		createTable(db, 'tbl-cfg', 'Config test', 'configured-council', 'party-1');
+
+		const receivedConfigs: Array<{ model: string; provider?: string }> = [];
+		const trackingComplete = async (req: any) => {
+			receivedConfigs.push({ model: req.model, provider: req.modelConfig?.provider });
+			return mockComplete(req);
+		};
+
+		for await (const _ of runDeliberation(db, {
+			tableId: 'tbl-cfg',
+			dilemma: 'Config test',
+			councilId: 'configured-council',
+			partyId: 'party-1',
+			completeFn: trackingComplete
+		})) {
+			// consume
+		}
+
+		expect(receivedConfigs.length).toBeGreaterThan(0);
+		expect(receivedConfigs[0].model).toBe('claude-sonnet-4-20250514');
+		expect(receivedConfigs[0].provider).toBe('anthropic');
+	});
 });
