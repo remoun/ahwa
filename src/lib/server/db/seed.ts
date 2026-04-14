@@ -25,8 +25,19 @@ export function seedFromDisk(
 	}
 
 	for (const file of councilFiles) {
-		const raw = JSON.parse(readFileSync(join(councilsDir, file), 'utf-8'));
-		const parsed = CouncilSchema.parse(raw);
+		let raw: unknown;
+		try {
+			raw = JSON.parse(readFileSync(join(councilsDir, file), 'utf-8'));
+		} catch (err) {
+			console.warn(`seed: skipping ${file}: ${err instanceof Error ? err.message : err}`);
+			continue;
+		}
+		const result = CouncilSchema.safeParse(raw);
+		if (!result.success) {
+			console.warn(`seed: skipping ${file}: ${result.error.issues[0]?.message ?? 'validation failed'}`);
+			continue;
+		}
+		const parsed = result.data;
 
 		// Upsert each persona from this council
 		for (const persona of parsed.personas) {
@@ -86,8 +97,19 @@ export function seedFromDisk(
 	}
 
 	for (const file of personaFiles) {
-		const raw = JSON.parse(readFileSync(join(personasDir, file), 'utf-8'));
-		const parsed = PersonaSchema.parse(raw);
+		let raw: unknown;
+		try {
+			raw = JSON.parse(readFileSync(join(personasDir, file), 'utf-8'));
+		} catch (err) {
+			console.warn(`seed: skipping ${file}: ${err instanceof Error ? err.message : err}`);
+			continue;
+		}
+		const result = PersonaSchema.safeParse(raw);
+		if (!result.success) {
+			console.warn(`seed: skipping ${file}: ${result.error.issues[0]?.message ?? 'validation failed'}`);
+			continue;
+		}
+		const parsed = result.data;
 
 		db.insert(schema.personas)
 			.values({

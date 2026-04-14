@@ -60,4 +60,12 @@ describe('markdown export', () => {
 		const md = generateMarkdown(table, turns, council, null);
 		expect(md).not.toContain('## Synthesis');
 	});
+
+	it('handles empty turns array', () => {
+		const md = generateMarkdown(table, [], council, null);
+		expect(md).toContain('# Should I quit my job?');
+		expect(md).toContain('The Default Council');
+		expect(md).not.toContain('## Round');
+		expect(md).not.toContain('## Synthesis');
+	});
 });

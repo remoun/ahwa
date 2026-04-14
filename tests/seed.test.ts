@@ -57,4 +57,32 @@ describe('seedFromDisk', () => {
 		expect(ids).toContain('mirror');
 		expect(ids.length).toBe(5);
 	});
+
+	it('skips malformed JSON files without crashing', () => {
+		const { mkdirSync, writeFileSync, rmSync } = require('fs');
+		const testDir = '/tmp/ahwa-test-councils';
+
+		try {
+			mkdirSync(testDir, { recursive: true });
+			// One valid council
+			writeFileSync(`${testDir}/good.json`, JSON.stringify({
+				id: 'good',
+				name: 'Good Council',
+				personas: [{ id: 'p1', name: 'P', emoji: '!', system_prompt: 'test' }],
+				round_structure: { rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }], synthesize: false },
+				synthesis_prompt: 'n/a'
+			}));
+			// One broken file
+			writeFileSync(`${testDir}/broken.json`, '{ this is not valid json }}}');
+
+			// Should not throw — should skip the broken file
+			seedFromDisk(db, testDir, '/tmp/ahwa-test-personas-empty');
+
+			// The good council should still be loaded
+			const councils = db.select().from(schema.councils).all();
+			expect(councils.map((c) => c.id)).toContain('good');
+		} finally {
+			rmSync(testDir, { recursive: true, force: true });
+		}
+	});
 });

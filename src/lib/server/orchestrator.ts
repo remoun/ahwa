@@ -157,12 +157,18 @@ export async function* runDeliberation(
 			})
 			.run();
 
-		// Update table with synthesis and mark completed
+		// Persist synthesis text on the table row
 		db.update(schema.tables)
-			.set({ synthesis: synthesisText, status: 'completed', updatedAt: Date.now() })
+			.set({ synthesis: synthesisText, updatedAt: Date.now() })
 			.where(eq(schema.tables.id, tableId))
 			.run();
 	}
+
+	// Mark table completed regardless of whether synthesis ran
+	db.update(schema.tables)
+		.set({ status: 'completed', updatedAt: Date.now() })
+		.where(eq(schema.tables.id, tableId))
+		.run();
 
 	yield { type: 'table_closed' };
 

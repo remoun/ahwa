@@ -305,4 +305,45 @@ describe('orchestrator', () => {
 		expect(turnStarts.length).toBe(1);
 		expect((turnStarts[0] as any).personaName).toBe('The Elder');
 	});
+
+	it('skips synthesis when council has synthesize: false', async () => {
+		db.insert(schema.councils).values({
+			id: 'no-synth',
+			name: 'No Synthesis',
+			personaIds: JSON.stringify(['elder']),
+			synthesisPrompt: 'Should not run.',
+			roundStructure: JSON.stringify({
+				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+				synthesize: false
+			})
+		}).run();
+
+		createTable(db, 'tbl-nosynth', 'No synthesis test', 'no-synth', 'party-1');
+
+		const events: SseEvent[] = [];
+		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-nosynth',
+			dilemma: 'No synthesis test',
+			councilId: 'no-synth',
+			partyId: 'party-1',
+			completeFn: mockComplete
+		})) {
+			events.push(event);
+		}
+
+		const types = events.map((e) => e.type);
+		expect(types).not.toContain('synthesis_started');
+		expect(types).not.toContain('synthesis_token');
+		expect(types[types.length - 1]).toBe('table_closed');
+
+		// No synthesis turn in DB
+		const turns = db.select().from(schema.turns).all();
+		const synthesisTurns = turns.filter((t) => t.round === 0);
+		expect(synthesisTurns.length).toBe(0);
+
+		// Table should be marked completed even without synthesis
+		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-nosynth')).get();
+		expect(table!.status).toBe('completed');
+		expect(table!.synthesis).toBeNull();
+	});
 });
