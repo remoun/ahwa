@@ -1,6 +1,8 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import TurnCard from '$lib/components/TurnCard.svelte';
+	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -11,20 +13,36 @@
 		emoji: string;
 		text: string;
 		complete: boolean;
+		round: number;
 	}
 
-	let turns = $state<Turn[]>([]);
+	// If table is already completed, populate from server data
+	const isCompleted = data.table?.status === 'completed';
+
+	let turns = $state<Turn[]>(
+		isCompleted
+			? data.turns
+				.filter((t) => t.round > 0) // exclude synthesis turn (round 0)
+				.map((t) => ({
+					personaId: '',
+					personaName: t.personaName ?? '',
+					emoji: '',
+					text: t.text ?? '',
+					complete: true,
+					round: t.round
+				}))
+			: []
+	);
 	let currentRound = $state('');
-	let synthesis = $state('');
+	let synthesis = $state(isCompleted ? (data.table?.synthesis ?? '') : '');
 	let synthesizing = $state(false);
-	let done = $state(false);
+	let done = $state(isCompleted);
 	let error = $state('');
 
 	onMount(() => {
-		const url = `/t/${data.tableId}?party=${data.partyId}`;
+		if (isCompleted) return; // No streaming needed
 
-		// Use fetch + ReadableStream instead of EventSource for streaming
-		// EventSource doesn't support custom parsing well; fetch streaming is simpler
+		const url = `/t/${data.tableId}?party=${data.partyId}`;
 		const controller = new AbortController();
 
 		(async () => {
@@ -82,7 +100,8 @@
 					personaName: event.personaName,
 					emoji: event.emoji,
 					text: '',
-					complete: false
+					complete: false,
+					round: 0
 				});
 				break;
 
@@ -120,46 +139,65 @@
 				break;
 		}
 	}
+
+	function exportMarkdown() {
+		window.location.href = `/api/tables/${data.tableId}/export`;
+	}
 </script>
 
-<main class="max-w-3xl mx-auto p-8">
-	<a href="/" class="text-stone-500 hover:text-stone-800 text-sm mb-4 inline-block">&larr; Back</a>
+<svelte:head>
+	<title>{data.table?.dilemma ? data.table.dilemma.slice(0, 50) : 'Table'} - Ahwa</title>
+</svelte:head>
+
+<main class="max-w-3xl mx-auto p-4 sm:p-8">
+	<div class="flex items-center justify-between mb-6">
+		<a href="/" class="text-stone-500 hover:text-stone-800 text-sm">&larr; Back to tables</a>
+		{#if done}
+			<button
+				onclick={exportMarkdown}
+				class="text-sm px-3 py-1.5 border border-stone-300 rounded-lg hover:bg-stone-50 text-stone-600 transition-colors"
+			>
+				Export Markdown
+			</button>
+		{/if}
+	</div>
+
+	{#if data.table?.dilemma}
+		<div class="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200">
+			<p class="text-sm text-stone-500 mb-1">Dilemma</p>
+			<p class="text-stone-800">{data.table.dilemma}</p>
+		</div>
+	{/if}
 
 	{#if error}
 		<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-			<p class="text-red-800">{error}</p>
+			<p class="text-red-800 text-sm">{error}</p>
 		</div>
 	{/if}
 
 	{#if currentRound}
-		<h2 class="text-lg font-semibold text-stone-500 mb-4">{currentRound}</h2>
+		<h2 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-3">{currentRound}</h2>
 	{/if}
 
 	{#each turns as turn}
-		<div class="mb-6 p-4 border rounded-lg {turn.complete ? 'border-stone-200' : 'border-stone-400'}">
-			<div class="font-medium mb-2">
-				{turn.emoji} {turn.personaName}
-			</div>
-			<div class="whitespace-pre-wrap text-stone-700">
-				{turn.text}{#if !turn.complete}<span class="animate-pulse">|</span>{/if}
-			</div>
-		</div>
+		<TurnCard
+			emoji={turn.emoji}
+			personaName={turn.personaName}
+			text={turn.text}
+			complete={turn.complete}
+			streaming={!isCompleted}
+		/>
 	{/each}
 
 	{#if synthesizing || synthesis}
-		<div class="mt-8 p-6 bg-stone-50 border-2 border-stone-300 rounded-lg">
-			<h2 class="text-lg font-bold mb-3">Synthesis</h2>
-			<div class="whitespace-pre-wrap text-stone-700">
-				{synthesis}{#if synthesizing}<span class="animate-pulse">|</span>{/if}
-			</div>
-		</div>
+		<SynthesisPanel text={synthesis} streaming={synthesizing} />
 	{/if}
 
-	{#if done}
-		<p class="mt-6 text-stone-500 text-sm text-center">Deliberation complete.</p>
+	{#if done && !error}
+		<p class="mt-6 text-stone-400 text-sm text-center">Deliberation complete.</p>
 	{/if}
 
-	{#if !currentRound && !error}
-		<p class="text-stone-400 animate-pulse">Connecting to the council...</p>
+	{#if !currentRound && !error && !isCompleted}
+		<p class="text-stone-400 animate-pulse text-sm">Connecting to the council...</p>
 	{/if}
 </main>
