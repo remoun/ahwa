@@ -16,8 +16,8 @@ COPY . .
 RUN bun run build && bun build --compile build/index.js --outfile ahwa
 
 # Production stage — no Bun, no Node, just the binary
-FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# distroless/cc includes glibc + ca-certificates, nothing else
+FROM gcr.io/distroless/cc-debian12
 
 WORKDIR /app
 
