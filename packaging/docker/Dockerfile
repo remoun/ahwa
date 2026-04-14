@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Multi-stage build: compile with Bun into a standalone binary.
 
-FROM oven/bun:1 AS build
+FROM oven/bun:1.3.11 AS build
 WORKDIR /app
 
 # Install deps
