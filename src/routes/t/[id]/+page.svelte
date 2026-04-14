@@ -17,12 +17,20 @@
 	}
 
 	// If table is already completed, populate from server data
-	const isCompleted = data.table?.status === 'completed';
+	let isCompleted = $derived(data.table?.status === 'completed');
 
-	let turns = $state<Turn[]>(
-		isCompleted
-			? data.turns
-				.filter((t) => t.round > 0) // exclude synthesis turn (round 0)
+	let turns = $state<Turn[]>([]);
+	let currentRound = $state('');
+	let synthesis = $state('');
+	let synthesizing = $state(false);
+	let done = $state(false);
+	let error = $state('');
+
+	// Populate from server data when viewing a completed table
+	$effect(() => {
+		if (data.table?.status === 'completed') {
+			turns = data.turns
+				.filter((t) => t.round > 0)
 				.map((t) => ({
 					personaId: '',
 					personaName: t.personaName ?? '',
@@ -30,14 +38,11 @@
 					text: t.text ?? '',
 					complete: true,
 					round: t.round
-				}))
-			: []
-	);
-	let currentRound = $state('');
-	let synthesis = $state(isCompleted ? (data.table?.synthesis ?? '') : '');
-	let synthesizing = $state(false);
-	let done = $state(isCompleted);
-	let error = $state('');
+				}));
+			synthesis = data.table?.synthesis ?? '';
+			done = true;
+		}
+	});
 
 	onMount(() => {
 		if (isCompleted) return; // No streaming needed

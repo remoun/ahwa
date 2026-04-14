@@ -91,15 +91,16 @@
 				<p class="text-red-600 text-sm mb-3">{error}</p>
 			{/if}
 
-			<label class="block text-sm font-medium text-stone-600 mb-1">Name</label>
+			<label for="council-name" class="block text-sm font-medium text-stone-600 mb-1">Name</label>
 			<input
+				id="council-name"
 				bind:value={name}
 				class="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm mb-3 focus:outline-none focus:border-stone-500"
 				placeholder="My Custom Council"
 			/>
 
-			<label class="block text-sm font-medium text-stone-600 mb-1">Personas</label>
-			<div class="flex flex-wrap gap-2 mb-3">
+			<span class="block text-sm font-medium text-stone-600 mb-1">Personas</span>
+			<div class="flex flex-wrap gap-2 mb-3" role="group" aria-label="Persona selection">
 				{#each data.personas as persona}
 					<button
 						type="button"
@@ -114,8 +115,9 @@
 				{/each}
 			</div>
 
-			<label class="block text-sm font-medium text-stone-600 mb-1">Synthesis prompt</label>
+			<label for="synthesis-prompt" class="block text-sm font-medium text-stone-600 mb-1">Synthesis prompt</label>
 			<textarea
+				id="synthesis-prompt"
 				bind:value={synthesisPrompt}
 				class="w-full h-20 px-3 py-2 border border-stone-300 rounded-lg text-sm mb-3 resize-y focus:outline-none focus:border-stone-500"
 			></textarea>
