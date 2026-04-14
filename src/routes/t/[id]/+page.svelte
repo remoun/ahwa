@@ -16,17 +16,20 @@
 		round: number;
 	}
 
-	// If table is already completed, populate from server data
 	let isCompleted = $derived(data.table?.status === 'completed');
 
 	let turns = $state<Turn[]>([]);
 	let currentRound = $state('');
+	let currentRoundNum = $state(0);
+	let totalRounds = $state(0);
+	let activePersona = $state('');
+	let completedTurns = $state(0);
+	let totalPersonas = $state(0);
 	let synthesis = $state('');
 	let synthesizing = $state(false);
 	let done = $state(false);
 	let error = $state('');
 
-	// Populate from server data when viewing a completed table
 	$effect(() => {
 		if (data.table?.status === 'completed') {
 			turns = data.turns
@@ -45,7 +48,7 @@
 	});
 
 	onMount(() => {
-		if (isCompleted) return; // No streaming needed
+		if (isCompleted) return;
 
 		const url = `/t/${data.tableId}?party=${data.partyId}`;
 		const controller = new AbortController();
@@ -97,16 +100,22 @@
 		switch (event.type) {
 			case 'round_started':
 				currentRound = event.kind === 'opening' ? 'Opening Round' : 'Cross-Examination';
+				currentRoundNum = event.round;
+				// We don't know totalRounds from the event; estimate from council structure
+				if (event.round > totalRounds) totalRounds = event.round;
+				completedTurns = 0;
 				break;
 
 			case 'persona_turn_started':
+				activePersona = event.personaName;
+				totalPersonas++;
 				turns.push({
 					personaId: event.personaId,
 					personaName: event.personaName,
 					emoji: event.emoji,
 					text: '',
 					complete: false,
-					round: 0
+					round: currentRoundNum
 				});
 				break;
 
@@ -123,11 +132,15 @@
 					(t) => t.personaId === event.personaId && !t.complete
 				);
 				if (turn) turn.complete = true;
+				completedTurns++;
+				activePersona = '';
 				break;
 			}
 
 			case 'synthesis_started':
 				synthesizing = true;
+				activePersona = '';
+				currentRound = 'Synthesis';
 				break;
 
 			case 'synthesis_token':
@@ -137,6 +150,8 @@
 			case 'table_closed':
 				synthesizing = false;
 				done = true;
+				activePersona = '';
+				currentRound = '';
 				break;
 
 			case 'error':
@@ -156,11 +171,11 @@
 
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<div class="flex items-center justify-between mb-6">
-		<a href="/" class="text-stone-500 hover:text-stone-800 text-sm">&larr; Back to tables</a>
+		<a href="/" class="text-amber-600/60 hover:text-amber-900 text-sm transition-colors">&larr; Back to tables</a>
 		{#if done}
 			<button
 				onclick={exportMarkdown}
-				class="text-sm px-3 py-1.5 border border-stone-300 rounded-lg hover:bg-stone-50 text-stone-600 transition-colors"
+				class="text-sm px-3 py-1.5 border border-amber-200 rounded-lg hover:bg-amber-50 text-amber-700 transition-colors"
 			>
 				Export Markdown
 			</button>
@@ -168,20 +183,33 @@
 	</div>
 
 	{#if data.table?.dilemma}
-		<div class="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200">
-			<p class="text-sm text-stone-500 mb-1">Dilemma</p>
-			<p class="text-stone-800">{data.table.dilemma}</p>
+		<div class="mb-8 p-5 bg-gradient-to-br from-amber-50 to-orange-50/50 rounded-xl border border-amber-200 shadow-sm">
+			<p class="text-xs font-medium text-amber-600/60 uppercase tracking-wide mb-1.5">Dilemma</p>
+			<p class="text-amber-950 leading-relaxed">{data.table.dilemma}</p>
 		</div>
 	{/if}
 
 	{#if error}
-		<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+		<div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 animate-fade-in">
 			<p class="text-red-800 text-sm">{error}</p>
 		</div>
 	{/if}
 
-	{#if currentRound}
-		<h2 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-3">{currentRound}</h2>
+	<!-- Progress indicator -->
+	{#if !isCompleted && !done && (currentRound || activePersona)}
+		<div class="mb-6 p-3 bg-white border border-amber-100 rounded-xl shadow-sm flex items-center gap-3">
+			<div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+			<div class="text-sm text-amber-800">
+				<span class="font-medium">{currentRound}</span>
+				{#if activePersona}
+					<span class="text-amber-600/60"> &middot; {activePersona} is speaking...</span>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
+	{#if currentRound && !synthesizing && !done}
+		<h2 class="text-xs font-semibold text-amber-600/60 uppercase tracking-wide mb-3">{currentRound}</h2>
 	{/if}
 
 	{#each turns as turn}
@@ -199,10 +227,13 @@
 	{/if}
 
 	{#if done && !error}
-		<p class="mt-6 text-stone-400 text-sm text-center">Deliberation complete.</p>
+		<p class="mt-8 text-amber-600/40 text-sm text-center">Deliberation complete.</p>
 	{/if}
 
 	{#if !currentRound && !error && !isCompleted}
-		<p class="text-stone-400 animate-pulse text-sm">Connecting to the council...</p>
+		<div class="flex items-center gap-3 text-amber-600/40 text-sm">
+			<div class="w-2 h-2 rounded-full bg-amber-300 animate-pulse"></div>
+			Connecting to the council...
+		</div>
 	{/if}
 </main>

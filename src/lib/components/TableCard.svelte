@@ -9,12 +9,14 @@
 		createdAt?: number;
 	} = $props();
 
-	const statusColors: Record<string, string> = {
-		pending: 'bg-yellow-100 text-yellow-800',
-		running: 'bg-blue-100 text-blue-800',
-		completed: 'bg-green-100 text-green-800',
-		failed: 'bg-red-100 text-red-800'
+	const statusConfig: Record<string, { bg: string; dot: string }> = {
+		pending: { bg: 'bg-yellow-50 text-yellow-700', dot: 'bg-yellow-400' },
+		running: { bg: 'bg-blue-50 text-blue-700', dot: 'bg-blue-400 animate-pulse' },
+		completed: { bg: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-400' },
+		failed: { bg: 'bg-red-50 text-red-700', dot: 'bg-red-400' }
 	};
+
+	let cfg = $derived(statusConfig[status] ?? { bg: 'bg-gray-50 text-gray-600', dot: 'bg-gray-400' });
 
 	function timeAgo(ts: number): string {
 		const seconds = Math.floor((Date.now() - ts) / 1000);
@@ -30,15 +32,16 @@
 
 <a
 	href="/t/{tableId}?party={partyId}"
-	class="block p-4 border border-stone-200 rounded-lg hover:border-stone-400 transition-colors"
+	class="block p-4 bg-white border border-amber-100 rounded-xl shadow-sm hover:shadow-md hover:border-amber-200 transition-all"
 >
 	<div class="flex items-start justify-between gap-3">
-		<p class="text-stone-700 text-sm line-clamp-2 flex-1">{dilemma}</p>
-		<span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap {statusColors[status] ?? 'bg-stone-100 text-stone-600'}">
+		<p class="text-amber-950 text-sm line-clamp-2 flex-1">{dilemma}</p>
+		<span class="text-xs px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5 {cfg.bg}">
+			<span class="w-1.5 h-1.5 rounded-full {cfg.dot}"></span>
 			{status}
 		</span>
 	</div>
-	<div class="mt-2 flex items-center gap-3 text-xs text-stone-400">
+	<div class="mt-2 flex items-center gap-3 text-xs text-amber-600/60">
 		<span>{councilId}</span>
 		{#if createdAt}
 			<span>{timeAgo(createdAt)}</span>
