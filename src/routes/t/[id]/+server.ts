@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import * as schema from '$lib/server/db/schema';
+import { validateDeliberationRequest } from '$lib/server/guards';
 import { runDeliberation } from '$lib/server/orchestrator';
 import type { RequestHandler } from './$types';
 
@@ -9,32 +8,15 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	const tableId = params.id;
 	const partyId = url.searchParams.get('party');
 
-	// Look up the table
-	const table = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
-	if (!table) {
-		return new Response('Table not found', { status: 404 });
-	}
-	if (!partyId) {
-		return new Response('party parameter required', { status: 400 });
-	}
-
-	// Verify party belongs to this table
-	const link = db.select().from(schema.tableParties)
-		.where(eq(schema.tableParties.tableId, tableId))
-		.all()
-		.find((tp) => tp.partyId === partyId);
-	if (!link) {
-		return new Response('party is not a member of this table', { status: 403 });
-	}
-
-	// Only start deliberation for pending tables
-	if (table.status !== 'pending') {
+	const guard = validateDeliberationRequest(db, tableId, partyId);
+	if (!guard.ok) {
 		return new Response(
-			JSON.stringify({ error: `Table is already ${table.status}` }),
-			{ status: 409, headers: { 'Content-Type': 'application/json' } }
+			JSON.stringify({ error: guard.message }),
+			{ status: guard.status, headers: { 'Content-Type': 'application/json' } }
 		);
 	}
 
+	const { table } = guard;
 	const encoder = new TextEncoder();
 	const stream = new ReadableStream({
 		async start(controller) {
@@ -43,7 +25,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					tableId,
 					dilemma: table.dilemma!,
 					councilId: table.councilId!,
-					partyId
+					partyId: partyId!
 				})) {
 					const data = `data: ${JSON.stringify(event)}\n\n`;
 					controller.enqueue(encoder.encode(data));
