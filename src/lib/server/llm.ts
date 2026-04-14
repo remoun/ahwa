@@ -70,7 +70,8 @@ export function resolveModelConfig(config: ModelConfig | undefined): ModelConfig
 }
 
 /** Create the appropriate Vercel AI SDK model instance for a provider+model pair */
-function createModel(config: ModelConfig) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createModel(config: ModelConfig): any {
 	switch (config.provider) {
 		case 'anthropic': {
 			const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

@@ -17,12 +17,7 @@ export interface DeliberationRequest {
 	completeFn?: CompleteFn;
 }
 
-interface PersonaRow {
-	id: string;
-	name: string | null;
-	emoji: string | null;
-	systemPrompt: string | null;
-}
+type PersonaRow = typeof schema.personas.$inferSelect;
 
 interface RoundDef {
 	kind: string;
