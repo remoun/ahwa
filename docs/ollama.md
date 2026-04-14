@@ -62,8 +62,11 @@ Or edit the council JSON directly:
   shorter, less nuanced output.
 - The synthesis step benefits most from a capable model. Consider using
   a larger model for synthesis and a smaller one for persona turns.
-- Ollama runs entirely on CPU by default. GPU acceleration (NVIDIA,
-  Apple Silicon) dramatically speeds up inference.
+- Ollama auto-detects your GPU (NVIDIA via CUDA, Apple Silicon via
+  Metal) — no configuration needed. GPU acceleration cuts response
+  times from ~30s to ~3s for 8B models. See
+  [Ollama GPU docs](https://docs.ollama.com/gpu) for supported
+  hardware and troubleshooting.
 
 ## Troubleshooting
 
