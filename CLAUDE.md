@@ -21,37 +21,14 @@ bun test                 # run tests (Bun's built-in test runner)
 
 # Ahwa
 
-**A private council of voices, around your table.**
+See [README.md](./README.md) for what Ahwa is. This file is for the AI
+coding agent — architectural constraints, working-style rules, and decisions
+that must not be violated.
 
-A privacy-first, FOSS multi-persona deliberation tool. You set a table, invite
-a council of AI personas, pose a dilemma; the council debates it across
-structured rounds; a synthesizer produces a recommendation that preserves
-real disagreement rather than flattening it. Local-first, bring-your-own-model,
-AGPL-3.0.
-
-Inspired by Moot (getmoot.app) and Auralink, but forkable, self-hostable, and
-built around user-owned data and custom councils.
-
-## The name and metaphor
-
-*Ahwa* (قهوة) is Egyptian Arabic for coffee, and by extension the coffeehouse
-— the traditional space where friends gather to think through problems
-together, argue, and work out what to do. The project takes its name from
-that practice: a deliberation tool should feel like the table, not the
-chamber.
-
-Pronounced "AH-wah."
-
-The metaphor nests cleanly across the product:
-
-- **Ahwa** is the venue.
-- **Tables** are individual deliberations — you set a table for one specific
-  question.
-- **Councils** are the configured groups of personas you invite to a table.
-- **Personas** are the individual voices.
-
-Product copy follows the metaphor: "set a new table," "your last three tables,"
-"who's at the table," "the Federation Council, around your table."
+**Metaphor cheat sheet** (for product copy):
+Table = deliberation, Council = persona group, Party = participant.
+"Set a new table," "who's at the table," "the Federation Council, around
+your table."
 
 ## How to work on this repo
 
@@ -109,70 +86,20 @@ When in doubt, do less and check in.
   self-contained binary. Both the Docker image and the YunoHost package
   distribute this binary; no runtime Bun dependency on the host.
 
-## Distribution
+## Distribution & hosting
 
-Ahwa ships through two parallel paths that share one runtime contract. The
-contract: a single binary that reads `AHWA_DATA_DIR` and `PORT` plus a small
-set of config env vars, writes only to its data directory, and handles its
-own SQLite migrations on startup.
+See README for user-facing install docs. The architectural constraints:
 
-**Docker** — developer-friendly install path. Official image
-`ghcr.io/remoun/ahwa:latest`, compose file in repo root, one-command
-self-host. Users bring their own reverse proxy (Caddy recommended).
-
-**YunoHost** — one-click install path for digital-sovereignty-minded users
-who want a web-UI install experience, not a terminal. The YunoHost package
-wraps the same binary as a native systemd service, integrates with SSOwat
-for single sign-on, gets automatic Let's Encrypt and backup/restore via
-YunoHost's machinery. Submitted to the official app catalog; lives in
-`packaging/yunohost/` in the repo.
-
-Both paths consume the same release binary from GitHub Releases. Cutting a
-release is: tag → CI builds the binary for linux-x64 and linux-arm64 →
-attaches to the release → Docker image and YunoHost package pick it up.
-
-## Hosting model
-
-Ahwa supports three hosting modes. Only the first two are in scope — Ahwa
-will never become a multi-tenant SaaS.
-
-**1. Self-hosted (always the primary path).** Users run their own instance
-via Docker or YunoHost. This is the canonical mode; everything else is
-secondary. README and install instructions optimize for this.
-
-**2. Personal public instance.** A single user (initially Remoun) runs their
-own instance at a public URL. Architecturally identical to self-hosted.
-
-**3. Public demo mode.** Ephemeral, rate-limited, cost-capped tables at
-ahwa.app so visitors can try Ahwa before installing. Demo tables are marked
-`is_demo = true` (see invariant #11), auto-expire, use the cheapest available
-model, and are walled off from every owned-data feature (memory, two-party,
-sync). Demo mode is part of the M2 public launch because it is the primary
-acquisition path — people who try the thing are 10x more likely to install
-than people who read the README alone.
-
-**What demo mode can and can't show.** Demo exhibits the core loop:
-dilemma → council deliberation → synthesis. It does not demo the
-differentiators (memory, Historian, two-party mediation) because those
-require persistent you-ness and break in anonymous ephemeral tables. That's
-a feature, not a limitation: the landing page frames it as *"try the
-council, self-host to get the rest."* Install is the path to the deeper
-product, which reinforces the local-first thesis.
-
-**Never in scope: full multi-tenant SaaS.** No user accounts, billing,
-support tiers, GDPR data-subject workflows, or hosted paid plans. If the
-project ever needs a sustainable funding model, explore donations, a
-paid setup service, or cooperative/mutual-aid patterns before going SaaS.
-
-## License
-
-**AGPL-3.0-or-later from commit one.** Every source file gets:
-
-```
-// SPDX-License-Identifier: AGPL-3.0-or-later
-```
-
-`LICENSE` at repo root contains the full AGPL-3.0 text.
+- **Single binary** via `bun build --compile`. Docker and YunoHost consume
+  the same binary. No "runs only via `bun run`" paths (invariant #12).
+- **Runtime contract:** binary reads `AHWA_DATA_DIR` and `PORT`, writes
+  only to its data directory, runs its own SQLite migrations on startup.
+- **Never multi-tenant SaaS.** No user accounts, billing, GDPR data-subject
+  workflows. Self-hosted or demo mode only.
+- **Demo mode** (M2): `is_demo = true` tables, rate-limited, auto-expire,
+  walled off from memory/two-party/sync. See invariant #11.
+- **License:** AGPL-3.0-or-later. Every source file gets
+  `// SPDX-License-Identifier: AGPL-3.0-or-later`.
 
 ## Architectural invariants (do not violate)
 

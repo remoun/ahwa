@@ -14,13 +14,19 @@ but forkable, self-hostable, and built around user-owned data.
 > coffeehouse — where friends gather to think through problems together.
 > Pronounced "AH-wah."
 
-## Try it
+## Try it (coming soon)
 
-- **[ahwa.app](https://ahwa.app)** — live demo, no signup. Your table
-  expires in 24 hours.
-- **Self-host in 5 minutes** with [YunoHost](#install-via-yunohost) or
-  [Docker](#install-via-docker) for the full experience, including
-  per-party memory, two-party mediation, and persistent history.
+Ahwa is not yet packaged for install. To try it from source:
+
+```bash
+git clone https://github.com/remoun/ahwa && cd ahwa
+bun install
+cp .env.example .env      # add your OpenRouter API key
+bun run dev                # http://localhost:5173
+```
+
+Self-host via [Docker](#install-via-docker) and
+[YunoHost](#install-via-yunohost) is planned for M1/M2.
 
 ## What it does
 
@@ -162,11 +168,17 @@ frame; the councils are the picture.
 
 ## Status
 
-Ahwa is at v1. The core loop works. YunoHost and Docker installs are
-supported. The demo at ahwa.app is live. The differentiators — per-party
-memory, the Historian persona, two-party mediation — are in progress.
+Ahwa is pre-release. The core deliberation loop works locally (M0 complete):
+you can pose a dilemma, watch five personas deliberate across two rounds,
+and read a synthesis. 37 tests cover the invariants.
 
-See [ROADMAP.md](./ROADMAP.md) for what's planned.
+**What's built:** Drizzle schema, typed SSE streaming, orchestrator state
+machine, OpenRouter provider, seed loader for council/persona JSON files.
+
+**What's next (M1):** table list UI, persona/council CRUD, markdown export,
+multi-provider routing, Docker image, self-host README.
+
+See [CLAUDE.md](./CLAUDE.md) for the full milestone plan.
 
 ## Credits
 
