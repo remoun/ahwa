@@ -217,4 +217,92 @@ describe('orchestrator', () => {
 		expect(receivedConfigs[0].model).toBe('claude-sonnet-4-20250514');
 		expect(receivedConfigs[0].provider).toBe('anthropic');
 	});
+
+	it('sets table status to failed when completeFn throws', async () => {
+		createTable(db, 'tbl-fail', 'Failure test', 'test-council', 'party-1');
+
+		const failingComplete = async () => {
+			throw new Error('LLM provider down');
+		};
+
+		const events: SseEvent[] = [];
+		try {
+			for await (const event of runDeliberation(db, {
+				tableId: 'tbl-fail',
+				dilemma: 'Failure test',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: failingComplete
+			})) {
+				events.push(event);
+			}
+		} catch (err: any) {
+			expect(err.message).toBe('LLM provider down');
+		}
+
+		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-fail')).get();
+		expect(table!.status).toBe('failed');
+	});
+
+	it('throws when council does not exist', async () => {
+		createTable(db, 'tbl-nocouncil', 'No council', 'nonexistent', 'party-1');
+
+		let threw = false;
+		try {
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-nocouncil',
+				dilemma: 'No council',
+				councilId: 'nonexistent',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+		} catch (err: any) {
+			threw = true;
+			expect(err.message).toContain('Council not found');
+		}
+		expect(threw).toBe(true);
+	});
+
+	it('filters out personas with unmet feature requirements', async () => {
+		// Add a persona that requires "memory" (unavailable in M1)
+		db.insert(schema.personas).values({
+			id: 'needs-memory',
+			name: 'Memory Persona',
+			emoji: '🧠',
+			systemPrompt: 'You need memory.',
+			requires: JSON.stringify(['memory'])
+		}).run();
+
+		// Create a council that includes both a normal persona and the gated one
+		db.insert(schema.councils).values({
+			id: 'gated-council',
+			name: 'Gated',
+			personaIds: JSON.stringify(['elder', 'needs-memory']),
+			synthesisPrompt: 'Summarize.',
+			roundStructure: JSON.stringify({
+				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+				synthesize: false
+			})
+		}).run();
+
+		createTable(db, 'tbl-gated', 'Feature test', 'gated-council', 'party-1');
+
+		const events: SseEvent[] = [];
+		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-gated',
+			dilemma: 'Feature test',
+			councilId: 'gated-council',
+			partyId: 'party-1',
+			completeFn: mockComplete
+		})) {
+			events.push(event);
+		}
+
+		// Only elder should have turns — needs-memory should be filtered out
+		const turnStarts = events.filter((e) => e.type === 'persona_turn_started');
+		expect(turnStarts.length).toBe(1);
+		expect((turnStarts[0] as any).personaName).toBe('The Elder');
+	});
 });
