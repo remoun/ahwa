@@ -228,6 +228,13 @@ break one of these, stop and ask.
 
 ## Data model
 
+The three core entities create a clean separation:
+**who** (parties) × **what** (tables/dilemmas) × **how** (councils/personas).
+Parties are the people at the table, tables are the specific deliberations,
+councils define the deliberation shape. This triple means two-party mode,
+new council types, and memory all land as additive changes — nothing existing
+needs restructuring.
+
 Note on naming: the deliberation concept is "table" throughout the product
 and code. The SQL table that stores them is also named `tables`, which is
 visually awkward at the schema-definition layer but contained — Drizzle
