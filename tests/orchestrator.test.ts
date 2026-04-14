@@ -347,4 +347,40 @@ describe('orchestrator', () => {
 		expect(table!.status).toBe('completed');
 		expect(table!.synthesis).toBeNull();
 	});
+
+	it('stops deliberation when abort signal fires between turns', async () => {
+		createTable(db, 'tbl-abort', 'Abort test', 'test-council', 'party-1');
+
+		const controller = new AbortController();
+		let turnCount = 0;
+
+		const events: SseEvent[] = [];
+		try {
+			for await (const event of runDeliberation(db, {
+				tableId: 'tbl-abort',
+				dilemma: 'Abort test',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete,
+				signal: controller.signal
+			})) {
+				events.push(event);
+				if (event.type === 'persona_turn_completed') {
+					turnCount++;
+					// Abort after the first persona finishes
+					if (turnCount === 1) controller.abort();
+				}
+			}
+		} catch (err: any) {
+			expect(err.message).toContain('aborted');
+		}
+
+		// Should have stopped — not all 4 turns (2 personas × 2 rounds)
+		const allTurnCompletes = events.filter((e) => e.type === 'persona_turn_completed');
+		expect(allTurnCompletes.length).toBe(1);
+
+		// Table should be marked failed (aborted = not completed)
+		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-abort')).get();
+		expect(table!.status).toBe('failed');
+	});
 });

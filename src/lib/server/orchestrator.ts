@@ -16,6 +16,7 @@ export interface DeliberationRequest {
 	councilId: string;
 	partyId: string;
 	completeFn?: CompleteFn;
+	signal?: AbortSignal;
 }
 
 type PersonaRow = typeof schema.personas.$inferSelect;
@@ -33,7 +34,7 @@ export async function* runDeliberation(
 	db: Db,
 	request: DeliberationRequest
 ): AsyncGenerator<SseEvent> {
-	const { tableId, dilemma, councilId, partyId, completeFn = defaultComplete } = request;
+	const { tableId, dilemma, councilId, partyId, completeFn = defaultComplete, signal } = request;
 
 	// Load the council
 	const council = db.select().from(schema.councils).where(eq(schema.councils.id, councilId)).get();
@@ -76,6 +77,12 @@ export async function* runDeliberation(
 		const roundTurns: Array<{ personaName: string; text: string }> = [];
 
 		for (const persona of personas) {
+			// Check for cancellation between turns (not mid-token — partial
+			// turns would be lost). This is the natural cancellation point.
+			if (signal?.aborted) {
+				throw new Error('Deliberation aborted');
+			}
+
 			yield {
 				type: 'persona_turn_started',
 				personaId: persona.id,
@@ -123,8 +130,8 @@ export async function* runDeliberation(
 		turnsByRound.set(roundIdx, roundTurns);
 	}
 
-	// Run synthesis if configured
-	if (roundStructure.synthesize && council.synthesisPrompt) {
+	// Run synthesis if configured (and not aborted)
+	if (roundStructure.synthesize && council.synthesisPrompt && !signal?.aborted) {
 		yield { type: 'synthesis_started' };
 
 		const allTurns = Array.from(turnsByRound.values()).flat();

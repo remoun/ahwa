@@ -4,7 +4,7 @@ import { validateDeliberationRequest } from '$lib/server/guards';
 import { runDeliberation } from '$lib/server/orchestrator';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ params, url }) => {
+export const GET: RequestHandler = async ({ params, url, request }) => {
 	const tableId = params.id;
 	const partyId = url.searchParams.get('party');
 
@@ -25,14 +25,18 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					tableId,
 					dilemma: table.dilemma!,
 					councilId: table.councilId!,
-					partyId: partyId!
+					partyId: partyId!,
+					signal: request.signal
 				})) {
 					const data = `data: ${JSON.stringify(event)}\n\n`;
 					controller.enqueue(encoder.encode(data));
 				}
 			} catch (err) {
-				const errorEvent = `data: ${JSON.stringify({ type: 'error', message: String(err) })}\n\n`;
-				controller.enqueue(encoder.encode(errorEvent));
+				// Don't send error events for aborts — client is already gone
+				if (!(err instanceof Error && err.message.includes('aborted'))) {
+					const errorEvent = `data: ${JSON.stringify({ type: 'error', message: String(err) })}\n\n`;
+					controller.enqueue(encoder.encode(errorEvent));
+				}
 			} finally {
 				controller.close();
 			}
