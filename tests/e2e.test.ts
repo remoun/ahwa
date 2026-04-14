@@ -10,27 +10,7 @@ import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
 import { runDeliberation } from '../src/lib/server/orchestrator';
 import type { SseEvent } from '../src/lib/schemas/events';
-import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
-import { createTestDb, type TestDb } from './helpers';
-
-// Deterministic mock: each persona returns a distinct response
-async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
-	const prompt = opts.system.toLowerCase();
-	let name = 'Unknown';
-	if (prompt.includes('elder')) name = 'Elder';
-	else if (prompt.includes('mirror')) name = 'Mirror';
-	else if (prompt.includes('engineer') || prompt.includes('systems')) name = 'Engineer';
-	else if (prompt.includes('weaver') || prompt.includes('relational')) name = 'Weaver';
-	else if (prompt.includes('instigator') || prompt.includes('agency')) name = 'Instigator';
-	else if (prompt.includes('synthesiz')) name = 'Synthesizer';
-
-	return {
-		textStream: (async function* () {
-			yield `[${name}] `;
-			yield `I have considered this dilemma carefully.`;
-		})()
-	};
-}
+import { createTestDb, mockComplete, type TestDb } from './helpers';
 
 describe('e2e: full deliberation with real councils', () => {
 	let db: TestDb;

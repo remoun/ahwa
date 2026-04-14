@@ -4,20 +4,7 @@ import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { runDeliberation } from '../src/lib/server/orchestrator';
 import type { SseEvent } from '../src/lib/schemas/events';
-import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
-import { createTestDb, type TestDb } from './helpers';
-
-// Mock completeFn via dependency injection — no global mock.module needed
-async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
-	const personaName = opts.system.includes('elder') ? 'Elder' :
-		opts.system.includes('mirror') ? 'Mirror' : 'Synthesizer';
-	return {
-		textStream: (async function* () {
-			yield `[${personaName}] `;
-			yield 'response text';
-		})()
-	};
-}
+import { createTestDb, mockComplete, type TestDb } from './helpers';
 
 function seedMiniCouncil(db: TestDb) {
 	db.insert(schema.personas).values([
