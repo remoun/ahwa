@@ -17,6 +17,8 @@
 	}
 
 	let isCompleted = $derived(data.table?.status === 'completed');
+	let isRunning = $derived(data.table?.status === 'running');
+	let isFailed = $derived(data.table?.status === 'failed');
 
 	let turns = $state<Turn[]>([]);
 	let currentRound = $state('');
@@ -48,10 +50,37 @@
 	});
 
 	onMount(() => {
-		if (isCompleted) return;
+		// Only start SSE for pending tables. Running tables are already
+		// being processed server-side; completed/failed show historical data.
+		if (isCompleted || isFailed) return;
+
+		if (isRunning) {
+			// Table is running server-side (user navigated away and back).
+			// Poll until it completes, then reload to show the result.
+			const interval = setInterval(async () => {
+				const res = await fetch(`/api/tables/${data.tableId}`);
+				if (res.ok) {
+					const table = await res.json();
+					if (table.status === 'completed' || table.status === 'failed') {
+						clearInterval(interval);
+						window.location.reload();
+					}
+				}
+			}, 3000);
+			return () => clearInterval(interval);
+		}
+
+		// Status is 'pending' — start the deliberation via SSE
+		if (data.table?.status !== 'pending') return;
 
 		const url = `/t/${data.tableId}?party=${data.partyId}`;
 		const controller = new AbortController();
+
+		// Only abort on actual tab/window close, not SvelteKit navigation.
+		// The deliberation continues server-side if the user navigates away
+		// and they'll see the completed table when they return.
+		const onUnload = () => controller.abort();
+		window.addEventListener('beforeunload', onUnload);
 
 		(async () => {
 			try {
@@ -93,7 +122,9 @@
 			}
 		})();
 
-		return () => controller.abort();
+		return () => {
+			window.removeEventListener('beforeunload', onUnload);
+		};
 	});
 
 	function handleEvent(event: any) {
@@ -230,7 +261,20 @@
 		<p class="mt-8 text-amber-600/40 text-sm text-center">Deliberation complete.</p>
 	{/if}
 
-	{#if !currentRound && !error && !isCompleted}
+	{#if isRunning && !done}
+		<div class="flex items-center gap-3 text-amber-600/60 text-sm p-4 bg-white border border-amber-100 rounded-xl shadow-sm">
+			<div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+			Deliberation in progress. This page will update when it completes.
+		</div>
+	{/if}
+
+	{#if isFailed && !done}
+		<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800">
+			This deliberation encountered an error and could not complete.
+		</div>
+	{/if}
+
+	{#if !currentRound && !error && !isCompleted && !isRunning && !isFailed}
 		<div class="flex items-center gap-3 text-amber-600/40 text-sm">
 			<div class="w-2 h-2 rounded-full bg-amber-300 animate-pulse"></div>
 			Connecting to the council...
