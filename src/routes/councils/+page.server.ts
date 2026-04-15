@@ -6,13 +6,19 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async () => {
 	const councils = db.select().from(schema.councils).all();
 	const personas = db.select().from(schema.personas).all();
+	const personaMap = new Map(personas.map((p) => [p.id, p]));
 
 	return {
-		councils: councils.map((c) => ({
-			...c,
-			personaIds: c.personaIds ? JSON.parse(c.personaIds) : [],
-			isSeeded: c.ownerParty === null
-		})),
-		personas
+		councils: councils.map((c) => {
+			const ids: string[] = c.personaIds ? JSON.parse(c.personaIds) : [];
+			return {
+				...c,
+				isSeeded: c.ownerParty === null,
+				personas: ids
+					.map((id) => personaMap.get(id))
+					.filter((p) => p !== undefined)
+			};
+		}),
+		allPersonas: personas
 	};
 };

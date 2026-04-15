@@ -11,6 +11,7 @@
 	let selectedPersonaIds = $state<string[]>([]);
 	let saving = $state(false);
 	let error = $state('');
+	let expandedPersona = $state<string | null>(null);
 
 	async function createCouncil() {
 		if (!name.trim() || selectedPersonaIds.length === 0) return;
@@ -66,6 +67,10 @@
 			selectedPersonaIds = [...selectedPersonaIds, id];
 		}
 	}
+
+	function toggleExpandedPersona(key: string) {
+		expandedPersona = expandedPersona === key ? null : key;
+	}
 </script>
 
 <svelte:head>
@@ -101,7 +106,7 @@
 
 			<span class="block text-xs font-medium text-amber-700/60 uppercase tracking-wide mb-2">Personas</span>
 			<div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Persona selection">
-				{#each data.personas as persona}
+				{#each data.allPersonas as persona}
 					<button
 						type="button"
 						onclick={() => togglePersona(persona.id)}
@@ -132,18 +137,15 @@
 		</div>
 	{/if}
 
-	<div class="space-y-2">
+	<div class="space-y-3">
 		{#each data.councils as council}
-			<div class="p-4 bg-white border border-amber-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+			<div class="p-4 bg-white border border-amber-100 rounded-xl shadow-sm">
 				<div class="flex items-start justify-between">
 					<div>
 						<h3 class="font-medium text-amber-900">{council.name}</h3>
-						<p class="text-xs text-amber-600/50 mt-1">
-							{council.personaIds.length} personas
-							{#if council.isSeeded}
-								<span class="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">built-in</span>
-							{/if}
-						</p>
+						{#if council.isSeeded}
+							<span class="inline-block mt-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">built-in</span>
+						{/if}
 					</div>
 					{#if !council.isSeeded}
 						<button
@@ -154,6 +156,36 @@
 						</button>
 					{/if}
 				</div>
+
+				<!-- Persona chips -->
+				<div class="mt-3 flex flex-wrap gap-1.5">
+					{#each council.personas as persona}
+						<button
+							type="button"
+							onclick={() => toggleExpandedPersona(`${council.id}-${persona.id}`)}
+							class="text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer
+								{expandedPersona === `${council.id}-${persona.id}`
+									? 'bg-amber-100 border-amber-300 text-amber-900'
+									: 'bg-amber-50/50 border-amber-100 text-amber-700 hover:border-amber-200'}"
+							title="Click to see prompt"
+						>
+							{persona.emoji} {persona.name}
+						</button>
+					{/each}
+				</div>
+
+				<!-- Expanded persona prompt -->
+				{#each council.personas as persona}
+					{#if expandedPersona === `${council.id}-${persona.id}`}
+						<div class="mt-3 p-3 bg-amber-50/50 border border-amber-100 rounded-lg animate-fade-in">
+							<div class="flex items-center gap-2 mb-2">
+								<span class="w-7 h-7 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-sm">{persona.emoji}</span>
+								<span class="text-sm font-medium text-amber-900">{persona.name}</span>
+							</div>
+							<p class="text-xs text-amber-800/70 leading-relaxed">{persona.systemPrompt}</p>
+						</div>
+					{/if}
+				{/each}
 			</div>
 		{/each}
 	</div>
