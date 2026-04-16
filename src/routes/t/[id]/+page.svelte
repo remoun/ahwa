@@ -27,10 +27,6 @@
 		round: number;
 	}
 
-	let isCompleted = $derived(data.table?.status === 'completed');
-	let isRunning = $derived(data.table?.status === 'running');
-	let isFailed = $derived(data.table?.status === 'failed');
-
 	let turns = $state<Turn[]>([]);
 	let currentRound = $state('');
 	let currentRoundNum = $state(0);
@@ -39,6 +35,26 @@
 	let synthesizing = $state(false);
 	let done = $state(false);
 	let error = $state('');
+
+	/**
+	 * A single derived view state replaces a handful of overlapping bools
+	 * (isCompleted, isRunning, isFailed, done, synthesizing, ...). Every
+	 * template branch dispatches on this; only one value is ever active.
+	 *
+	 *   connecting        — pending table, SSE not yet producing events
+	 *   streaming         — SSE in flight (a round, persona, or synthesis)
+	 *   runningElsewhere  — DB says running; we polled our way in
+	 *   completed         — finished successfully (live or historical)
+	 *   failed            — errored (DB marker or SSE error event)
+	 */
+	type View = 'connecting' | 'streaming' | 'runningElsewhere' | 'completed' | 'failed';
+	const view: View = $derived.by(() => {
+		if (error || data.table?.status === 'failed') return 'failed';
+		if (done || data.table?.status === 'completed') return 'completed';
+		if (data.table?.status === 'running') return 'runningElsewhere';
+		if (currentRound || activePersona || synthesizing || turns.length > 0) return 'streaming';
+		return 'connecting';
+	});
 
 	$effect(() => {
 		// Render persisted turns for completed AND failed tables — a failed
@@ -65,11 +81,12 @@
 	});
 
 	onMount(() => {
-		// Only start SSE for pending tables. Running tables are already
-		// being processed server-side; completed/failed show historical data.
-		if (isCompleted || isFailed) return;
+		const status = data.table?.status;
 
-		if (isRunning) {
+		// Completed/failed tables show historical data only; no SSE.
+		if (status === 'completed' || status === 'failed') return;
+
+		if (status === 'running') {
 			// Table is running server-side (user navigated away and back).
 			// Poll until it completes, then reload to show the result.
 			const interval = setInterval(async () => {
@@ -85,8 +102,8 @@
 			return () => clearInterval(interval);
 		}
 
-		// Status is 'pending' — start the deliberation via SSE
-		if (data.table?.status !== 'pending') return;
+		// Pending — start the deliberation via SSE
+		if (status !== 'pending') return;
 
 		const controller = new AbortController();
 
@@ -199,7 +216,7 @@
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<div class="flex items-center justify-between mb-6">
 		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors">← Back to tables</a>
-		{#if done}
+		{#if view === 'completed'}
 			<button
 				onclick={copyMarkdown}
 				title="Copy this deliberation to your clipboard as Markdown"
@@ -231,8 +248,7 @@
 		</div>
 	{/if}
 
-	<!-- Progress indicator -->
-	{#if !isCompleted && !done && (currentRound || activePersona)}
+	{#if view === 'streaming' && (currentRound || activePersona)}
 		<div
 			class="mb-6 p-3 bg-surface border border-border rounded-xl shadow-sm flex items-center gap-3"
 		>
@@ -246,7 +262,7 @@
 		</div>
 	{/if}
 
-	{#if currentRound && !synthesizing && !done}
+	{#if view === 'streaming' && currentRound && !synthesizing}
 		<h2 class="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">
 			{currentRound}
 		</h2>
@@ -258,7 +274,7 @@
 			personaName={turn.personaName}
 			text={turn.text}
 			complete={turn.complete}
-			streaming={!isCompleted}
+			streaming={view === 'streaming'}
 		/>
 	{/each}
 
@@ -266,26 +282,20 @@
 		<SynthesisPanel text={synthesis} streaming={synthesizing} />
 	{/if}
 
-	{#if done && !error}
+	{#if view === 'completed'}
 		<p class="mt-8 text-fg-subtle text-sm text-center">Deliberation complete.</p>
-	{/if}
-
-	{#if isRunning && !done}
+	{:else if view === 'runningElsewhere'}
 		<div
 			class="flex items-center gap-3 text-fg-subtle text-sm p-4 bg-surface border border-border rounded-xl shadow-sm"
 		>
 			<div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
 			Deliberation in progress. This page will update when it completes.
 		</div>
-	{/if}
-
-	{#if isFailed && !error}
+	{:else if view === 'failed' && !error}
 		<div class="p-4 bg-danger-bg border border-danger-border rounded-xl text-sm text-danger">
 			{data.table?.errorMessage ?? 'This deliberation encountered an error and could not complete.'}
 		</div>
-	{/if}
-
-	{#if !currentRound && !error && !done && !isCompleted && !isRunning && !isFailed}
+	{:else if view === 'connecting'}
 		<div class="flex items-center gap-3 text-fg-subtle text-sm">
 			<div class="w-2 h-2 rounded-full bg-accent-hover animate-pulse"></div>
 			Connecting to the council...
