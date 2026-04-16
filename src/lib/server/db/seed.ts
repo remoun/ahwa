@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
+import { parseJsonSafe } from '../parse';
 import * as schema from './schema';
 
 type Db = BunSQLiteDatabase<typeof schema>;
@@ -25,16 +26,10 @@ export function seedFromDisk(
 	}
 
 	for (const file of councilFiles) {
-		let raw: unknown;
-		try {
-			raw = JSON.parse(readFileSync(join(councilsDir, file), 'utf-8'));
-		} catch (err) {
-			console.warn(`seed: skipping ${file}: ${err instanceof Error ? err.message : err}`);
-			continue;
-		}
-		const result = CouncilSchema.safeParse(raw);
-		if (!result.success) {
-			console.warn(`seed: skipping ${file}: ${result.error.issues[0]?.message ?? 'validation failed'}`);
+		const raw = readFileSync(join(councilsDir, file), 'utf-8');
+		const result = parseJsonSafe(raw, CouncilSchema);
+		if (!result.ok) {
+			console.warn(`seed: skipping ${file}: ${result.error}`);
 			continue;
 		}
 		const parsed = result.data;
@@ -97,16 +92,10 @@ export function seedFromDisk(
 	}
 
 	for (const file of personaFiles) {
-		let raw: unknown;
-		try {
-			raw = JSON.parse(readFileSync(join(personasDir, file), 'utf-8'));
-		} catch (err) {
-			console.warn(`seed: skipping ${file}: ${err instanceof Error ? err.message : err}`);
-			continue;
-		}
-		const result = PersonaSchema.safeParse(raw);
-		if (!result.success) {
-			console.warn(`seed: skipping ${file}: ${result.error.issues[0]?.message ?? 'validation failed'}`);
+		const raw = readFileSync(join(personasDir, file), 'utf-8');
+		const result = parseJsonSafe(raw, PersonaSchema);
+		if (!result.ok) {
+			console.warn(`seed: skipping ${file}: ${result.error}`);
 			continue;
 		}
 		const parsed = result.data;

@@ -2,10 +2,15 @@
 import { eq } from 'drizzle-orm';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { nanoid } from 'nanoid';
-import { complete as defaultComplete, resolveModelConfig, type CompleteRequest, type CompleteResult, type ModelConfig } from './llm';
+import { z } from 'zod';
+import { complete as defaultComplete, resolveModelConfig, type CompleteRequest, type CompleteResult } from './llm';
 import { filterPersonas } from './features';
+import { parseJson } from './parse';
+import { RoundStructureSchema, ModelConfigSchema } from '../schemas/council';
 import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
+
+const PersonaIdsSchema = z.array(z.string());
 
 type Db = BunSQLiteDatabase<typeof schema>;
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
@@ -40,10 +45,10 @@ export async function* runDeliberation(
 	const council = db.select().from(schema.councils).where(eq(schema.councils.id, councilId)).get();
 	if (!council) throw new Error(`Council not found: ${councilId}`);
 
-	const personaIds: string[] = JSON.parse(council.personaIds!);
-	const roundStructure: { rounds: RoundDef[]; synthesize: boolean } = JSON.parse(council.roundStructure!);
-	const modelConfig: ModelConfig | undefined = council.modelConfig
-		? JSON.parse(council.modelConfig)
+	const personaIds = parseJson(council.personaIds!, PersonaIdsSchema, `council.${councilId}.personaIds`);
+	const roundStructure = parseJson(council.roundStructure!, RoundStructureSchema, `council.${councilId}.roundStructure`);
+	const modelConfig = council.modelConfig
+		? parseJson(council.modelConfig, ModelConfigSchema, `council.${councilId}.modelConfig`)
 		: undefined;
 	const resolvedConfig = resolveModelConfig(modelConfig);
 
