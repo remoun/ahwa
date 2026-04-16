@@ -20,10 +20,14 @@ FROM oven/bun:1.3.11-slim
 
 WORKDIR /app
 
-# Copy built output (adapter-node: index.js + handler.js + client/ + server/)
+# Copy built output
 COPY --from=build /app/build ./build
 
-# Copy council and persona JSON files for seeding
+# Copy node_modules — adapter-node externalizes some runtime deps
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
+
+# Seed data — council and persona JSON files
 COPY --from=build /app/councils ./councils
 COPY --from=build /app/personas ./personas
 
@@ -34,4 +38,5 @@ VOLUME /data
 
 EXPOSE 3000
 
-CMD ["bun", "build/index.js"]
+# Use --bun so Bun's module resolver handles bun:sqlite at runtime
+CMD ["bun", "--bun", "build/index.js"]
