@@ -25,7 +25,11 @@ export function toSseStream<T>(generator: AsyncIterable<T>): ReadableStream<Uint
 			} catch (err) {
 				// Don't send error events for aborts — client is already gone
 				if (!(err instanceof Error && err.message.includes('aborted'))) {
-					const payload = { type: 'error', message: String(err) };
+					// Log server-side so operators can see the full error with
+					// stack trace, then send a clean message to the client.
+					console.error('SSE stream error:', err);
+					const message = err instanceof Error ? err.message : String(err);
+					const payload = { type: 'error', message };
 					controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 				}
 			} finally {

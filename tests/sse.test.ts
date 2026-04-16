@@ -41,7 +41,7 @@ describe('toSseStream', () => {
 		const text = await readAll(stream);
 		expect(text).toContain(`data: {"type":"opened"}\n\n`);
 		expect(text).toContain(`"type":"error"`);
-		expect(text).toContain(`"message":"Error: something broke"`);
+		expect(text).toContain(`"message":"something broke"`);
 	});
 
 	it('suppresses the error envelope for aborted errors (client already gone)', async () => {

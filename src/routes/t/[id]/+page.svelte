@@ -86,7 +86,18 @@
 			try {
 				const res = await fetch(url, { signal: controller.signal });
 				if (!res.ok || !res.body) {
-					error = `Failed to connect: ${res.status}`;
+					// Try to pull the server's error message out of the body
+					let detail = '';
+					try {
+						const body = await res.json();
+						detail = body.error ?? '';
+					} catch {
+						// not JSON — ignore
+					}
+					error = detail
+						? `${detail} (HTTP ${res.status})`
+						: `Failed to connect: HTTP ${res.status}`;
+					done = true;
 					return;
 				}
 
