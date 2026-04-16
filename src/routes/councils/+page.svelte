@@ -8,6 +8,7 @@
 
 	let showForm = $state(false);
 	let name = $state('');
+	let description = $state('');
 	let synthesisPrompt = $state('You are a neutral synthesizer. Produce a clear summary.');
 	let selectedPersonaIds = $state<string[]>([]);
 	let saving = $state(false);
@@ -24,6 +25,7 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				name,
+				description: description.trim() || undefined,
 				personaIds: selectedPersonaIds,
 				synthesisPrompt,
 				roundStructure: {
@@ -47,6 +49,7 @@
 		}
 
 		name = '';
+		description = '';
 		synthesisPrompt = 'You are a neutral synthesizer. Produce a clear summary.';
 		selectedPersonaIds = [];
 		showForm = false;
@@ -113,6 +116,18 @@
 				placeholder="My Custom Council"
 			/>
 
+			<label
+				for="council-description"
+				class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1"
+				>Description <span class="text-fg-subtle/60 normal-case">— optional, one line</span></label
+			>
+			<input
+				id="council-description"
+				bind:value={description}
+				class="w-full px-3 py-2 bg-surface border border-border-strong rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-border-strong focus:border-border-strong"
+				placeholder="What's this council for?"
+			/>
+
 			<span class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-2"
 				>Personas</span
 			>
@@ -151,8 +166,8 @@
 	<div class="space-y-3">
 		{#each data.councils as council (council.id)}
 			<div class="p-4 bg-surface border border-border rounded-xl shadow-sm">
-				<div class="flex items-start justify-between">
-					<div>
+				<div class="flex items-start justify-between gap-4">
+					<div class="flex-1">
 						<h3 class="font-medium text-fg">{council.name}</h3>
 						{#if council.isSeeded}
 							<span
@@ -160,11 +175,16 @@
 								>built-in</span
 							>
 						{/if}
+						{#if council.description}
+							<p class="text-xs text-fg-subtle mt-2 leading-relaxed">
+								{council.description}
+							</p>
+						{/if}
 					</div>
 					{#if !council.isSeeded}
 						<button
 							onclick={() => deleteCouncil(council.id)}
-							class="text-xs text-danger/70 hover:text-danger transition-colors"
+							class="text-xs text-danger/70 hover:text-danger transition-colors shrink-0"
 						>
 							Delete
 						</button>

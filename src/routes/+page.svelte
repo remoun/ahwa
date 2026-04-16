@@ -53,13 +53,18 @@
 						<button
 							type="button"
 							onclick={() => (councilId = council.id)}
+							title={council.description ?? ''}
 							class="text-left p-3 rounded-xl border transition-all
 								{councilId === council.id
 								? 'bg-surface-muted border-border-strong shadow-sm ring-1 ring-border-strong'
 								: 'bg-surface border-border hover:border-border-strong hover:shadow-sm'}"
 						>
 							<div class="font-medium text-sm text-fg">{council.name}</div>
-							{#if council.personaIds}
+							{#if council.description}
+								<div class="text-xs text-fg-subtle mt-1 line-clamp-2 leading-snug">
+									{council.description}
+								</div>
+							{:else if council.personaIds}
 								<div class="text-xs text-fg-subtle mt-0.5">
 									{JSON.parse(council.personaIds).length} personas
 								</div>

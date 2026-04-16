@@ -8,6 +8,13 @@
       "when": 1776336637647,
       "tag": "0001_init",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776379415149,
+      "tag": "0002_council_description",
+      "breakpoints": true
     }
   ]
 }

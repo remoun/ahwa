@@ -61,6 +61,7 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 			.values({
 				id: parsed.id,
 				name: parsed.name,
+				description: parsed.description ?? null,
 				personaIds: JSON.stringify(personaIds),
 				synthesisPrompt: parsed.synthesis_prompt,
 				roundStructure: JSON.stringify(parsed.round_structure),
@@ -71,6 +72,7 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 				target: schema.councils.id,
 				set: {
 					name: parsed.name,
+					description: parsed.description ?? null,
 					personaIds: JSON.stringify(personaIds),
 					synthesisPrompt: parsed.synthesis_prompt,
 					roundStructure: JSON.stringify(parsed.round_structure),

@@ -63,6 +63,7 @@ export const personas = sqliteTable('personas', {
 export const councils = sqliteTable('councils', {
 	id: text('id').primaryKey(),
 	name: text('name'),
+	description: text('description'),
 	personaIds: text('persona_ids'), // JSON array
 	synthesisPrompt: text('synthesis_prompt'),
 	roundStructure: text('round_structure'), // JSON

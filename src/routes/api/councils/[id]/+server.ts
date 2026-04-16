@@ -14,6 +14,7 @@ const config = {
 	toValues: () => ({}), // not used for get/update/delete
 	toUpdateValues: (body: CouncilBody) => ({
 		name: body.name,
+		description: body.description ?? null,
 		personaIds: JSON.stringify(body.personaIds),
 		synthesisPrompt: body.synthesisPrompt,
 		roundStructure: JSON.stringify(body.roundStructure),

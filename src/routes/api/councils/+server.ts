@@ -13,6 +13,7 @@ const config = {
 	toValues: (body: CouncilBody, id: string) => ({
 		id,
 		name: body.name,
+		description: body.description ?? null,
 		personaIds: JSON.stringify(body.personaIds),
 		synthesisPrompt: body.synthesisPrompt,
 		roundStructure: JSON.stringify(body.roundStructure),
@@ -21,6 +22,7 @@ const config = {
 	}),
 	toUpdateValues: (body: CouncilBody) => ({
 		name: body.name,
+		description: body.description ?? null,
 		personaIds: JSON.stringify(body.personaIds),
 		synthesisPrompt: body.synthesisPrompt,
 		roundStructure: JSON.stringify(body.roundStructure),

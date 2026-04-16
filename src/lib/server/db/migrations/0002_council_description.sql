@@ -1,0 +1,1 @@
+ALTER TABLE `councils` ADD `description` text;
