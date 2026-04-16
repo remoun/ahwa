@@ -4,6 +4,19 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// Apply the stored theme preference before first paint to avoid
+			// a flash of the wrong theme. Valid values: 'light', 'dark', 'system'.
+			try {
+				const pref = localStorage.getItem('ahwa-theme');
+				if (pref === 'light' || pref === 'dark') {
+					document.documentElement.classList.add(pref);
+				}
+				// 'system' or missing → leave no class, media query takes over
+			} catch (err) {
+				// localStorage may be unavailable (SSR, private mode, etc.)
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

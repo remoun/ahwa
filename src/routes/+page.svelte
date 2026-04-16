@@ -31,18 +31,18 @@
 
 <main class="max-w-2xl mx-auto p-4 sm:p-8">
 	<section class="mb-12">
-		<h1 class="text-2xl font-bold mb-1 text-sky-950">Set a table</h1>
-		<p class="text-sky-700/60 text-sm mb-5">Pose a dilemma. The council will deliberate.</p>
+		<h1 class="text-2xl font-bold mb-1 text-fg">Set a table</h1>
+		<p class="text-fg-subtle text-sm mb-5">Pose a dilemma. The council will deliberate.</p>
 
 		<form onsubmit={(e) => { e.preventDefault(); setTable(); }}>
 			<textarea
 				bind:value={dilemma}
-				class="w-full h-36 p-4 bg-white border border-sky-200 rounded-xl shadow-sm text-sm text-sky-950 placeholder:text-sky-300 resize-y focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300 transition-shadow"
+				class="w-full h-36 p-4 bg-surface border border-border-strong rounded-xl shadow-sm text-sm text-fg placeholder:text-fg-subtle resize-y focus:outline-none focus:ring-2 focus:ring-border-strong focus:border-border-strong transition-shadow"
 				placeholder="Describe the decision you're wrestling with..."
 			></textarea>
 
 			<div class="mt-4 mb-2">
-				<p class="text-xs font-medium text-sky-700/60 mb-2">Choose a council</p>
+				<p class="text-xs font-medium text-fg-subtle mb-2">Choose a council</p>
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 					{#each data.councils as council}
 						<button
@@ -50,12 +50,12 @@
 							onclick={() => councilId = council.id}
 							class="text-left p-3 rounded-xl border transition-all
 								{councilId === council.id
-									? 'bg-sky-50 border-sky-300 shadow-sm ring-1 ring-sky-200'
-									: 'bg-white border-sky-100 hover:border-sky-200 hover:shadow-sm'}"
+									? 'bg-surface-muted border-border-strong shadow-sm ring-1 ring-border-strong'
+									: 'bg-surface border-border hover:border-border-strong hover:shadow-sm'}"
 						>
-							<div class="font-medium text-sm text-sky-900">{council.name}</div>
+							<div class="font-medium text-sm text-fg">{council.name}</div>
 							{#if council.personaIds}
-								<div class="text-xs text-sky-600/50 mt-0.5">
+								<div class="text-xs text-fg-subtle mt-0.5">
 									{JSON.parse(council.personaIds).length} personas
 								</div>
 							{/if}
@@ -67,7 +67,7 @@
 			<button
 				type="submit"
 				disabled={loading || !dilemma.trim()}
-				class="mt-4 w-full sm:w-auto px-6 py-2.5 bg-sky-800 text-white text-sm font-medium rounded-xl hover:bg-sky-700 disabled:opacity-50 transition-colors shadow-sm"
+				class="mt-4 w-full sm:w-auto px-6 py-2.5 bg-accent text-white text-sm font-medium rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-colors shadow-sm"
 			>
 				{loading ? 'Setting the table...' : 'Set a table'}
 			</button>
@@ -76,7 +76,7 @@
 
 	{#if data.tables.length > 0}
 		<section>
-			<h2 class="text-base font-semibold text-sky-900 mb-3">Your tables</h2>
+			<h2 class="text-base font-semibold text-fg mb-3">Your tables</h2>
 			<div class="space-y-2">
 				{#each data.tables as table}
 					<TableCard

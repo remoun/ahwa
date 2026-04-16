@@ -222,11 +222,11 @@
 
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<div class="flex items-center justify-between mb-6">
-		<a href="/" class="text-sky-600/60 hover:text-sky-900 text-sm transition-colors">&larr; Back to tables</a>
+		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors">&larr; Back to tables</a>
 		{#if done}
 			<button
 				onclick={exportMarkdown}
-				class="text-sm px-3 py-1.5 border border-sky-200 rounded-lg hover:bg-sky-50 text-sky-700 transition-colors"
+				class="text-sm px-3 py-1.5 border border-border-strong rounded-lg hover:bg-surface-muted text-fg-muted transition-colors"
 			>
 				Export Markdown
 			</button>
@@ -234,9 +234,9 @@
 	</div>
 
 	{#if data.table?.dilemma}
-		<div class="mb-8 p-5 bg-gradient-to-br from-sky-50 to-indigo-50/50 rounded-xl border border-sky-200 shadow-sm">
-			<p class="text-xs font-medium text-sky-600/60 uppercase tracking-wide mb-1.5">Dilemma</p>
-			<p class="text-sky-950 leading-relaxed">{data.table.dilemma}</p>
+		<div class="mb-8 p-5 bg-gradient-to-br from-surface-muted to-surface-accent/50 rounded-xl border border-border-strong shadow-sm">
+			<p class="text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1.5">Dilemma</p>
+			<p class="text-fg leading-relaxed">{data.table.dilemma}</p>
 		</div>
 	{/if}
 
@@ -248,19 +248,19 @@
 
 	<!-- Progress indicator -->
 	{#if !isCompleted && !done && (currentRound || activePersona)}
-		<div class="mb-6 p-3 bg-white border border-sky-100 rounded-xl shadow-sm flex items-center gap-3">
-			<div class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
-			<div class="text-sm text-sky-800">
+		<div class="mb-6 p-3 bg-surface border border-border rounded-xl shadow-sm flex items-center gap-3">
+			<div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
+			<div class="text-sm text-accent">
 				<span class="font-medium">{currentRound}</span>
 				{#if activePersona}
-					<span class="text-sky-600/60"> &middot; {activePersona} is speaking...</span>
+					<span class="text-fg-subtle"> &middot; {activePersona} is speaking...</span>
 				{/if}
 			</div>
 		</div>
 	{/if}
 
 	{#if currentRound && !synthesizing && !done}
-		<h2 class="text-xs font-semibold text-sky-600/60 uppercase tracking-wide mb-3">{currentRound}</h2>
+		<h2 class="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">{currentRound}</h2>
 	{/if}
 
 	{#each turns as turn}
@@ -278,12 +278,12 @@
 	{/if}
 
 	{#if done && !error}
-		<p class="mt-8 text-sky-600/40 text-sm text-center">Deliberation complete.</p>
+		<p class="mt-8 text-fg-subtle text-sm text-center">Deliberation complete.</p>
 	{/if}
 
 	{#if isRunning && !done}
-		<div class="flex items-center gap-3 text-sky-600/60 text-sm p-4 bg-white border border-sky-100 rounded-xl shadow-sm">
-			<div class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
+		<div class="flex items-center gap-3 text-fg-subtle text-sm p-4 bg-surface border border-border rounded-xl shadow-sm">
+			<div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
 			Deliberation in progress. This page will update when it completes.
 		</div>
 	{/if}
@@ -295,8 +295,8 @@
 	{/if}
 
 	{#if !currentRound && !error && !isCompleted && !isRunning && !isFailed}
-		<div class="flex items-center gap-3 text-sky-600/40 text-sm">
-			<div class="w-2 h-2 rounded-full bg-sky-300 animate-pulse"></div>
+		<div class="flex items-center gap-3 text-fg-subtle text-sm">
+			<div class="w-2 h-2 rounded-full bg-accent-hover animate-pulse"></div>
 			Connecting to the council...
 		</div>
 	{/if}

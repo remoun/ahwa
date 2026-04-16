@@ -1,6 +1,83 @@
 @import 'tailwindcss';
 
+/*
+ * Semantic color tokens. Tailwind classes like `bg-surface`, `text-fg`,
+ * `border-border` resolve to these. Swap the palette in one place.
+ *
+ * Dark mode resolution:
+ *   - no class on <html>  → follow prefers-color-scheme (system)
+ *   - .light on <html>    → force light
+ *   - .dark on <html>     → force dark
+ */
+
+/* Light (default) */
+:root {
+	--c-bg: #f8fbff;
+	--c-surface: #ffffff;
+	--c-surface-muted: #f0f9ff; /* sky-50 */
+	--c-surface-accent: #e0f2fe; /* sky-100 */
+	--c-fg: #0c4a6e; /* sky-900 */
+	--c-fg-muted: #475569; /* slate-600 */
+	--c-fg-subtle: #94a3b8; /* slate-400 */
+	--c-accent: #0369a1; /* sky-700 */
+	--c-accent-strong: #075985; /* sky-800 */
+	--c-accent-hover: #0284c7; /* sky-600 */
+	--c-accent-fg: #ffffff;
+	--c-border: #e0f2fe; /* sky-100 */
+	--c-border-strong: #7dd3fc; /* sky-300 */
+}
+
+/* Dark: apply when prefers-color-scheme is dark AND no .light override */
+@media (prefers-color-scheme: dark) {
+	:root:not(.light) {
+		--c-bg: #020617; /* slate-950 */
+		--c-surface: #0f172a; /* slate-900 */
+		--c-surface-muted: #1e293b; /* slate-800 */
+		--c-surface-accent: #0c4a6e; /* sky-900 */
+		--c-fg: #e0f2fe; /* sky-100 */
+		--c-fg-muted: #94a3b8; /* slate-400 */
+		--c-fg-subtle: #64748b; /* slate-500 */
+		--c-accent: #38bdf8; /* sky-400 */
+		--c-accent-strong: #0ea5e9; /* sky-500 */
+		--c-accent-hover: #7dd3fc; /* sky-300 */
+		--c-accent-fg: #020617;
+		--c-border: #1e293b; /* slate-800 */
+		--c-border-strong: #0369a1; /* sky-700 */
+	}
+}
+
+/* Dark: force via explicit class regardless of system preference */
+:root.dark {
+	--c-bg: #020617;
+	--c-surface: #0f172a;
+	--c-surface-muted: #1e293b;
+	--c-surface-accent: #0c4a6e;
+	--c-fg: #e0f2fe;
+	--c-fg-muted: #94a3b8;
+	--c-fg-subtle: #64748b;
+	--c-accent: #38bdf8;
+	--c-accent-strong: #0ea5e9;
+	--c-accent-hover: #7dd3fc;
+	--c-accent-fg: #020617;
+	--c-border: #1e293b;
+	--c-border-strong: #0369a1;
+}
+
 @theme {
+	--color-bg: var(--c-bg);
+	--color-surface: var(--c-surface);
+	--color-surface-muted: var(--c-surface-muted);
+	--color-surface-accent: var(--c-surface-accent);
+	--color-fg: var(--c-fg);
+	--color-fg-muted: var(--c-fg-muted);
+	--color-fg-subtle: var(--c-fg-subtle);
+	--color-accent: var(--c-accent);
+	--color-accent-strong: var(--c-accent-strong);
+	--color-accent-hover: var(--c-accent-hover);
+	--color-accent-fg: var(--c-accent-fg);
+	--color-border: var(--c-border);
+	--color-border-strong: var(--c-border-strong);
+
 	--animate-fade-in: fade-in 0.3s ease-out;
 }
 
@@ -16,6 +93,6 @@
 }
 
 body {
-	background-color: #f8fbff;
-	color: #334155;
+	background-color: var(--c-bg);
+	color: var(--c-fg-muted);
 }
