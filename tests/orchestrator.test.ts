@@ -5,40 +5,7 @@ import * as schema from '../src/lib/server/db/schema';
 import { runDeliberation } from '../src/lib/server/orchestrator';
 import type { SseEvent } from '../src/lib/schemas/events';
 import { createTestDb, mockComplete, type TestDb } from './helpers';
-
-function seedMiniCouncil(db: TestDb) {
-	db.insert(schema.personas).values([
-		{ id: 'elder', name: 'The Elder', emoji: '🌿', systemPrompt: 'You are an elder.' },
-		{ id: 'mirror', name: 'The Mirror', emoji: '🪞', systemPrompt: 'You are a mirror.' }
-	]).run();
-
-	db.insert(schema.councils).values({
-		id: 'test-council',
-		name: 'Test Council',
-		personaIds: JSON.stringify(['elder', 'mirror']),
-		synthesisPrompt: 'Synthesize the deliberation.',
-		roundStructure: JSON.stringify({
-			rounds: [
-				{ kind: 'opening', prompt_suffix: 'Give your opening take.' },
-				{ kind: 'cross_examination', prompt_suffix: 'Push back.' }
-			],
-			synthesize: true
-		})
-	}).run();
-
-	db.insert(schema.parties).values({ id: 'party-1', displayName: 'me' }).run();
-}
-
-/** Pre-create a table row so the orchestrator can use it */
-function createTable(db: TestDb, id: string, dilemma: string, councilId: string, partyId: string) {
-	db.insert(schema.tables).values({
-		id,
-		dilemma,
-		councilId,
-		status: 'pending'
-	}).run();
-	db.insert(schema.tableParties).values({ tableId: id, partyId, role: 'initiator' }).run();
-}
+import { seedMiniCouncil, createTable } from './fixtures';
 
 describe('orchestrator', () => {
 	let db: TestDb;

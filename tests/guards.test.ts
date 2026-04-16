@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { validateDeliberationRequest } from '../src/lib/server/guards';
 import { createTestDb, type TestDb } from './helpers';
+import { createParty, createTable } from './fixtures';
 
 describe('validateDeliberationRequest', () => {
 	let db: TestDb;
@@ -11,20 +12,10 @@ describe('validateDeliberationRequest', () => {
 	beforeEach(() => {
 		db = createTestDb();
 
-		db.insert(schema.parties).values({ id: 'alice', displayName: 'Alice' }).run();
-		db.insert(schema.parties).values({ id: 'bob', displayName: 'Bob' }).run();
+		createParty(db, 'alice', 'Alice');
+		createParty(db, 'bob', 'Bob');
 
-		db.insert(schema.tables).values({
-			id: 'pending-table',
-			dilemma: 'A pending dilemma',
-			councilId: 'default',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({
-			tableId: 'pending-table',
-			partyId: 'alice',
-			role: 'initiator'
-		}).run();
+		createTable(db, 'pending-table', 'A pending dilemma', 'default', 'alice', 'pending');
 
 		db.insert(schema.tables).values({
 			id: 'completed-table',
@@ -39,29 +30,8 @@ describe('validateDeliberationRequest', () => {
 			role: 'initiator'
 		}).run();
 
-		db.insert(schema.tables).values({
-			id: 'running-table',
-			dilemma: 'An in-progress dilemma',
-			councilId: 'default',
-			status: 'running'
-		}).run();
-		db.insert(schema.tableParties).values({
-			tableId: 'running-table',
-			partyId: 'alice',
-			role: 'initiator'
-		}).run();
-
-		db.insert(schema.tables).values({
-			id: 'failed-table',
-			dilemma: 'A failed dilemma',
-			councilId: 'default',
-			status: 'failed'
-		}).run();
-		db.insert(schema.tableParties).values({
-			tableId: 'failed-table',
-			partyId: 'alice',
-			role: 'initiator'
-		}).run();
+		createTable(db, 'running-table', 'An in-progress dilemma', 'default', 'alice', 'running');
+		createTable(db, 'failed-table', 'A failed dilemma', 'default', 'alice', 'failed');
 	});
 
 	it('returns ok for a pending table with a valid party', () => {

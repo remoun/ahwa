@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import PersonaChip from '$lib/components/PersonaChip.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -107,16 +108,12 @@
 			<span class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-2">Personas</span>
 			<div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Persona selection">
 				{#each data.allPersonas as persona}
-					<button
-						type="button"
+					<PersonaChip
+						emoji={persona.emoji ?? ''}
+						name={persona.name ?? ''}
+						active={selectedPersonaIds.includes(persona.id)}
 						onclick={() => togglePersona(persona.id)}
-						class="text-sm px-3 py-1.5 rounded-full border transition-all
-							{selectedPersonaIds.includes(persona.id)
-								? 'bg-accent text-white border-accent shadow-sm'
-								: 'bg-surface text-accent border-border-strong hover:border-border-strong hover:shadow-sm'}"
-					>
-						<span class="mr-1">{persona.emoji}</span> {persona.name}
-					</button>
+					/>
 				{/each}
 			</div>
 
@@ -160,17 +157,14 @@
 				<!-- Persona chips -->
 				<div class="mt-3 flex flex-wrap gap-1.5">
 					{#each council.personas as persona}
-						<button
-							type="button"
+						<PersonaChip
+							emoji={persona.emoji ?? ''}
+							name={persona.name ?? ''}
+							active={expandedPersona === `${council.id}-${persona.id}`}
+							size="sm"
 							onclick={() => toggleExpandedPersona(`${council.id}-${persona.id}`)}
-							class="text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer
-								{expandedPersona === `${council.id}-${persona.id}`
-									? 'bg-surface-accent border-border-strong text-fg'
-									: 'bg-surface-muted/50 border-border text-fg-muted hover:border-border-strong'}"
 							title="Click to see prompt"
-						>
-							{persona.emoji} {persona.name}
-						</button>
+						/>
 					{/each}
 				</div>
 

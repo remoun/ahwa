@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import TurnCard from '$lib/components/TurnCard.svelte';
 	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
+	import { consumeSseStream } from '$lib/sse-client';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -77,7 +78,6 @@
 		// Status is 'pending' — start the deliberation via SSE
 		if (data.table?.status !== 'pending') return;
 
-		const url = `/t/${data.tableId}?party=${data.partyId}`;
 		const controller = new AbortController();
 
 		// Only abort on actual tab/window close, not SvelteKit navigation.
@@ -86,56 +86,15 @@
 		const onUnload = () => controller.abort();
 		window.addEventListener('beforeunload', onUnload);
 
-		(async () => {
-			try {
-				const res = await fetch(url, { signal: controller.signal });
-				if (!res.ok || !res.body) {
-					// Try to pull the server's error message out of the body
-					let detail = '';
-					try {
-						const body = await res.json();
-						detail = body.error ?? '';
-					} catch {
-						// not JSON — ignore
-					}
-					error = detail
-						? `${detail} (HTTP ${res.status})`
-						: `Failed to connect: HTTP ${res.status}`;
-					done = true;
-					return;
-				}
-
-				const reader = res.body.getReader();
-				const decoder = new TextDecoder();
-				let buffer = '';
-
-				while (true) {
-					const { done: streamDone, value } = await reader.read();
-					if (streamDone) break;
-
-					buffer += decoder.decode(value, { stream: true });
-					const lines = buffer.split('\n');
-					buffer = lines.pop() ?? '';
-
-					for (const line of lines) {
-						if (!line.startsWith('data: ')) continue;
-						const json = line.slice(6);
-						if (!json.trim()) continue;
-
-						try {
-							const event = JSON.parse(json);
-							handleEvent(event);
-						} catch {
-							// skip malformed lines
-						}
-					}
-				}
-			} catch (err: any) {
-				if (err.name !== 'AbortError') {
-					error = String(err);
-				}
+		consumeSseStream({
+			url: `/t/${data.tableId}?party=${data.partyId}`,
+			signal: controller.signal,
+			onEvent: handleEvent,
+			onError: (message) => {
+				error = message;
+				done = true;
 			}
-		})();
+		});
 
 		return () => {
 			window.removeEventListener('beforeunload', onUnload);
