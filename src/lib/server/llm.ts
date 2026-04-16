@@ -27,15 +27,17 @@ export interface CompleteResult {
 /**
  * Default models per provider when only the provider is known.
  *
- * OpenRouter default is a `:free` Llama 3.3 70B variant — the free-tier
- * lineup rotates occasionally, so if this one gets retired the symptom
- * is "LLM returned empty response" (we surface that loudly from the
- * orchestrator). Users can override via council.model_config.
+ * OpenRouter default is an NVIDIA Nemotron `:free` variant — NVIDIA
+ * subsidizes these to showcase their models on NIM, which tends to mean
+ * more consistent availability than the other free-tier options. If
+ * this model gets retired or rate-limits bite, the symptom is "LLM
+ * returned empty response" surfaced loudly from the orchestrator;
+ * users can override via council.model_config.
  */
 const DEFAULT_MODELS: Record<ProviderName, string> = {
 	anthropic: 'claude-sonnet-4-20250514',
 	openai: 'gpt-4o',
-	openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
+	openrouter: 'nvidia/nemotron-3-super-120b-a12b:free',
 	ollama: 'llama3.1'
 };
 

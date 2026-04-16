@@ -18,7 +18,12 @@ type Db = BunSQLiteDatabase<typeof schema>;
 export function recoverOrphanedTables(db: Db): number {
 	const result = db
 		.update(schema.tables)
-		.set({ status: 'failed', updatedAt: Date.now() })
+		.set({
+			status: 'failed',
+			errorMessage:
+				'The server restarted mid-deliberation. Create a new table to try this dilemma again.',
+			updatedAt: Date.now()
+		})
 		.where(eq(schema.tables.status, 'running'))
 		.run();
 

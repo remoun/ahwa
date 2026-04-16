@@ -92,9 +92,11 @@
 		</form>
 	</section>
 
-	{#if data.tables.length > 0}
-		<section>
-			<h2 class="font-display text-xl text-fg mb-3">Your tables</h2>
+	<section>
+		<h2 class="font-display text-xl text-fg mb-3">Your tables</h2>
+		{#if data.tables.length === 0}
+			<p class="text-fg-subtle text-sm">No tables yet — pose a dilemma above to start one.</p>
+		{:else}
 			<div class="space-y-2">
 				{#each data.tables as table (table.id)}
 					<TableCard
@@ -108,6 +110,6 @@
 					/>
 				{/each}
 			</div>
-		</section>
-	{/if}
+		{/if}
+	</section>
 </main>

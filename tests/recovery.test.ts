@@ -27,6 +27,9 @@ describe('recoverOrphanedTables', () => {
 		expect(count).toBe(1);
 		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'orphan-1')).get();
 		expect(table!.status).toBe('failed');
+		// Users navigating back should see a useful reason, not a blank
+		// "encountered an error and could not complete."
+		expect(table!.errorMessage).toMatch(/server restarted/i);
 	});
 
 	it('leaves pending tables alone', () => {

@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { validateDeliberationRequest } from '../src/lib/server/guards';
+import { signShareToken } from '../src/lib/server/share';
 import { createTestDb, type TestDb } from './helpers';
 import { createParty, createTable } from './fixtures';
 
@@ -133,6 +134,43 @@ describe('validateDeliberationRequest', () => {
 		if (!result.ok) {
 			expect(result.status).toBe(403);
 		}
+	});
+
+	it('accepts a request with a valid share token', () => {
+		const token = signShareToken('pending-table', 'alice');
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', token);
+		expect(result.ok).toBe(true);
+	});
+
+	it('rejects a tampered share token with 403', () => {
+		const token = signShareToken('pending-table', 'alice');
+		// Flip one character in the signature — token is hex, so '0'→'1' keeps
+		// it syntactically valid but breaks the HMAC match.
+		const tampered = token.startsWith('0') ? '1' + token.slice(1) : '0' + token.slice(1);
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', tampered);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.status).toBe(403);
+			expect(result.message).toMatch(/invalid share token/i);
+		}
+	});
+
+	it('rejects a token signed for a different party as 403', () => {
+		// alice has a link to the table — an attacker crafts a token for 'bob'
+		// (who is not a member) and tries to use it with alice's party id.
+		const wrongPartyToken = signShareToken('pending-table', 'bob');
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', wrongPartyToken);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.status).toBe(403);
+		}
+	});
+
+	it('accepts requests without any token (localhost direct access)', () => {
+		// M1 is localhost-only; guard only enforces token validity when one
+		// is supplied. Null token means no token check — pass through.
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', null);
+		expect(result.ok).toBe(true);
 	});
 
 	it('atomic claim: second call on same pending table gets 409', () => {
