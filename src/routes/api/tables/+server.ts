@@ -3,6 +3,7 @@ import { json } from '@sveltejs/kit';
 import { nanoid } from 'nanoid';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { signShareToken } from '$lib/server/share';
 import * as schema from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
 
@@ -52,5 +53,5 @@ export const POST: RequestHandler = async ({ request }) => {
 	// Link party to table
 	db.insert(schema.tableParties).values({ tableId, partyId, role: 'initiator' }).run();
 
-	return json({ tableId, partyId });
+	return json({ tableId, partyId, token: signShareToken(tableId, partyId) });
 };

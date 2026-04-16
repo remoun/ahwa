@@ -20,8 +20,8 @@
 			body: JSON.stringify({ dilemma, councilId })
 		});
 
-		const { tableId, partyId } = await res.json();
-		goto(`/t/${tableId}?party=${partyId}`);
+		const { tableId, partyId, token } = await res.json();
+		goto(`/t/${tableId}?party=${partyId}&token=${token}`);
 	}
 </script>
 

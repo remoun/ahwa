@@ -10,8 +10,9 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 	try {
 		const tableId = params.id;
 		const partyId = url.searchParams.get('party');
+		const token = url.searchParams.get('token');
 
-		const guard = validateDeliberationRequest(db, tableId, partyId);
+		const guard = validateDeliberationRequest(db, tableId, partyId, token);
 		if (!guard.ok) {
 			return new Response(JSON.stringify({ error: guard.message }), {
 				status: guard.status,

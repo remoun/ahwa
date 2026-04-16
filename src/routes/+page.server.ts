@@ -2,6 +2,7 @@
 import { eq, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { loadOrFail } from '$lib/server/load';
+import { signShareToken } from '$lib/server/share';
 import * as schema from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
@@ -22,10 +23,14 @@ export const load: PageServerLoad = () =>
 		const partyByTable = new Map(tableParties.map((tp) => [tp.tableId, tp.partyId]));
 
 		return {
-			tables: tables.map((t) => ({
-				...t,
-				partyId: partyByTable.get(t.id) ?? ''
-			})),
+			tables: tables.map((t) => {
+				const partyId = partyByTable.get(t.id) ?? '';
+				return {
+					...t,
+					partyId,
+					token: partyId ? signShareToken(t.id, partyId) : ''
+				};
+			}),
 			councils
 		};
 	});
