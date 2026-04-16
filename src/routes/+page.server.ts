@@ -16,7 +16,13 @@ export const load: PageServerLoad = () =>
 			.orderBy(desc(schema.tables.createdAt))
 			.all();
 
-		const councils = db.select().from(schema.councils).all();
+		// Put the default council first so the preselected option leads the
+		// picker grid; everything else keeps insertion order.
+		const councils = db
+			.select()
+			.from(schema.councils)
+			.all()
+			.sort((a, b) => (a.id === 'default' ? -1 : b.id === 'default' ? 1 : 0));
 		const personas = db.select().from(schema.personas).all();
 
 		// M1: one party per table, so last-write-wins is fine. M3 will need

@@ -4,7 +4,9 @@
 
 - Docker and Docker Compose, OR
 - [Bun](https://bun.sh) runtime (v1.0+)
-- An API key for at least one LLM provider (or Ollama for local models)
+- At least one configured LLM provider (see
+  [Environment variables](#environment-variables) below). Without one,
+  Ahwa will refuse to start a deliberation with a clear error message.
 
 ## Docker (recommended)
 
@@ -80,13 +82,14 @@ Set `AHWA_DATA_DIR` to control where the database lives:
 
 ## Environment variables
 
-| Variable             | Required | Description                                        |
-| -------------------- | -------- | -------------------------------------------------- |
-| `PORT`               | No       | HTTP port (default: 3000)                          |
-| `AHWA_DATA_DIR`      | No       | Data directory path                                |
-| `ANTHROPIC_API_KEY`  | No\*     | Anthropic API key                                  |
-| `OPENAI_API_KEY`     | No\*     | OpenAI API key                                     |
-| `OPENROUTER_API_KEY` | No\*     | OpenRouter API key                                 |
-| `OLLAMA_BASE_URL`    | No       | Ollama URL (default: `http://localhost:11434/api`) |
+| Variable             | Required | Description                                                                 |
+| -------------------- | -------- | --------------------------------------------------------------------------- |
+| `PORT`               | No       | HTTP port (default: 3000)                                                   |
+| `AHWA_DATA_DIR`      | No       | Data directory path                                                         |
+| `AHWA_SHARE_SECRET`  | No       | Hex secret used to sign share-link tokens. If unset, a random one is generated at startup — fine for dev, but links will break across restarts in production. Generate with `openssl rand -hex 32`. |
+| `ANTHROPIC_API_KEY`  | No\*     | Anthropic API key                                                           |
+| `OPENAI_API_KEY`     | No\*     | OpenAI API key                                                              |
+| `OPENROUTER_API_KEY` | No\*     | OpenRouter API key (includes a free tier — easiest to start with)           |
+| `OLLAMA_BASE_URL`    | No\*     | Ollama URL, e.g. `http://localhost:11434/api`. Must be set explicitly — not inferred — so hosted deploys without a reachable Ollama don't silently fail. |
 
-\*At least one provider must be configured, or Ollama must be running locally.
+\*At least one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, or `OLLAMA_BASE_URL` must be set.
