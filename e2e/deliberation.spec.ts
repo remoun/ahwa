@@ -51,6 +51,21 @@ test.describe('deliberation flow', () => {
 		await expect(page.getByText(dilemma)).toBeVisible();
 	});
 
+	test('surfaces LLM errors and drops empty speech blocks', async ({ page }) => {
+		// [MOCK_FAIL] is a marker the mock LLM treats as "throw on this call"
+		await createTable(page, 'Should I do this? [MOCK_FAIL]');
+
+		// Error banner should appear (mock throws on first persona)
+		await expect(page.getByText(/Mock LLM failure injected/i)).toBeVisible({ timeout: 15_000 });
+
+		// No "Deliberation complete." for a failed run
+		await expect(page.getByText('Deliberation complete.')).not.toBeVisible();
+
+		// No empty persona turn cards with cursors — turns that started but
+		// never got content should be filtered out of the DOM
+		await expect(page.getByRole('main').locator('.animate-pulse')).toHaveCount(0);
+	});
+
 	test('markdown export downloads after completion', async ({ page }) => {
 		await runDeliberation(page, 'Export test');
 

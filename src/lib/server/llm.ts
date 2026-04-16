@@ -97,8 +97,16 @@ function createModel(config: ModelConfig): any {
  * Deterministic mock response for E2E tests. Enabled by AHWA_MOCK_LLM=1.
  * Yields a short labeled response identifying the persona from the system
  * prompt — same pattern as tests/helpers.ts mockComplete().
+ *
+ * Escape hatch: if any user message contains the marker "[MOCK_FAIL]",
+ * the mock throws. Lets E2E tests exercise the error-handling path.
  */
 function mockComplete(request: CompleteRequest): CompleteResult {
+	// Failure injection for tests
+	if (request.messages.some((m) => m.content.includes('[MOCK_FAIL]'))) {
+		throw new Error('Mock LLM failure injected via [MOCK_FAIL] marker');
+	}
+
 	const prompt = request.system.toLowerCase();
 	let name = 'Persona';
 	if (prompt.includes('elder')) name = 'Elder';
