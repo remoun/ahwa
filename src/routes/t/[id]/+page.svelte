@@ -243,11 +243,14 @@
 
 	{#if data.table?.dilemma}
 		<!--
-			The dilemma is "pinned" to the top of the table: warm paper tone,
-			soft drop shadow, serif body. Keeps the question feeling like a
-			note on the table rather than a form echo.
+			The dilemma is "pinned" to the top of the table — both visually
+			(warm paper tone, soft drop shadow, serif body) and literally:
+			sticky below the nav so the question stays in view while you
+			scroll through the council's turns. top-14 matches Nav's h-14.
 		-->
-		<figure class="mb-10 px-6 py-5 bg-surface border border-border-strong rounded-xl shadow-md">
+		<figure
+			class="sticky top-14 z-10 mb-10 px-6 py-5 bg-surface border border-border-strong rounded-xl shadow-md"
+		>
 			<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-2">
 				Dilemma
 			</figcaption>
