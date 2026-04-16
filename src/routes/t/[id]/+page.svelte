@@ -266,7 +266,7 @@
 		<SynthesisPanel text={synthesis} streaming={synthesizing} />
 	{/if}
 
-	{#if done && !error}
+	{#if isCompleted}
 		<p class="mt-8 text-amber-600/40 text-sm text-center">Deliberation complete.</p>
 	{/if}
 
@@ -277,7 +277,7 @@
 		</div>
 	{/if}
 
-	{#if isFailed && !done}
+	{#if isFailed && !error}
 		<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800">
 			This deliberation encountered an error and could not complete.
 		</div>
