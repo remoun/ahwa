@@ -85,7 +85,7 @@ test.describe('council management', () => {
 		await expect(page).toHaveURL('/councils');
 		await expect(page.getByRole('heading', { name: 'Councils' })).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'The Default Council' })).toBeVisible();
-		await expect(page.getByRole('button', { name: /🌿 The Elder/ })).toBeVisible();
+		await expect(page.getByRole('button').filter({ hasText: 'The Elder' }).first()).toBeVisible();
 		await expect(page.getByText('built-in').first()).toBeVisible();
 	});
 
@@ -93,7 +93,8 @@ test.describe('council management', () => {
 		await page.goto('/councils');
 
 		await page
-			.getByRole('button', { name: /🌿 The Elder/ })
+			.getByRole('button')
+			.filter({ hasText: 'The Elder' })
 			.first()
 			.click();
 
@@ -109,7 +110,8 @@ test.describe('council management', () => {
 		const councilName = 'E2E Test Council ' + Date.now();
 		await page.getByLabel('Name').fill(councilName);
 		await page
-			.getByRole('button', { name: /🌿 The Elder/ })
+			.getByRole('button')
+			.filter({ hasText: 'The Elder' })
 			.first()
 			.click();
 		await page.getByRole('button', { name: /^Create$/ }).click();
