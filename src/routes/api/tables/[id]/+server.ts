@@ -13,21 +13,13 @@ import type { RequestHandler } from './$types';
  * party-scoped read access when two-party share links land.
  */
 export const GET: RequestHandler = async ({ params }) => {
-	const table = db
-		.select()
-		.from(schema.tables)
-		.where(eq(schema.tables.id, params.id))
-		.get();
+	const table = db.select().from(schema.tables).where(eq(schema.tables.id, params.id)).get();
 
 	if (!table) {
 		return json({ error: 'Table not found' }, { status: 404 });
 	}
 
-	const turns = db
-		.select()
-		.from(schema.turns)
-		.where(eq(schema.turns.tableId, params.id))
-		.all();
+	const turns = db.select().from(schema.turns).where(eq(schema.turns.tableId, params.id)).all();
 
 	const council = table.councilId
 		? db.select().from(schema.councils).where(eq(schema.councils.id, table.councilId)).get()

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect, beforeEach } from 'bun:test';
+import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
@@ -59,19 +60,24 @@ describe('seedFromDisk', () => {
 	});
 
 	it('skips malformed JSON files without crashing', () => {
-		const { mkdirSync, writeFileSync, rmSync } = require('fs');
 		const testDir = '/tmp/ahwa-test-councils';
 
 		try {
 			mkdirSync(testDir, { recursive: true });
 			// One valid council
-			writeFileSync(`${testDir}/good.json`, JSON.stringify({
-				id: 'good',
-				name: 'Good Council',
-				personas: [{ id: 'p1', name: 'P', emoji: '!', system_prompt: 'test' }],
-				round_structure: { rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }], synthesize: false },
-				synthesis_prompt: 'n/a'
-			}));
+			writeFileSync(
+				`${testDir}/good.json`,
+				JSON.stringify({
+					id: 'good',
+					name: 'Good Council',
+					personas: [{ id: 'p1', name: 'P', emoji: '!', system_prompt: 'test' }],
+					round_structure: {
+						rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+						synthesize: false
+					},
+					synthesis_prompt: 'n/a'
+				})
+			);
 			// One broken file
 			writeFileSync(`${testDir}/broken.json`, '{ this is not valid json }}}');
 

@@ -10,7 +10,7 @@ that preserves real disagreement rather than flattening it.
 Inspired by [Moot](https://getmoot.app) and [Auralink](https://auralink.com),
 but forkable, self-hostable, and built around user-owned data.
 
-> *Ahwa* (قهوة) is Egyptian Arabic for coffee, and by extension the
+> _Ahwa_ (قهوة) is Egyptian Arabic for coffee, and by extension the
 > coffeehouse — where friends gather to think through problems together.
 > Pronounced "AH-wah."
 

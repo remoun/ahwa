@@ -16,9 +16,7 @@ describe('PersonaSchema', () => {
 	});
 
 	it('parses a persona with requires field', () => {
-		const historian = JSON.parse(
-			readFileSync('personas/historian.json', 'utf-8')
-		);
+		const historian = JSON.parse(readFileSync('personas/historian.json', 'utf-8'));
 		const result = PersonaSchema.safeParse(historian);
 		expect(result.success).toBe(true);
 		if (result.success) {
@@ -38,9 +36,7 @@ describe('PersonaSchema', () => {
 
 describe('CouncilSchema', () => {
 	it('parses the default council JSON', () => {
-		const raw = JSON.parse(
-			readFileSync('councils/default.json', 'utf-8')
-		);
+		const raw = JSON.parse(readFileSync('councils/default.json', 'utf-8'));
 		const result = CouncilSchema.safeParse(raw);
 		expect(result.success).toBe(true);
 		if (result.success) {
@@ -51,9 +47,7 @@ describe('CouncilSchema', () => {
 	});
 
 	it('parses the federation council JSON', () => {
-		const raw = JSON.parse(
-			readFileSync('councils/federation.json', 'utf-8')
-		);
+		const raw = JSON.parse(readFileSync('councils/federation.json', 'utf-8'));
 		const result = CouncilSchema.safeParse(raw);
 		expect(result.success).toBe(true);
 		if (result.success) {
@@ -72,7 +66,10 @@ describe('CouncilSchema', () => {
 		});
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data.model_config).toEqual({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' });
+			expect(result.data.model_config).toEqual({
+				provider: 'anthropic',
+				model: 'claude-sonnet-4-20250514'
+			});
 		}
 	});
 
@@ -126,7 +123,12 @@ describe('SseEventSchema', () => {
 		const events: Record<string, object> = {
 			table_opened: { type: 'table_opened', tableId: 't1' },
 			round_started: { type: 'round_started', round: 1, kind: 'opening' },
-			persona_turn_started: { type: 'persona_turn_started', personaId: 'elder', personaName: 'The Elder', emoji: '🌿' },
+			persona_turn_started: {
+				type: 'persona_turn_started',
+				personaId: 'elder',
+				personaName: 'The Elder',
+				emoji: '🌿'
+			},
 			token: { type: 'token', personaId: 'elder', text: 'Hello' },
 			persona_turn_completed: { type: 'persona_turn_completed', personaId: 'elder' },
 			synthesis_started: { type: 'synthesis_started' },

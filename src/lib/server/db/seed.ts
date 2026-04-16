@@ -13,11 +13,7 @@ type Db = BunSQLiteDatabase<typeof schema>;
  * Seed councils and personas from JSON files on disk.
  * Idempotent — uses INSERT OR REPLACE so it's safe to call on every startup.
  */
-export function seedFromDisk(
-	db: Db,
-	councilsDir = 'councils',
-	personasDir = 'personas'
-): void {
+export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'personas'): void {
 	// Load council JSON files
 	let councilFiles: string[] = [];
 	try {

@@ -48,10 +48,14 @@ export const CouncilBodySchema = z.object({
 	personaIds: z.array(z.string()).min(1),
 	synthesisPrompt: z.string().min(1),
 	roundStructure: z.object({
-		rounds: z.array(z.object({
-			kind: z.string(),
-			prompt_suffix: z.string()
-		})).min(1),
+		rounds: z
+			.array(
+				z.object({
+					kind: z.string(),
+					prompt_suffix: z.string()
+				})
+			)
+			.min(1),
 		synthesize: z.boolean()
 	}),
 	modelConfig: ModelConfigSchema.optional()

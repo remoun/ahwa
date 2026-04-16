@@ -35,13 +35,17 @@ describe('e2e: full deliberation with real councils', () => {
 
 		// Create a party and table (orchestrator no longer creates these)
 		db.insert(schema.parties).values({ id: 'e2e-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'e2e-table-1',
-			dilemma: 'Should I quit my job to start a cooperative?',
-			councilId: 'default',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'e2e-table-1', partyId: 'e2e-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'e2e-table-1',
+				dilemma: 'Should I quit my job to start a cooperative?',
+				councilId: 'default',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'e2e-table-1', partyId: 'e2e-party', role: 'initiator' })
+			.run();
 
 		// Run the full deliberation
 		const events: SseEvent[] = [];
@@ -101,15 +105,19 @@ describe('e2e: full deliberation with real councils', () => {
 
 	it('persists all turns and synthesis to the database', async () => {
 		db.insert(schema.parties).values({ id: 'e2e-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'e2e-table-2',
-			dilemma: 'Test dilemma for persistence check',
-			councilId: 'default',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'e2e-table-2', partyId: 'e2e-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'e2e-table-2',
+				dilemma: 'Test dilemma for persistence check',
+				councilId: 'default',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'e2e-table-2', partyId: 'e2e-party', role: 'initiator' })
+			.run();
 
-		for await (const event of runDeliberation(db, {
+		for await (const _ of runDeliberation(db, {
 			tableId: 'e2e-table-2',
 			dilemma: 'Test dilemma for persistence check',
 			councilId: 'default',
@@ -149,7 +157,11 @@ describe('e2e: full deliberation with real councils', () => {
 	});
 
 	it('historian persona is seeded with requires: ["memory"]', () => {
-		const historian = db.select().from(schema.personas).where(eq(schema.personas.id, 'historian')).get();
+		const historian = db
+			.select()
+			.from(schema.personas)
+			.where(eq(schema.personas.id, 'historian'))
+			.get();
 		expect(historian).toBeDefined();
 		expect(JSON.parse(historian!.requires!)).toEqual(['memory']);
 	});
@@ -165,13 +177,17 @@ describe('e2e: markdown export from completed table', () => {
 
 	it('generates valid markdown from a completed deliberation', async () => {
 		db.insert(schema.parties).values({ id: 'export-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'export-table',
-			dilemma: 'Should I move abroad?',
-			councilId: 'default',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'export-table', partyId: 'export-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'export-table',
+				dilemma: 'Should I move abroad?',
+				councilId: 'default',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'export-table', partyId: 'export-party', role: 'initiator' })
+			.run();
 
 		for await (const _ of runDeliberation(db, {
 			tableId: 'export-table',
@@ -184,9 +200,21 @@ describe('e2e: markdown export from completed table', () => {
 		}
 
 		// Now generate markdown from the persisted data
-		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'export-table')).get()!;
-		const turns = db.select().from(schema.turns).where(eq(schema.turns.tableId, 'export-table')).all();
-		const council = db.select().from(schema.councils).where(eq(schema.councils.id, 'default')).get()!;
+		const table = db
+			.select()
+			.from(schema.tables)
+			.where(eq(schema.tables.id, 'export-table'))
+			.get()!;
+		const turns = db
+			.select()
+			.from(schema.turns)
+			.where(eq(schema.turns.tableId, 'export-table'))
+			.all();
+		const council = db
+			.select()
+			.from(schema.councils)
+			.where(eq(schema.councils.id, 'default'))
+			.get()!;
 
 		const md = generateMarkdown(
 			table,
@@ -242,42 +270,61 @@ describe('e2e: council CRUD with seed protection', () => {
 	});
 
 	it('seeded councils have null owner_party', () => {
-		const defaultCouncil = db.select().from(schema.councils).where(eq(schema.councils.id, 'default')).get();
+		const defaultCouncil = db
+			.select()
+			.from(schema.councils)
+			.where(eq(schema.councils.id, 'default'))
+			.get();
 		expect(defaultCouncil).toBeDefined();
 		expect(defaultCouncil!.ownerParty).toBeNull();
 	});
 
 	it('custom councils can be created with owner_party', () => {
-		db.insert(schema.councils).values({
-			id: 'custom-1',
-			name: 'My Custom Council',
-			personaIds: JSON.stringify(['elder', 'mirror']),
-			synthesisPrompt: 'Summarize.',
-			roundStructure: JSON.stringify({
-				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
-				synthesize: true
-			}),
-			ownerParty: 'user'
-		}).run();
+		db.insert(schema.councils)
+			.values({
+				id: 'custom-1',
+				name: 'My Custom Council',
+				personaIds: JSON.stringify(['elder', 'mirror']),
+				synthesisPrompt: 'Summarize.',
+				roundStructure: JSON.stringify({
+					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+					synthesize: true
+				}),
+				ownerParty: 'user'
+			})
+			.run();
 
-		const custom = db.select().from(schema.councils).where(eq(schema.councils.id, 'custom-1')).get();
+		const custom = db
+			.select()
+			.from(schema.councils)
+			.where(eq(schema.councils.id, 'custom-1'))
+			.get();
 		expect(custom).toBeDefined();
 		expect(custom!.ownerParty).toBe('user');
 	});
 
 	it('custom councils can be deleted', () => {
-		db.insert(schema.councils).values({
-			id: 'deletable',
-			name: 'Deletable',
-			personaIds: JSON.stringify(['elder']),
-			synthesisPrompt: 'n/a',
-			roundStructure: JSON.stringify({ rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }], synthesize: false }),
-			ownerParty: 'user'
-		}).run();
+		db.insert(schema.councils)
+			.values({
+				id: 'deletable',
+				name: 'Deletable',
+				personaIds: JSON.stringify(['elder']),
+				synthesisPrompt: 'n/a',
+				roundStructure: JSON.stringify({
+					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+					synthesize: false
+				}),
+				ownerParty: 'user'
+			})
+			.run();
 
 		db.delete(schema.councils).where(eq(schema.councils.id, 'deletable')).run();
 
-		const deleted = db.select().from(schema.councils).where(eq(schema.councils.id, 'deletable')).get();
+		const deleted = db
+			.select()
+			.from(schema.councils)
+			.where(eq(schema.councils.id, 'deletable'))
+			.get();
 		expect(deleted).toBeUndefined();
 	});
 
@@ -301,13 +348,17 @@ describe('e2e: deliberation with federation council', () => {
 
 	it('runs a complete deliberation with the federation council', async () => {
 		db.insert(schema.parties).values({ id: 'fed-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'fed-table',
-			dilemma: 'Should our collective adopt consensus-based governance?',
-			councilId: 'federation',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'fed-table', partyId: 'fed-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'fed-table',
+				dilemma: 'Should our collective adopt consensus-based governance?',
+				councilId: 'federation',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'fed-table', partyId: 'fed-party', role: 'initiator' })
+			.run();
 
 		const events: SseEvent[] = [];
 		for await (const event of runDeliberation(db, {
@@ -340,13 +391,17 @@ describe('e2e: table status transitions', () => {
 
 	it('table transitions from pending → running → completed', async () => {
 		db.insert(schema.parties).values({ id: 'status-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'status-table',
-			dilemma: 'Status test',
-			councilId: 'default',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'status-table', partyId: 'status-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'status-table',
+				dilemma: 'Status test',
+				councilId: 'default',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'status-table', partyId: 'status-party', role: 'initiator' })
+			.run();
 
 		// Before: pending
 		let table = db.select().from(schema.tables).where(eq(schema.tables.id, 'status-table')).get();
@@ -376,13 +431,17 @@ describe('e2e: table status transitions', () => {
 
 	it('completed table has all turns persisted with correct round numbers', async () => {
 		db.insert(schema.parties).values({ id: 'round-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'round-table',
-			dilemma: 'Round test',
-			councilId: 'default',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'round-table', partyId: 'round-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'round-table',
+				dilemma: 'Round test',
+				councilId: 'default',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'round-table', partyId: 'round-party', role: 'initiator' })
+			.run();
 
 		for await (const _ of runDeliberation(db, {
 			tableId: 'round-table',
@@ -394,7 +453,11 @@ describe('e2e: table status transitions', () => {
 			// consume
 		}
 
-		const turns = db.select().from(schema.turns).where(eq(schema.turns.tableId, 'round-table')).all();
+		const turns = db
+			.select()
+			.from(schema.turns)
+			.where(eq(schema.turns.tableId, 'round-table'))
+			.all();
 
 		// Round 1: 5 persona turns
 		const round1 = turns.filter((t) => t.round === 1);
@@ -421,27 +484,33 @@ describe('e2e: model_config flows through deliberation', () => {
 
 	it('council with model_config passes it to completeFn', async () => {
 		// Create a council with explicit model_config
-		db.insert(schema.councils).values({
-			id: 'model-test',
-			name: 'Model Test Council',
-			personaIds: JSON.stringify(['elder']),
-			synthesisPrompt: 'Summarize.',
-			roundStructure: JSON.stringify({
-				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
-				synthesize: false
-			}),
-			modelConfig: JSON.stringify({ provider: 'openai', model: 'gpt-4o' }),
-			ownerParty: 'user'
-		}).run();
+		db.insert(schema.councils)
+			.values({
+				id: 'model-test',
+				name: 'Model Test Council',
+				personaIds: JSON.stringify(['elder']),
+				synthesisPrompt: 'Summarize.',
+				roundStructure: JSON.stringify({
+					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+					synthesize: false
+				}),
+				modelConfig: JSON.stringify({ provider: 'openai', model: 'gpt-4o' }),
+				ownerParty: 'user'
+			})
+			.run();
 
 		db.insert(schema.parties).values({ id: 'model-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'model-table',
-			dilemma: 'Model test',
-			councilId: 'model-test',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'model-table', partyId: 'model-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'model-table',
+				dilemma: 'Model test',
+				councilId: 'model-test',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'model-table', partyId: 'model-party', role: 'initiator' })
+			.run();
 
 		const receivedModels: string[] = [];
 		const trackingComplete = async (req: any) => {
@@ -474,32 +543,42 @@ describe('e2e: state guards and invalid transitions', () => {
 
 	it('cannot run deliberation on a completed table (orchestrator sets running first)', async () => {
 		db.insert(schema.parties).values({ id: 'guard-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'guard-completed',
-			dilemma: 'Already done',
-			councilId: 'default',
-			status: 'completed',
-			synthesis: 'Already synthesized.'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'guard-completed', partyId: 'guard-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'guard-completed',
+				dilemma: 'Already done',
+				councilId: 'default',
+				status: 'completed',
+				synthesis: 'Already synthesized.'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'guard-completed', partyId: 'guard-party', role: 'initiator' })
+			.run();
 
 		// The SSE endpoint would reject this with 409, but at the orchestrator
 		// level it will overwrite status to 'running'. The guard belongs in the
 		// endpoint layer. Verify the endpoint-level invariant here by confirming
 		// that the table's status was already 'completed' before we'd call the
 		// orchestrator.
-		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'guard-completed')).get();
+		const table = db
+			.select()
+			.from(schema.tables)
+			.where(eq(schema.tables.id, 'guard-completed'))
+			.get();
 		expect(table!.status).toBe('completed');
 	});
 
 	it('cannot run deliberation on a failed table', async () => {
 		db.insert(schema.parties).values({ id: 'fail-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'guard-failed',
-			dilemma: 'Previously failed',
-			councilId: 'default',
-			status: 'failed'
-		}).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'guard-failed',
+				dilemma: 'Previously failed',
+				councilId: 'default',
+				status: 'failed'
+			})
+			.run();
 
 		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'guard-failed')).get();
 		expect(table!.status).toBe('failed');
@@ -507,7 +586,11 @@ describe('e2e: state guards and invalid transitions', () => {
 	});
 
 	it('cannot delete a seeded council (owner_party is null)', () => {
-		const defaultCouncil = db.select().from(schema.councils).where(eq(schema.councils.id, 'default')).get();
+		const defaultCouncil = db
+			.select()
+			.from(schema.councils)
+			.where(eq(schema.councils.id, 'default'))
+			.get();
 		expect(defaultCouncil).toBeDefined();
 		expect(defaultCouncil!.ownerParty).toBeNull();
 		// CRUD factory returns 403 for entities with null ownerParty
@@ -515,25 +598,36 @@ describe('e2e: state guards and invalid transitions', () => {
 
 	it('cannot delete a council referenced by a table', () => {
 		// Create a custom council
-		db.insert(schema.councils).values({
-			id: 'ref-council',
-			name: 'Referenced Council',
-			personaIds: JSON.stringify(['elder']),
-			synthesisPrompt: 'n/a',
-			roundStructure: JSON.stringify({ rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }], synthesize: false }),
-			ownerParty: 'user'
-		}).run();
+		db.insert(schema.councils)
+			.values({
+				id: 'ref-council',
+				name: 'Referenced Council',
+				personaIds: JSON.stringify(['elder']),
+				synthesisPrompt: 'n/a',
+				roundStructure: JSON.stringify({
+					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+					synthesize: false
+				}),
+				ownerParty: 'user'
+			})
+			.run();
 
 		// Create a table that references it
-		db.insert(schema.tables).values({
-			id: 'ref-table',
-			dilemma: 'References the council',
-			councilId: 'ref-council',
-			status: 'completed'
-		}).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'ref-table',
+				dilemma: 'References the council',
+				councilId: 'ref-council',
+				status: 'completed'
+			})
+			.run();
 
 		// Verify the reference exists
-		const table = db.select().from(schema.tables).where(eq(schema.tables.councilId, 'ref-council')).get();
+		const table = db
+			.select()
+			.from(schema.tables)
+			.where(eq(schema.tables.councilId, 'ref-council'))
+			.get();
 		expect(table).toBeDefined();
 		// CRUD canDelete check returns error string → endpoint returns 409
 	});
@@ -550,13 +644,17 @@ describe('e2e: state guards and invalid transitions', () => {
 
 	it('running table transitions to failed on LLM error, not stuck in running', async () => {
 		db.insert(schema.parties).values({ id: 'err-party', displayName: 'me' }).run();
-		db.insert(schema.tables).values({
-			id: 'err-table',
-			dilemma: 'Will fail',
-			councilId: 'default',
-			status: 'pending'
-		}).run();
-		db.insert(schema.tableParties).values({ tableId: 'err-table', partyId: 'err-party', role: 'initiator' }).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'err-table',
+				dilemma: 'Will fail',
+				councilId: 'default',
+				status: 'pending'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'err-table', partyId: 'err-party', role: 'initiator' })
+			.run();
 
 		const failOnSecondCall = (() => {
 			let calls = 0;

@@ -16,7 +16,8 @@ type Db = BunSQLiteDatabase<typeof schema>;
  * Returns the number of tables recovered (useful for logging).
  */
 export function recoverOrphanedTables(db: Db): number {
-	const result = db.update(schema.tables)
+	const result = db
+		.update(schema.tables)
 		.set({ status: 'failed', updatedAt: Date.now() })
 		.where(eq(schema.tables.status, 'running'))
 		.run();

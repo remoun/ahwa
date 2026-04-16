@@ -40,9 +40,7 @@ export async function consumeSseStream<T>(opts: SseClientOptions<T>): Promise<vo
 		} catch {
 			// body wasn't JSON — fall through to generic message
 		}
-		onError?.(
-			detail ? `${detail} (HTTP ${res.status})` : `Failed to connect: HTTP ${res.status}`
-		);
+		onError?.(detail ? `${detail} (HTTP ${res.status})` : `Failed to connect: HTTP ${res.status}`);
 		return;
 	}
 

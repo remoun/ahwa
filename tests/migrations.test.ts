@@ -9,9 +9,7 @@ import { join } from 'path';
 const MIGRATIONS = join(process.cwd(), 'src/lib/server/db/migrations');
 
 function hasTable(client: Database, name: string): boolean {
-	return !!client
-		.query(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
-		.get(name);
+	return !!client.query(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(name);
 }
 
 describe('ensureMigrated', () => {
@@ -20,7 +18,15 @@ describe('ensureMigrated', () => {
 		const db = drizzle(client, { schema });
 		ensureMigrated(db, MIGRATIONS);
 
-		for (const name of ['parties', 'tables', 'table_parties', 'turns', 'personas', 'councils', 'memory']) {
+		for (const name of [
+			'parties',
+			'tables',
+			'table_parties',
+			'turns',
+			'personas',
+			'councils',
+			'memory'
+		]) {
 			expect(hasTable(client, name)).toBe(true);
 		}
 		expect(hasTable(client, '__drizzle_migrations')).toBe(true);

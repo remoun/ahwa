@@ -38,7 +38,9 @@ export function validateDeliberationRequest(
 		return { ok: false, status: 400, message: 'party parameter required' };
 	}
 
-	const link = db.select().from(schema.tableParties)
+	const link = db
+		.select()
+		.from(schema.tableParties)
 		.where(eq(schema.tableParties.tableId, tableId))
 		.all()
 		.find((tp) => tp.partyId === partyId);
@@ -48,7 +50,8 @@ export function validateDeliberationRequest(
 
 	// Atomic claim: only transitions pending → running.
 	// If another request already claimed it, changes === 0.
-	const result = db.update(schema.tables)
+	const result = db
+		.update(schema.tables)
 		.set({ status: 'running', updatedAt: Date.now() })
 		.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'pending')))
 		.run();

@@ -10,13 +10,17 @@
 		<div class="flex gap-4 text-sm flex-1">
 			<a
 				href="/"
-				class="hover:text-fg transition-colors {page.url.pathname === '/' ? 'text-fg font-medium' : 'text-fg-subtle'}"
+				class="hover:text-fg transition-colors {page.url.pathname === '/'
+					? 'text-fg font-medium'
+					: 'text-fg-subtle'}"
 			>
 				Tables
 			</a>
 			<a
 				href="/councils"
-				class="hover:text-fg transition-colors {page.url.pathname.startsWith('/councils') ? 'text-fg font-medium' : 'text-fg-subtle'}"
+				class="hover:text-fg transition-colors {page.url.pathname.startsWith('/councils')
+					? 'text-fg font-medium'
+					: 'text-fg-subtle'}"
 			>
 				Councils
 			</a>

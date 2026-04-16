@@ -12,7 +12,7 @@ describe('llm interface contract', () => {
 	// We test the interface shape, not the real provider (never hit APIs in tests).
 	// The real complete() wraps Vercel AI SDK; we verify the contract here.
 
-	const mockComplete = async (request: CompleteRequest): Promise<CompleteResult> => ({
+	const mockComplete = async (_request: CompleteRequest): Promise<CompleteResult> => ({
 		textStream: (async function* () {
 			yield 'Hello';
 			yield ' world';

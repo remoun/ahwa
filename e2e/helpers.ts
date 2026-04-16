@@ -8,7 +8,11 @@ export const DELIBERATION_TIMEOUT = 30_000;
  * Go to the home page, fill the dilemma, click "Set a table".
  * Returns the URL of the resulting table view.
  */
-export async function createTable(page: Page, dilemma: string, councilName?: string): Promise<string> {
+export async function createTable(
+	page: Page,
+	dilemma: string,
+	councilName?: string
+): Promise<string> {
 	await page.goto('/');
 	await page.getByPlaceholder(/describe the decision/i).fill(dilemma);
 	if (councilName) {
@@ -32,7 +36,11 @@ export async function waitForCompletion(page: Page) {
 /**
  * Create a table and wait for it to complete. Returns the table URL.
  */
-export async function runDeliberation(page: Page, dilemma: string, councilName?: string): Promise<string> {
+export async function runDeliberation(
+	page: Page,
+	dilemma: string,
+	councilName?: string
+): Promise<string> {
 	const url = await createTable(page, dilemma, councilName);
 	await waitForCompletion(page);
 	return url;

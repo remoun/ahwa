@@ -33,8 +33,8 @@
 	{title}
 	class="{sizeClasses[size]} rounded-full border transition-all cursor-pointer
 		{active
-			? 'bg-accent text-accent-fg border-accent shadow-sm'
-			: 'bg-surface text-accent border-border-strong hover:border-accent hover:shadow-sm'}"
+		? 'bg-accent text-accent-fg border-accent shadow-sm'
+		: 'bg-surface text-accent border-border-strong hover:border-accent hover:shadow-sm'}"
 >
 	{#if emoji}<span class="mr-1">{emoji}</span>{/if}{name}
 </button>

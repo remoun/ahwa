@@ -37,9 +37,7 @@ describe('consumeSseStream', () => {
 	});
 
 	it('skips malformed JSON lines', async () => {
-		const fetchImpl = mockFetch(
-			sseResponse([`data: not json\n\ndata: {"type":"ok"}\n\n`])
-		);
+		const fetchImpl = mockFetch(sseResponse([`data: not json\n\ndata: {"type":"ok"}\n\n`]));
 		const events: unknown[] = [];
 		await consumeSseStream({
 			url: '/stream',
@@ -93,9 +91,7 @@ describe('consumeSseStream', () => {
 	});
 
 	it('ignores non-data lines', async () => {
-		const fetchImpl = mockFetch(
-			sseResponse([`event: ping\ndata: {"type":"ok"}\n\n: comment\n\n`])
-		);
+		const fetchImpl = mockFetch(sseResponse([`event: ping\ndata: {"type":"ok"}\n\n: comment\n\n`]));
 		const events: unknown[] = [];
 		await consumeSseStream({
 			url: '/stream',

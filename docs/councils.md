@@ -8,69 +8,70 @@ deliberation structure, and a synthesis prompt. Councils live in the
 
 ```json
 {
-  "id": "my-council",
-  "name": "My Council",
-  "description": "Optional description shown in the UI.",
-  "personas": [
-    {
-      "id": "persona-1",
-      "name": "The Philosopher",
-      "emoji": "🤔",
-      "system_prompt": "You are a philosopher. You ask deep questions..."
-    },
-    {
-      "id": "persona-2",
-      "name": "The Pragmatist",
-      "emoji": "🔨",
-      "system_prompt": "You are a pragmatist. Focus on what works..."
-    }
-  ],
-  "round_structure": {
-    "rounds": [
-      {
-        "kind": "opening",
-        "prompt_suffix": "Give a 2-3 paragraph opening take."
-      },
-      {
-        "kind": "cross_examination",
-        "prompt_suffix": "Push back on what's wrong, concede what's right."
-      }
-    ],
-    "synthesize": true
-  },
-  "synthesis_prompt": "You are a neutral synthesizer. Produce: 1) Areas of convergence, 2) Live disagreements, 3) Recommendation, 4) Confidence level.",
-  "model_config": {
-    "provider": "anthropic",
-    "model": "claude-sonnet-4-20250514"
-  }
+	"id": "my-council",
+	"name": "My Council",
+	"description": "Optional description shown in the UI.",
+	"personas": [
+		{
+			"id": "persona-1",
+			"name": "The Philosopher",
+			"emoji": "🤔",
+			"system_prompt": "You are a philosopher. You ask deep questions..."
+		},
+		{
+			"id": "persona-2",
+			"name": "The Pragmatist",
+			"emoji": "🔨",
+			"system_prompt": "You are a pragmatist. Focus on what works..."
+		}
+	],
+	"round_structure": {
+		"rounds": [
+			{
+				"kind": "opening",
+				"prompt_suffix": "Give a 2-3 paragraph opening take."
+			},
+			{
+				"kind": "cross_examination",
+				"prompt_suffix": "Push back on what's wrong, concede what's right."
+			}
+		],
+		"synthesize": true
+	},
+	"synthesis_prompt": "You are a neutral synthesizer. Produce: 1) Areas of convergence, 2) Live disagreements, 3) Recommendation, 4) Confidence level.",
+	"model_config": {
+		"provider": "anthropic",
+		"model": "claude-sonnet-4-20250514"
+	}
 }
 ```
 
 ## Fields
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | Yes | Unique identifier (used as filename stem) |
-| `name` | Yes | Display name in the UI |
-| `description` | No | Shown in the council picker |
-| `personas` | Yes | Array of persona objects (minimum 1) |
-| `round_structure` | Yes | Defines the deliberation rounds |
-| `synthesis_prompt` | Yes | System prompt for the synthesizer |
-| `model_config` | No | Provider and model override |
+| Field              | Required | Description                               |
+| ------------------ | -------- | ----------------------------------------- |
+| `id`               | Yes      | Unique identifier (used as filename stem) |
+| `name`             | Yes      | Display name in the UI                    |
+| `description`      | No       | Shown in the council picker               |
+| `personas`         | Yes      | Array of persona objects (minimum 1)      |
+| `round_structure`  | Yes      | Defines the deliberation rounds           |
+| `synthesis_prompt` | Yes      | System prompt for the synthesizer         |
+| `model_config`     | No       | Provider and model override               |
 
 ### Persona fields
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | Yes | Unique identifier |
-| `name` | Yes | Display name |
-| `emoji` | Yes | Single emoji for the persona |
-| `system_prompt` | Yes | The persona's instructions |
-| `requires` | No | Array of feature flags (e.g., `["memory"]`) |
+| Field           | Required | Description                                 |
+| --------------- | -------- | ------------------------------------------- |
+| `id`            | Yes      | Unique identifier                           |
+| `name`          | Yes      | Display name                                |
+| `emoji`         | Yes      | Single emoji for the persona                |
+| `system_prompt` | Yes      | The persona's instructions                  |
+| `requires`      | No       | Array of feature flags (e.g., `["memory"]`) |
 
 ### Round structure
 
 Each round has:
+
 - `kind`: A label for the round type (e.g., `"opening"`, `"cross_examination"`, `"closing"`)
 - `prompt_suffix`: Appended to the user message for that round, telling personas how to respond
 

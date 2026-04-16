@@ -72,21 +72,21 @@ Ahwa is stopped, or use SQLite's `.backup` command for a hot backup.
 
 Set `AHWA_DATA_DIR` to control where the database lives:
 
-| Environment | Default |
-|-------------|---------|
-| Dev (`bun run dev`) | `./data` |
-| Docker | `/data` (mounted as a volume) |
-| YunoHost | Set by install script |
+| Environment         | Default                       |
+| ------------------- | ----------------------------- |
+| Dev (`bun run dev`) | `./data`                      |
+| Docker              | `/data` (mounted as a volume) |
+| YunoHost            | Set by install script         |
 
 ## Environment variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | HTTP port (default: 3000) |
-| `AHWA_DATA_DIR` | No | Data directory path |
-| `ANTHROPIC_API_KEY` | No* | Anthropic API key |
-| `OPENAI_API_KEY` | No* | OpenAI API key |
-| `OPENROUTER_API_KEY` | No* | OpenRouter API key |
-| `OLLAMA_BASE_URL` | No | Ollama URL (default: `http://localhost:11434/api`) |
+| Variable             | Required | Description                                        |
+| -------------------- | -------- | -------------------------------------------------- |
+| `PORT`               | No       | HTTP port (default: 3000)                          |
+| `AHWA_DATA_DIR`      | No       | Data directory path                                |
+| `ANTHROPIC_API_KEY`  | No\*     | Anthropic API key                                  |
+| `OPENAI_API_KEY`     | No\*     | OpenAI API key                                     |
+| `OPENROUTER_API_KEY` | No\*     | OpenRouter API key                                 |
+| `OLLAMA_BASE_URL`    | No       | Ollama URL (default: `http://localhost:11434/api`) |
 
-*At least one provider must be configured, or Ollama must be running locally.
+\*At least one provider must be configured, or Ollama must be running locally.

@@ -29,20 +29,14 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	// Verify council exists
-	const council = db
-		.select()
-		.from(schema.councils)
-		.where(eq(schema.councils.id, councilId))
-		.get();
+	const council = db.select().from(schema.councils).where(eq(schema.councils.id, councilId)).get();
 	if (!council) {
 		return json({ error: `Council not found: ${councilId}` }, { status: 400 });
 	}
 
 	// Create a party for this user (M1: one party per table)
 	const partyId = nanoid();
-	db.insert(schema.parties)
-		.values({ id: partyId, displayName: 'me' })
-		.run();
+	db.insert(schema.parties).values({ id: partyId, displayName: 'me' }).run();
 
 	// Create the table row
 	const tableId = nanoid();
@@ -56,9 +50,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		.run();
 
 	// Link party to table
-	db.insert(schema.tableParties)
-		.values({ tableId, partyId, role: 'initiator' })
-		.run();
+	db.insert(schema.tableParties).values({ tableId, partyId, role: 'initiator' }).run();
 
 	return json({ tableId, partyId });
 };

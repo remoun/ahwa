@@ -5,26 +5,27 @@ import { loadOrFail } from '$lib/server/load';
 import * as schema from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = () => loadOrFail('home', () => {
-	const tables = db
-		.select()
-		.from(schema.tables)
-		.where(eq(schema.tables.isDemo, 0))
-		.orderBy(desc(schema.tables.createdAt))
-		.all();
+export const load: PageServerLoad = () =>
+	loadOrFail('home', () => {
+		const tables = db
+			.select()
+			.from(schema.tables)
+			.where(eq(schema.tables.isDemo, 0))
+			.orderBy(desc(schema.tables.createdAt))
+			.all();
 
-	const councils = db.select().from(schema.councils).all();
+		const councils = db.select().from(schema.councils).all();
 
-	// M1: one party per table, so last-write-wins is fine. M3 will need
-	// to filter by role === 'initiator' when two-party tables exist.
-	const tableParties = db.select().from(schema.tableParties).all();
-	const partyByTable = new Map(tableParties.map((tp) => [tp.tableId, tp.partyId]));
+		// M1: one party per table, so last-write-wins is fine. M3 will need
+		// to filter by role === 'initiator' when two-party tables exist.
+		const tableParties = db.select().from(schema.tableParties).all();
+		const partyByTable = new Map(tableParties.map((tp) => [tp.tableId, tp.partyId]));
 
-	return {
-		tables: tables.map((t) => ({
-			...t,
-			partyId: partyByTable.get(t.id) ?? ''
-		})),
-		councils
-	};
-});
+		return {
+			tables: tables.map((t) => ({
+				...t,
+				partyId: partyByTable.get(t.id) ?? ''
+			})),
+			councils
+		};
+	});

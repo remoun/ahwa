@@ -13,20 +13,22 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 
 		const guard = validateDeliberationRequest(db, tableId, partyId);
 		if (!guard.ok) {
-			return new Response(
-				JSON.stringify({ error: guard.message }),
-				{ status: guard.status, headers: { 'Content-Type': 'application/json' } }
-			);
+			return new Response(JSON.stringify({ error: guard.message }), {
+				status: guard.status,
+				headers: { 'Content-Type': 'application/json' }
+			});
 		}
 
 		const { table } = guard;
-		const stream = toSseStream(runDeliberation(db, {
-			tableId,
-			dilemma: table.dilemma!,
-			councilId: table.councilId!,
-			partyId: partyId!,
-			signal: request.signal
-		}));
+		const stream = toSseStream(
+			runDeliberation(db, {
+				tableId,
+				dilemma: table.dilemma!,
+				councilId: table.councilId!,
+				partyId: partyId!,
+				signal: request.signal
+			})
+		);
 
 		return new Response(stream, {
 			headers: {
@@ -39,9 +41,9 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 		// Handler-level failures (e.g., DB unavailable) never reach the
 		// SSE stream, so return a JSON error body the client can surface.
 		console.error('SSE handler error:', err);
-		return new Response(
-			JSON.stringify({ error: errorMessage(err) }),
-			{ status: 500, headers: { 'Content-Type': 'application/json' } }
-		);
+		return new Response(JSON.stringify({ error: errorMessage(err) }), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
 	}
 };

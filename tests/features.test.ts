@@ -33,7 +33,10 @@ describe('feature flags', () => {
 	});
 
 	it('passes through personas with no requires field', () => {
-		const simple = [{ id: 'a', requires: null }, { id: 'b', requires: null }];
+		const simple = [
+			{ id: 'a', requires: null },
+			{ id: 'b', requires: null }
+		];
 		const { eligible } = filterPersonas(simple);
 		expect(eligible.length).toBe(2);
 	});

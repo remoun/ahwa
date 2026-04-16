@@ -13,10 +13,7 @@
 		closing: 'Closing Round'
 	};
 	function labelForRound(kind: string): string {
-		return (
-			ROUND_LABELS[kind] ??
-			kind.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-		);
+		return ROUND_LABELS[kind] ?? kind.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 	}
 
 	let { data }: { data: PageData } = $props();
@@ -140,17 +137,13 @@
 				// Reassign the whole array to guarantee reactivity — individual
 				// element or property mutations have been flaky in production.
 				turns = turns.map((t) =>
-					t.personaId === event.personaId && !t.complete
-						? { ...t, text: t.text + event.text }
-						: t
+					t.personaId === event.personaId && !t.complete ? { ...t, text: t.text + event.text } : t
 				);
 				break;
 
 			case 'persona_turn_completed':
 				turns = turns.map((t) =>
-					t.personaId === event.personaId && !t.complete
-						? { ...t, complete: true }
-						: t
+					t.personaId === event.personaId && !t.complete ? { ...t, complete: true } : t
 				);
 				activePersona = '';
 				break;
@@ -194,7 +187,9 @@
 
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<div class="flex items-center justify-between mb-6">
-		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors">&larr; Back to tables</a>
+		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors"
+			>&larr; Back to tables</a
+		>
 		{#if done}
 			<button
 				onclick={exportMarkdown}
@@ -206,7 +201,9 @@
 	</div>
 
 	{#if data.table?.dilemma}
-		<div class="mb-8 p-5 bg-gradient-to-br from-surface-muted to-surface-accent/50 rounded-xl border border-border-strong shadow-sm">
+		<div
+			class="mb-8 p-5 bg-gradient-to-br from-surface-muted to-surface-accent/50 rounded-xl border border-border-strong shadow-sm"
+		>
 			<p class="text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1.5">Dilemma</p>
 			<p class="text-fg leading-relaxed">{data.table.dilemma}</p>
 		</div>
@@ -220,7 +217,9 @@
 
 	<!-- Progress indicator -->
 	{#if !isCompleted && !done && (currentRound || activePersona)}
-		<div class="mb-6 p-3 bg-surface border border-border rounded-xl shadow-sm flex items-center gap-3">
+		<div
+			class="mb-6 p-3 bg-surface border border-border rounded-xl shadow-sm flex items-center gap-3"
+		>
 			<div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
 			<div class="text-sm text-accent">
 				<span class="font-medium">{currentRound}</span>
@@ -232,10 +231,12 @@
 	{/if}
 
 	{#if currentRound && !synthesizing && !done}
-		<h2 class="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">{currentRound}</h2>
+		<h2 class="text-xs font-semibold text-fg-subtle uppercase tracking-wide mb-3">
+			{currentRound}
+		</h2>
 	{/if}
 
-	{#each turns as turn}
+	{#each turns as turn, i (`${turn.personaId}-${turn.round}-${i}`)}
 		<TurnCard
 			emoji={turn.emoji}
 			personaName={turn.personaName}
@@ -254,7 +255,9 @@
 	{/if}
 
 	{#if isRunning && !done}
-		<div class="flex items-center gap-3 text-fg-subtle text-sm p-4 bg-surface border border-border rounded-xl shadow-sm">
+		<div
+			class="flex items-center gap-3 text-fg-subtle text-sm p-4 bg-surface border border-border rounded-xl shadow-sm"
+		>
 			<div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
 			Deliberation in progress. This page will update when it completes.
 		</div>

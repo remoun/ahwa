@@ -2,7 +2,14 @@
 <script lang="ts">
 	import StatusBadge from './StatusBadge.svelte';
 
-	let { tableId = '', partyId = '', dilemma = '', status = '', councilId = '', createdAt = 0 }: {
+	let {
+		tableId = '',
+		partyId = '',
+		dilemma = '',
+		status = '',
+		councilId = '',
+		createdAt = 0
+	}: {
 		tableId?: string;
 		partyId?: string;
 		dilemma?: string;

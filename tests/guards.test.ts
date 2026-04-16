@@ -17,18 +17,22 @@ describe('validateDeliberationRequest', () => {
 
 		createTable(db, 'pending-table', 'A pending dilemma', 'default', 'alice', 'pending');
 
-		db.insert(schema.tables).values({
-			id: 'completed-table',
-			dilemma: 'A completed dilemma',
-			councilId: 'default',
-			status: 'completed',
-			synthesis: 'Done.'
-		}).run();
-		db.insert(schema.tableParties).values({
-			tableId: 'completed-table',
-			partyId: 'alice',
-			role: 'initiator'
-		}).run();
+		db.insert(schema.tables)
+			.values({
+				id: 'completed-table',
+				dilemma: 'A completed dilemma',
+				councilId: 'default',
+				status: 'completed',
+				synthesis: 'Done.'
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({
+				tableId: 'completed-table',
+				partyId: 'alice',
+				role: 'initiator'
+			})
+			.run();
 
 		createTable(db, 'running-table', 'An in-progress dilemma', 'default', 'alice', 'running');
 		createTable(db, 'failed-table', 'A failed dilemma', 'default', 'alice', 'failed');

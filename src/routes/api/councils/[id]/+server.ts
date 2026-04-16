@@ -21,11 +21,7 @@ const config = {
 	}),
 	canDelete: (id: string) => {
 		// Check if any table references this council
-		const ref = db
-			.select()
-			.from(schema.tables)
-			.where(eq(schema.tables.councilId, id))
-			.get();
+		const ref = db.select().from(schema.tables).where(eq(schema.tables.councilId, id)).get();
 		return ref ? 'Council is referenced by existing tables' : null;
 	}
 };

@@ -51,10 +51,10 @@ surgery recovery. Optimize for:
      to add code the failing test doesn't demand.
   3. Refactor if needed, with tests green throughout.
   4. Commit.
-  Skipping red is the most common failure mode — it produces tests that pass
-  regardless of whether the code works. If a test passes on first run, it is
-  suspect; make it fail deliberately (break the code, tweak the assertion)
-  to confirm it actually exercises the behavior, then restore.
+     Skipping red is the most common failure mode — it produces tests that pass
+     regardless of whether the code works. If a test passes on first run, it is
+     suspect; make it fail deliberately (break the code, tweak the assertion)
+     to confirm it actually exercises the behavior, then restore.
 - **Commit after each green step** with a descriptive message so the user can
   `git reset` by voice without reading diffs. Commit messages follow
   conventional-commits lightly: `feat:`, `fix:`, `test:`, `refactor:`, `chore:`.
@@ -159,7 +159,7 @@ break one of these, stop and ask.
     - Are auto-deleted by a cleanup job after a short TTL
     - Are rendered with visible "demo" chrome in the UI so users never confuse
       them with owned tables
-    If a query could plausibly mix demo and owned tables, the query is wrong.
+      If a query could plausibly mix demo and owned tables, the query is wrong.
 
 12. **Production builds are single binaries.** Releases are cut as statically
     linked binaries via `bun build --compile`. Docker images and YunoHost
@@ -241,13 +241,14 @@ memory
 ```
 
 `round_structure` JSON shape:
+
 ```json
 {
-  "rounds": [
-    { "kind": "opening", "prompt_suffix": "Give a 2-3 paragraph opening take." },
-    { "kind": "cross_examination", "prompt_suffix": "..." }
-  ],
-  "synthesize": true
+	"rounds": [
+		{ "kind": "opening", "prompt_suffix": "Give a 2-3 paragraph opening take." },
+		{ "kind": "cross_examination", "prompt_suffix": "..." }
+	],
+	"synthesize": true
 }
 ```
 
@@ -257,11 +258,11 @@ The orchestrator maintains a set of available features. Personas whose
 `requires` array contains any unavailable feature are filtered out (with a
 visible warning in the UI) before a table opens.
 
-| Feature     | Available from | Notes                                      |
-|-------------|----------------|--------------------------------------------|
-| `memory`    | M3             | Per-party markdown memory passed to LLMs   |
-| `two_party` | M3             | Second party via share link                |
-| `sync`      | M4             | E2E-encrypted cross-device sync            |
+| Feature     | Available from | Notes                                    |
+| ----------- | -------------- | ---------------------------------------- |
+| `memory`    | M3             | Per-party markdown memory passed to LLMs |
+| `two_party` | M3             | Second party via share link              |
+| `sync`      | M4             | E2E-encrypted cross-device sync          |
 
 ## Milestones
 
@@ -445,7 +446,7 @@ confirm compatibility during M0 setup).
 **What not to test:**
 
 - Trivial getters, thin passthroughs, or framework code you don't own.
-- Visual styling. Add tests for component *behavior* (click this, see that
+- Visual styling. Add tests for component _behavior_ (click this, see that
   state change); do not test CSS.
 - Third-party libraries. Test your own adapter layer around them instead.
 

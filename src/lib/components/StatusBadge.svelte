@@ -9,10 +9,14 @@
 		failed: { bg: 'bg-danger-bg', fg: 'text-danger', dot: 'bg-danger' }
 	};
 
-	const cfg = $derived(config[status] ?? { bg: 'bg-surface-muted', fg: 'text-fg-muted', dot: 'bg-fg-subtle' });
+	const cfg = $derived(
+		config[status] ?? { bg: 'bg-surface-muted', fg: 'text-fg-muted', dot: 'bg-fg-subtle' }
+	);
 </script>
 
-<span class="text-xs px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5 {cfg.bg} {cfg.fg}">
+<span
+	class="text-xs px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5 {cfg.bg} {cfg.fg}"
+>
 	<span class="w-1.5 h-1.5 rounded-full {cfg.dot}"></span>
 	{status}
 </span>

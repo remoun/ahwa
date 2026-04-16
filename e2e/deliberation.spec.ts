@@ -92,9 +92,14 @@ test.describe('council management', () => {
 	test('clicking a persona chip expands its system prompt', async ({ page }) => {
 		await page.goto('/councils');
 
-		await page.getByRole('button', { name: /🌿 The Elder/ }).first().click();
+		await page
+			.getByRole('button', { name: /🌿 The Elder/ })
+			.first()
+			.click();
 
-		await expect(page.getByText(/60-year-old self|long life|patience for slow goods/i)).toBeVisible();
+		await expect(
+			page.getByText(/60-year-old self|long life|patience for slow goods/i)
+		).toBeVisible();
 	});
 
 	test('creating a custom council then deleting it', async ({ page }) => {
@@ -103,12 +108,18 @@ test.describe('council management', () => {
 
 		const councilName = 'E2E Test Council ' + Date.now();
 		await page.getByLabel('Name').fill(councilName);
-		await page.getByRole('button', { name: /🌿 The Elder/ }).first().click();
+		await page
+			.getByRole('button', { name: /🌿 The Elder/ })
+			.first()
+			.click();
 		await page.getByRole('button', { name: /^Create$/ }).click();
 
 		await expect(page.getByRole('heading', { name: councilName })).toBeVisible();
 
-		const councilCard = page.locator('div').filter({ has: page.getByRole('heading', { name: councilName }) }).first();
+		const councilCard = page
+			.locator('div')
+			.filter({ has: page.getByRole('heading', { name: councilName }) })
+			.first();
 		await councilCard.getByRole('button', { name: 'Delete' }).click();
 
 		await expect(page.getByRole('heading', { name: councilName })).not.toBeVisible();

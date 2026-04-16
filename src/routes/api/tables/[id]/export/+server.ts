@@ -11,11 +11,7 @@ import type { RequestHandler } from './$types';
  * M1 TODO: no party-membership check. See GET /api/tables/[id] for context.
  */
 export const GET: RequestHandler = async ({ params }) => {
-	const table = db
-		.select()
-		.from(schema.tables)
-		.where(eq(schema.tables.id, params.id))
-		.get();
+	const table = db.select().from(schema.tables).where(eq(schema.tables.id, params.id)).get();
 
 	if (!table) {
 		return new Response('Table not found', { status: 404 });
@@ -25,11 +21,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		return new Response('Table is not yet completed', { status: 400 });
 	}
 
-	const turns = db
-		.select()
-		.from(schema.turns)
-		.where(eq(schema.turns.tableId, params.id))
-		.all();
+	const turns = db.select().from(schema.turns).where(eq(schema.turns.tableId, params.id)).all();
 
 	const council = table.councilId
 		? db.select().from(schema.councils).where(eq(schema.councils.id, table.councilId)).get()

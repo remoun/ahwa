@@ -5,7 +5,7 @@
  * CLAUDE.md: "These are the invariant-protecting tests; they matter most."
  */
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { eq, and, like } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
 import { createTestDb, type TestDb } from './helpers';
@@ -17,21 +17,51 @@ describe('invariant #8: visible_to filtering', () => {
 		db = createTestDb();
 
 		// Two parties
-		db.insert(schema.parties).values([
-			{ id: 'alice', displayName: 'Alice' },
-			{ id: 'bob', displayName: 'Bob' }
-		]).run();
+		db.insert(schema.parties)
+			.values([
+				{ id: 'alice', displayName: 'Alice' },
+				{ id: 'bob', displayName: 'Bob' }
+			])
+			.run();
 
 		// Turns with different visibility
-		db.insert(schema.turns).values([
-			{ id: 't1', tableId: 'table-1', round: 1, partyId: 'alice', personaName: 'Elder', text: 'Alice sees this', visibleTo: JSON.stringify(['alice']) },
-			{ id: 't2', tableId: 'table-1', round: 1, partyId: 'bob', personaName: 'Elder', text: 'Bob sees this', visibleTo: JSON.stringify(['bob']) },
-			{ id: 't3', tableId: 'table-1', round: 1, partyId: 'alice', personaName: 'Mirror', text: 'Both see this', visibleTo: JSON.stringify(['alice', 'bob']) }
-		]).run();
+		db.insert(schema.turns)
+			.values([
+				{
+					id: 't1',
+					tableId: 'table-1',
+					round: 1,
+					partyId: 'alice',
+					personaName: 'Elder',
+					text: 'Alice sees this',
+					visibleTo: JSON.stringify(['alice'])
+				},
+				{
+					id: 't2',
+					tableId: 'table-1',
+					round: 1,
+					partyId: 'bob',
+					personaName: 'Elder',
+					text: 'Bob sees this',
+					visibleTo: JSON.stringify(['bob'])
+				},
+				{
+					id: 't3',
+					tableId: 'table-1',
+					round: 1,
+					partyId: 'alice',
+					personaName: 'Mirror',
+					text: 'Both see this',
+					visibleTo: JSON.stringify(['alice', 'bob'])
+				}
+			])
+			.run();
 	});
 
 	it('query for alice returns only turns visible to alice', () => {
-		const turns = db.select().from(schema.turns)
+		const turns = db
+			.select()
+			.from(schema.turns)
 			.where(like(schema.turns.visibleTo, '%alice%'))
 			.all();
 
@@ -41,9 +71,7 @@ describe('invariant #8: visible_to filtering', () => {
 	});
 
 	it('query for bob does not return alice-only turns', () => {
-		const turns = db.select().from(schema.turns)
-			.where(like(schema.turns.visibleTo, '%bob%'))
-			.all();
+		const turns = db.select().from(schema.turns).where(like(schema.turns.visibleTo, '%bob%')).all();
 
 		expect(turns.length).toBe(2);
 		expect(turns.map((t) => t.id)).toContain('t2');
@@ -58,17 +86,17 @@ describe('invariant #11: is_demo filtering', () => {
 	beforeEach(() => {
 		db = createTestDb();
 
-		db.insert(schema.tables).values([
-			{ id: 'owned-1', dilemma: 'Real dilemma', councilId: 'default', isDemo: 0 },
-			{ id: 'owned-2', dilemma: 'Another dilemma', councilId: 'default', isDemo: 0 },
-			{ id: 'demo-1', dilemma: 'Demo dilemma', councilId: 'default', isDemo: 1 }
-		]).run();
+		db.insert(schema.tables)
+			.values([
+				{ id: 'owned-1', dilemma: 'Real dilemma', councilId: 'default', isDemo: 0 },
+				{ id: 'owned-2', dilemma: 'Another dilemma', councilId: 'default', isDemo: 0 },
+				{ id: 'demo-1', dilemma: 'Demo dilemma', councilId: 'default', isDemo: 1 }
+			])
+			.run();
 	});
 
 	it('default table list excludes demo tables', () => {
-		const tables = db.select().from(schema.tables)
-			.where(eq(schema.tables.isDemo, 0))
-			.all();
+		const tables = db.select().from(schema.tables).where(eq(schema.tables.isDemo, 0)).all();
 
 		expect(tables.length).toBe(2);
 		expect(tables.map((t) => t.id)).toContain('owned-1');
@@ -77,9 +105,7 @@ describe('invariant #11: is_demo filtering', () => {
 	});
 
 	it('demo query returns only demo tables', () => {
-		const tables = db.select().from(schema.tables)
-			.where(eq(schema.tables.isDemo, 1))
-			.all();
+		const tables = db.select().from(schema.tables).where(eq(schema.tables.isDemo, 1)).all();
 
 		expect(tables.length).toBe(1);
 		expect(tables[0].id).toBe('demo-1');

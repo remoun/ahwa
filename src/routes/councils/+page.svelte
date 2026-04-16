@@ -29,7 +29,10 @@
 				roundStructure: {
 					rounds: [
 						{ kind: 'opening', prompt_suffix: 'Give a 2-3 paragraph opening take.' },
-						{ kind: 'cross_examination', prompt_suffix: 'Push back on what you think is wrong, concede what\'s right.' }
+						{
+							kind: 'cross_examination',
+							prompt_suffix: "Push back on what you think is wrong, concede what's right."
+						}
 					],
 					synthesize: true
 				}
@@ -82,7 +85,7 @@
 	<div class="flex items-center justify-between mb-6">
 		<h1 class="text-2xl font-bold text-fg">Councils</h1>
 		<button
-			onclick={() => showForm = !showForm}
+			onclick={() => (showForm = !showForm)}
 			class="text-sm px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent-hover transition-colors shadow-sm"
 		>
 			{showForm ? 'Cancel' : 'New council'}
@@ -90,14 +93,19 @@
 	</div>
 
 	{#if showForm}
-		<div class="mb-8 p-5 border border-border-strong rounded-xl bg-surface-muted/50 shadow-sm animate-fade-in">
+		<div
+			class="mb-8 p-5 border border-border-strong rounded-xl bg-surface-muted/50 shadow-sm animate-fade-in"
+		>
 			<h2 class="font-semibold mb-4 text-fg">Create a council</h2>
 
 			{#if error}
 				<p class="text-danger text-sm mb-3">{error}</p>
 			{/if}
 
-			<label for="council-name" class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1">Name</label>
+			<label
+				for="council-name"
+				class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1">Name</label
+			>
 			<input
 				id="council-name"
 				bind:value={name}
@@ -105,9 +113,11 @@
 				placeholder="My Custom Council"
 			/>
 
-			<span class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-2">Personas</span>
+			<span class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-2"
+				>Personas</span
+			>
 			<div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Persona selection">
-				{#each data.allPersonas as persona}
+				{#each data.allPersonas as persona (persona.id)}
 					<PersonaChip
 						emoji={persona.emoji ?? ''}
 						name={persona.name ?? ''}
@@ -117,7 +127,11 @@
 				{/each}
 			</div>
 
-			<label for="synthesis-prompt" class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1">Synthesis prompt</label>
+			<label
+				for="synthesis-prompt"
+				class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1"
+				>Synthesis prompt</label
+			>
 			<textarea
 				id="synthesis-prompt"
 				bind:value={synthesisPrompt}
@@ -135,13 +149,16 @@
 	{/if}
 
 	<div class="space-y-3">
-		{#each data.councils as council}
+		{#each data.councils as council (council.id)}
 			<div class="p-4 bg-surface border border-border rounded-xl shadow-sm">
 				<div class="flex items-start justify-between">
 					<div>
 						<h3 class="font-medium text-fg">{council.name}</h3>
 						{#if council.isSeeded}
-							<span class="inline-block mt-1 px-1.5 py-0.5 bg-surface-accent text-fg-muted rounded text-xs">built-in</span>
+							<span
+								class="inline-block mt-1 px-1.5 py-0.5 bg-surface-accent text-fg-muted rounded text-xs"
+								>built-in</span
+							>
 						{/if}
 					</div>
 					{#if !council.isSeeded}
@@ -156,7 +173,7 @@
 
 				<!-- Persona chips -->
 				<div class="mt-3 flex flex-wrap gap-1.5">
-					{#each council.personas as persona}
+					{#each council.personas as persona (persona.id)}
 						<PersonaChip
 							emoji={persona.emoji ?? ''}
 							name={persona.name ?? ''}
@@ -169,11 +186,16 @@
 				</div>
 
 				<!-- Expanded persona prompt -->
-				{#each council.personas as persona}
+				{#each council.personas as persona (persona.id)}
 					{#if expandedPersona === `${council.id}-${persona.id}`}
-						<div class="mt-3 p-3 bg-surface-muted/50 border border-border rounded-lg animate-fade-in">
+						<div
+							class="mt-3 p-3 bg-surface-muted/50 border border-border rounded-lg animate-fade-in"
+						>
 							<div class="flex items-center gap-2 mb-2">
-								<span class="w-7 h-7 rounded-full bg-surface-accent border border-border-strong flex items-center justify-center text-sm">{persona.emoji}</span>
+								<span
+									class="w-7 h-7 rounded-full bg-surface-accent border border-border-strong flex items-center justify-center text-sm"
+									>{persona.emoji}</span
+								>
 								<span class="text-sm font-medium text-fg">{persona.name}</span>
 							</div>
 							<p class="text-xs text-accent/70 leading-relaxed">{persona.systemPrompt}</p>

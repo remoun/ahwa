@@ -108,7 +108,7 @@ describe('orchestrator', () => {
 
 	it('stores synthesis on the table row', async () => {
 		createTable(db, 'tbl-6', 'Test dilemma', 'test-council', 'party-1');
-		for await (const event of runDeliberation(db, {
+		for await (const _ of runDeliberation(db, {
 			tableId: 'tbl-6',
 			dilemma: 'Test dilemma',
 			councilId: 'test-council',
@@ -151,17 +151,19 @@ describe('orchestrator', () => {
 
 	it('passes council model_config to completeFn', async () => {
 		// Create a council with explicit model_config
-		db.insert(schema.councils).values({
-			id: 'configured-council',
-			name: 'Configured',
-			personaIds: JSON.stringify(['elder']),
-			synthesisPrompt: 'Synthesize.',
-			roundStructure: JSON.stringify({
-				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
-				synthesize: false
-			}),
-			modelConfig: JSON.stringify({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' })
-		}).run();
+		db.insert(schema.councils)
+			.values({
+				id: 'configured-council',
+				name: 'Configured',
+				personaIds: JSON.stringify(['elder']),
+				synthesisPrompt: 'Synthesize.',
+				roundStructure: JSON.stringify({
+					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+					synthesize: false
+				}),
+				modelConfig: JSON.stringify({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' })
+			})
+			.run();
 
 		createTable(db, 'tbl-cfg', 'Config test', 'configured-council', 'party-1');
 
@@ -236,25 +238,29 @@ describe('orchestrator', () => {
 
 	it('filters out personas with unmet feature requirements', async () => {
 		// Add a persona that requires "memory" (unavailable in M1)
-		db.insert(schema.personas).values({
-			id: 'needs-memory',
-			name: 'Memory Persona',
-			emoji: '🧠',
-			systemPrompt: 'You need memory.',
-			requires: JSON.stringify(['memory'])
-		}).run();
+		db.insert(schema.personas)
+			.values({
+				id: 'needs-memory',
+				name: 'Memory Persona',
+				emoji: '🧠',
+				systemPrompt: 'You need memory.',
+				requires: JSON.stringify(['memory'])
+			})
+			.run();
 
 		// Create a council that includes both a normal persona and the gated one
-		db.insert(schema.councils).values({
-			id: 'gated-council',
-			name: 'Gated',
-			personaIds: JSON.stringify(['elder', 'needs-memory']),
-			synthesisPrompt: 'Summarize.',
-			roundStructure: JSON.stringify({
-				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
-				synthesize: false
+		db.insert(schema.councils)
+			.values({
+				id: 'gated-council',
+				name: 'Gated',
+				personaIds: JSON.stringify(['elder', 'needs-memory']),
+				synthesisPrompt: 'Summarize.',
+				roundStructure: JSON.stringify({
+					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+					synthesize: false
+				})
 			})
-		}).run();
+			.run();
 
 		createTable(db, 'tbl-gated', 'Feature test', 'gated-council', 'party-1');
 
@@ -276,16 +282,18 @@ describe('orchestrator', () => {
 	});
 
 	it('skips synthesis when council has synthesize: false', async () => {
-		db.insert(schema.councils).values({
-			id: 'no-synth',
-			name: 'No Synthesis',
-			personaIds: JSON.stringify(['elder']),
-			synthesisPrompt: 'Should not run.',
-			roundStructure: JSON.stringify({
-				rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
-				synthesize: false
+		db.insert(schema.councils)
+			.values({
+				id: 'no-synth',
+				name: 'No Synthesis',
+				personaIds: JSON.stringify(['elder']),
+				synthesisPrompt: 'Should not run.',
+				roundStructure: JSON.stringify({
+					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+					synthesize: false
+				})
 			})
-		}).run();
+			.run();
 
 		createTable(db, 'tbl-nosynth', 'No synthesis test', 'no-synth', 'party-1');
 

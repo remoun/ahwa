@@ -2,6 +2,7 @@
 	"name": "ahwa",
 	"version": "0.0.1",
 	"devDependencies": {
+		"@eslint/js": "^10.0.1",
 		"@playwright/test": "^1.59.1",
 		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/kit": "^2.57.0",
@@ -11,10 +12,17 @@
 		"@types/node": "^24",
 		"drizzle-kit": "^0.31.10",
 		"drizzle-orm": "^0.45.2",
+		"eslint": "^10.2.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.17.0",
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^3.5.1",
 		"svelte": "^5.55.2",
 		"svelte-check": "^4.4.6",
+		"svelte-eslint-parser": "^1.6.0",
 		"tailwindcss": "^4.2.2",
 		"typescript": "^6.0.2",
+		"typescript-eslint": "^8.58.2",
 		"vite": "^8.0.7"
 	},
 	"private": true,
@@ -31,7 +39,9 @@
 		"db:studio": "drizzle-kit studio",
 		"build:binary": "bun --bun vite build && bun build --compile build/index.js --outfile ahwa",
 		"test:e2e": "playwright test",
-		"test:e2e:ui": "playwright test --ui"
+		"test:e2e:ui": "playwright test --ui",
+		"lint": "eslint . && prettier --check .",
+		"format": "prettier --write ."
 	},
 	"type": "module",
 	"dependencies": {

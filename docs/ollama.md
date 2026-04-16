@@ -48,10 +48,10 @@ Or edit the council JSON directly:
 
 ```json
 {
-  "model_config": {
-    "provider": "ollama",
-    "model": "qwen2.5:14b"
-  }
+	"model_config": {
+		"provider": "ollama",
+		"model": "qwen2.5:14b"
+	}
 }
 ```
 

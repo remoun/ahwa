@@ -46,7 +46,9 @@ describe('parseJson', () => {
 	});
 
 	it('throws on schema mismatch with context', () => {
-		expect(() => parseJson('{"name":"a"}', Schema, 'my-field')).toThrow(/my-field.*schema validation failed/);
+		expect(() => parseJson('{"name":"a"}', Schema, 'my-field')).toThrow(
+			/my-field.*schema validation failed/
+		);
 	});
 
 	it('uses default context when none provided', () => {
