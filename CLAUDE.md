@@ -43,7 +43,12 @@ surgery recovery. Optimize for:
   Specs describe inputs, outputs, and side effects — never implementation.
   If you cannot write a testable spec for the task, the task is underspecified;
   stop and ask the user for clarification.
-- **Red-green TDD, strictly.** Every behavior change follows this loop:
+- **Red-green TDD, by default.** This is the posture for every behavior
+  change — not a practice reserved for "important" work. Default to the
+  loop below; only deviate (with a one-sentence note in the commit) for
+  changes that are genuinely untestable (pure CSS, copy, config). If you
+  catch yourself writing production code without a failing test in front
+  of it, stop and write the test.
   1. Write the test. Run it. Confirm it fails for the right reason (red).
      "Right reason" means the assertion fires on the behavior under test, not
      an import error or missing file.
@@ -55,6 +60,9 @@ surgery recovery. Optimize for:
      regardless of whether the code works. If a test passes on first run, it is
      suspect; make it fail deliberately (break the code, tweak the assertion)
      to confirm it actually exercises the behavior, then restore.
+  Adding tests *after* the code has shipped is the anti-pattern this rule
+  exists to prevent — if you find yourself doing that, treat it as a bug
+  in your process, not a neutral alternative.
 - **Commit after each green step** with a descriptive message so the user can
   `git reset` by voice without reading diffs. Commit messages follow
   conventional-commits lightly: `feat:`, `fix:`, `test:`, `refactor:`, `chore:`.

@@ -29,7 +29,7 @@
 	<title>Ahwa - Your Tables</title>
 </svelte:head>
 
-<main class="max-w-2xl mx-auto p-4 sm:p-8">
+<main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<section class="mb-12">
 		<h1 class="text-2xl font-bold mb-1 text-fg">Set a table</h1>
 		<p class="text-fg-subtle text-sm mb-5">Pose a dilemma. The council will deliberate.</p>
