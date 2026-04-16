@@ -3,10 +3,10 @@
   "dialect": "sqlite",
   "entries": [
     {
-      "idx": 0,
+      "idx": 1,
       "version": "6",
       "when": 1776336637647,
-      "tag": "0000_perpetual_jigsaw",
+      "tag": "0001_init",
       "breakpoints": true
     }
   ]
