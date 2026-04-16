@@ -49,6 +49,8 @@
 		"@ai-sdk/openai": "^3.0.52",
 		"@openrouter/ai-sdk-provider": "^2.5.1",
 		"ai": "^6.0.159",
+		"dompurify": "^3.4.0",
+		"marked": "^18.0.0",
 		"nanoid": "^5.1.7",
 		"ollama-ai-provider-v2": "^3.5.0",
 		"zod": "^4.3.6"

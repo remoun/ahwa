@@ -1,5 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+	import { renderMarkdown } from '$lib/markdown';
+
 	let {
 		text = '',
 		streaming = false
@@ -7,6 +9,8 @@
 		text?: string;
 		streaming?: boolean;
 	} = $props();
+
+	const html = $derived(renderMarkdown(text));
 </script>
 
 <div
@@ -21,7 +25,8 @@
 		</div>
 		<h2 class="text-lg font-bold text-fg">Synthesis</h2>
 	</div>
-	<div class="whitespace-pre-wrap text-fg text-sm leading-relaxed">
-		{text}{#if streaming}<span class="animate-pulse text-accent">|</span>{/if}
+	<div class="prose-sm text-fg text-sm leading-relaxed">
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+		{@html html}{#if streaming}<span class="animate-pulse text-accent">|</span>{/if}
 	</div>
 </div>
