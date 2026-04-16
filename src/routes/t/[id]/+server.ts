@@ -6,6 +6,7 @@ import { toSseStream } from '$lib/server/sse';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, url, request }) => {
+	console.log(`[SSE] handler v2 start id=${params.id} party=${url.searchParams.get('party')}`);
 	try {
 		const tableId = params.id;
 		const partyId = url.searchParams.get('party');
