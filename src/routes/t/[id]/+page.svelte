@@ -4,6 +4,7 @@
 	import TurnCard from '$lib/components/TurnCard.svelte';
 	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
 	import { consumeSseStream } from '$lib/sse-client';
+	import type { SseEvent } from '$lib/schemas/events';
 	import type { PageData } from './$types';
 
 	/** Display labels per round kind; unknown kinds fall back to title-case. */
@@ -128,8 +129,12 @@
 		};
 	});
 
-	function handleEvent(event: any) {
+	function handleEvent(event: SseEvent) {
 		switch (event.type) {
+			case 'table_opened':
+				// No UI state to update; the page already knows its tableId.
+				break;
+
 			case 'round_started':
 				currentRound = labelForRound(event.kind);
 				currentRoundNum = event.round;
@@ -239,9 +244,7 @@
 			soft drop shadow, serif body. Keeps the question feeling like a
 			note on the table rather than a form echo.
 		-->
-		<figure
-			class="mb-10 px-6 py-5 bg-surface border border-border-strong rounded-xl shadow-md"
-		>
+		<figure class="mb-10 px-6 py-5 bg-surface border border-border-strong rounded-xl shadow-md">
 			<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-2">
 				Dilemma
 			</figcaption>
@@ -283,10 +286,7 @@
 				conversation thread rather than a pile of disconnected cards. Sits
 				behind the avatars via -z-10 so they punch through.
 			-->
-			<div
-				class="absolute left-5 top-5 bottom-5 w-px bg-border -z-10"
-				aria-hidden="true"
-			></div>
+			<div class="absolute left-5 top-5 bottom-5 w-px bg-border -z-10" aria-hidden="true"></div>
 			{#each turns as turn, i (`${turn.personaId}-${turn.round}-${i}`)}
 				<TurnCard
 					emoji={turn.emoji}

@@ -28,6 +28,7 @@ export default [
 				AbortSignal: 'readonly',
 				DOMException: 'readonly',
 				URL: 'readonly',
+				navigator: 'readonly',
 				process: 'readonly',
 				console: 'readonly',
 				setInterval: 'readonly',

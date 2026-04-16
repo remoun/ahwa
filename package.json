@@ -38,6 +38,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"build:binary": "bun --bun vite build && bun build --compile build/index.js --outfile ahwa",
+		"test": "bun test",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"lint": "eslint . && prettier --check .",
