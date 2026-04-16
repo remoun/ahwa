@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { loadOrFail } from '$lib/server/load';
 import * as schema from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const load: PageServerLoad = ({ params, url }) => loadOrFail('t/[id]', () => {
 	const tableId = params.id;
 	const partyId = url.searchParams.get('party') ?? '';
 
@@ -29,4 +30,4 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		: null;
 
 	return { tableId, partyId, table, turns, council };
-};
+});

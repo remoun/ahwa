@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { loadOrFail } from '$lib/server/load';
 import * as schema from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = () => loadOrFail('home', () => {
 	const tables = db
 		.select()
 		.from(schema.tables)
@@ -14,7 +15,6 @@ export const load: PageServerLoad = async () => {
 
 	const councils = db.select().from(schema.councils).all();
 
-	// Look up party IDs for each table so we can link to them
 	const tableParties = db.select().from(schema.tableParties).all();
 	const partyByTable = new Map<string, string>();
 	for (const tp of tableParties) {
@@ -30,4 +30,4 @@ export const load: PageServerLoad = async () => {
 		})),
 		councils
 	};
-};
+});
