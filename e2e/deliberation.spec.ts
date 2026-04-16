@@ -22,6 +22,11 @@ test.describe('deliberation flow', () => {
 		await expect(page.getByText('The Elder').first()).toBeVisible();
 		await expect(page.getByText('The Mirror').first()).toBeVisible();
 
+		// Verify actual token content rendered — catches reactivity bugs
+		// where the turn cards appear but the streamed text is missing.
+		// mockComplete yields "[PersonaName] This is a mocked response..."
+		await expect(page.getByText(/mocked response for E2E testing/i).first()).toBeVisible();
+
 		await expect(page.getByRole('heading', { name: 'Synthesis' })).toBeVisible();
 		await expect(page.getByRole('button', { name: /export markdown/i })).toBeVisible();
 	});
