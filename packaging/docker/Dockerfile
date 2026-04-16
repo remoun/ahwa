@@ -15,21 +15,12 @@ COPY . .
 # --bun forces Bun's module resolver so bun:sqlite is understood during build
 RUN bun run build
 
-# Production stage
+# Production stage — copy the whole /app directory, which includes
+# build/, node_modules/, councils/, personas/, package.json, etc.
 FROM oven/bun:1.3.11-slim
 
 WORKDIR /app
-
-# Copy built output
-COPY --from=build /app/build ./build
-
-# Copy node_modules — adapter-node externalizes some runtime deps
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./
-
-# Seed data — council and persona JSON files
-COPY --from=build /app/councils ./councils
-COPY --from=build /app/personas ./personas
+COPY --from=build /app ./
 
 # Data directory — mount a volume here for persistence
 ENV AHWA_DATA_DIR=/data
