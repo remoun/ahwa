@@ -94,11 +94,39 @@ function createModel(config: ModelConfig): any {
 }
 
 /**
+ * Deterministic mock response for E2E tests. Enabled by AHWA_MOCK_LLM=1.
+ * Yields a short labeled response identifying the persona from the system
+ * prompt — same pattern as tests/helpers.ts mockComplete().
+ */
+function mockComplete(request: CompleteRequest): CompleteResult {
+	const prompt = request.system.toLowerCase();
+	let name = 'Persona';
+	if (prompt.includes('elder')) name = 'Elder';
+	else if (prompt.includes('mirror')) name = 'Mirror';
+	else if (prompt.includes('engineer') || prompt.includes('systems')) name = 'Engineer';
+	else if (prompt.includes('weaver') || prompt.includes('relational')) name = 'Weaver';
+	else if (prompt.includes('instigator') || prompt.includes('agency')) name = 'Instigator';
+	else if (prompt.includes('synthesiz')) name = 'Synthesizer';
+
+	return {
+		textStream: (async function* () {
+			yield `[${name}] `;
+			yield 'This is a mocked response for E2E testing.';
+		})()
+	};
+}
+
+/**
  * Single provider abstraction per invariant #6.
  * The orchestrator calls this and nothing else.
  * Routes to the correct provider based on modelConfig.
  */
 export async function complete(request: CompleteRequest): Promise<CompleteResult> {
+	// Mock mode for E2E tests — no real LLM calls
+	if (process.env.AHWA_MOCK_LLM === '1') {
+		return mockComplete(request);
+	}
+
 	const config = resolveModelConfig(request.modelConfig);
 	const model = createModel(config);
 

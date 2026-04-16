@@ -26,3 +26,12 @@ vite.config.ts.timestamp-*
 
 # SQLite
 *.db
+
+# Playwright
+/test-results
+/playwright-report
+/playwright/.cache
+/e2e/.data
+
+# Compiled binary
+/ahwa
