@@ -29,6 +29,8 @@ export default [
 				DOMException: 'readonly',
 				URL: 'readonly',
 				navigator: 'readonly',
+				HTMLElement: 'readonly',
+				IntersectionObserver: 'readonly',
 				process: 'readonly',
 				console: 'readonly',
 				setInterval: 'readonly',

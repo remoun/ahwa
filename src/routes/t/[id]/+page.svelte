@@ -201,6 +201,27 @@
 		}
 	}
 
+	/**
+	 * Detect when the sticky dilemma card has actually stuck. A 1px sentinel
+	 * placed immediately above it leaves the viewport at the same moment the
+	 * figure pins to top-14 (rootMargin matches that offset). Toggling a
+	 * `stuck` class lets us shrink the card to stay out of the reading
+	 * column's way on mobile without ever using a scroll listener.
+	 */
+	let sentinel: HTMLElement | undefined = $state();
+	let dilemmaStuck = $state(false);
+	$effect(() => {
+		if (!sentinel) return;
+		const io = new IntersectionObserver(
+			([entry]) => {
+				dilemmaStuck = !entry.isIntersecting;
+			},
+			{ rootMargin: '-56px 0px 0px 0px', threshold: 0 }
+		);
+		io.observe(sentinel);
+		return () => io.disconnect();
+	});
+
 	let copyState = $state<'idle' | 'copied' | 'error'>('idle');
 	async function copyMarkdown() {
 		try {
@@ -247,14 +268,26 @@
 			(warm paper tone, soft drop shadow, serif body) and literally:
 			sticky below the nav so the question stays in view while you
 			scroll through the council's turns. top-14 matches Nav's h-14.
+			Once stuck, the card shrinks (see dilemmaStuck above) so it
+			takes less vertical real estate on mobile.
 		-->
+		<div bind:this={sentinel} aria-hidden="true" class="h-px"></div>
 		<figure
-			class="sticky top-14 z-10 mb-10 px-6 py-5 bg-surface border border-border-strong rounded-xl shadow-md"
+			class="sticky top-14 z-10 bg-surface border border-border-strong rounded-xl shadow-md transition-all
+				{dilemmaStuck ? 'mb-10 px-4 py-2' : 'mb-10 px-6 py-5'}"
 		>
-			<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-2">
-				Dilemma
-			</figcaption>
-			<p class="font-display text-xl text-fg leading-relaxed">{data.table.dilemma}</p>
+			{#if !dilemmaStuck}
+				<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-2">
+					Dilemma
+				</figcaption>
+			{/if}
+			<p
+				class="font-display text-fg leading-relaxed {dilemmaStuck
+					? 'text-base line-clamp-1'
+					: 'text-xl'}"
+			>
+				{data.table.dilemma}
+			</p>
 		</figure>
 	{/if}
 
