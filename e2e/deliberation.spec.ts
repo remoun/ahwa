@@ -21,8 +21,9 @@ test.describe('deliberation flow', () => {
 		// Should navigate to the table view
 		await expect(page).toHaveURL(/\/t\/.+\?party=.+/);
 
-		// Dilemma should render at the top
-		await expect(page.getByText('Should I take the new job?')).toBeVisible();
+		// Dilemma should render at the top (scope to main to avoid the
+		// SvelteKit aria-live announcer duplicate)
+		await expect(page.getByRole('main').getByText('Should I take the new job?')).toBeVisible();
 
 		// Wait for deliberation to complete. Mock LLM produces labeled output
 		// like "[Elder] This is a mocked response..." for each persona.
@@ -54,7 +55,7 @@ test.describe('deliberation flow', () => {
 		await page.goto(tableUrl);
 
 		// Should show historical data immediately — no "Connecting..."
-		await expect(page.getByText('Historical view test')).toBeVisible();
+		await expect(page.getByRole('main').getByText('Historical view test')).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'Synthesis' })).toBeVisible();
 		await expect(page.getByText(/connecting to the council/i)).not.toBeVisible();
 	});
