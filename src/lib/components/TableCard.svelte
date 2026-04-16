@@ -5,6 +5,7 @@
 	let {
 		tableId = '',
 		partyId = '',
+		token = '',
 		dilemma = '',
 		status = '',
 		councilId = '',
@@ -12,6 +13,7 @@
 	}: {
 		tableId?: string;
 		partyId?: string;
+		token?: string;
 		dilemma?: string;
 		status?: string;
 		councilId?: string;
@@ -31,7 +33,7 @@
 </script>
 
 <a
-	href="/t/{tableId}?party={partyId}"
+	href={token ? `/t/${tableId}?party=${partyId}&token=${token}` : `/t/${tableId}?party=${partyId}`}
 	class="block p-4 bg-surface border border-border rounded-xl shadow-sm hover:shadow-md hover:border-border-strong transition-all"
 >
 	<div class="flex items-start justify-between gap-3">

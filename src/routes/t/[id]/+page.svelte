@@ -114,8 +114,11 @@
 		const onUnload = () => controller.abort();
 		window.addEventListener('beforeunload', onUnload);
 
+		const sseUrl = data.token
+			? `/t/${data.tableId}?party=${data.partyId}&token=${data.token}`
+			: `/t/${data.tableId}?party=${data.partyId}`;
 		consumeSseStream({
-			url: `/t/${data.tableId}?party=${data.partyId}`,
+			url: sseUrl,
 			signal: controller.signal,
 			onEvent: handleEvent,
 			onError: (message) => {

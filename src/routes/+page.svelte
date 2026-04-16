@@ -100,6 +100,7 @@
 					<TableCard
 						tableId={table.id}
 						partyId={table.partyId}
+						token={table.token}
 						dilemma={table.dilemma ?? ''}
 						status={table.status ?? 'pending'}
 						councilId={table.councilId ?? ''}
