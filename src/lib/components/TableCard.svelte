@@ -32,16 +32,16 @@
 
 <a
 	href="/t/{tableId}?party={partyId}"
-	class="block p-4 bg-white border border-amber-100 rounded-xl shadow-sm hover:shadow-md hover:border-amber-200 transition-all"
+	class="block p-4 bg-white border border-sky-100 rounded-xl shadow-sm hover:shadow-md hover:border-sky-200 transition-all"
 >
 	<div class="flex items-start justify-between gap-3">
-		<p class="text-amber-950 text-sm line-clamp-2 flex-1">{dilemma}</p>
+		<p class="text-sky-950 text-sm line-clamp-2 flex-1">{dilemma}</p>
 		<span class="text-xs px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5 {cfg.bg}">
 			<span class="w-1.5 h-1.5 rounded-full {cfg.dot}"></span>
 			{status}
 		</span>
 	</div>
-	<div class="mt-2 flex items-center gap-3 text-xs text-amber-600/60">
+	<div class="mt-2 flex items-center gap-3 text-xs text-sky-600/60">
 		<span>{councilId}</span>
 		{#if createdAt}
 			<span>{timeAgo(createdAt)}</span>

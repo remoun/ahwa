@@ -1,7 +1,6 @@
 @import 'tailwindcss';
 
 @theme {
-	--color-warm-800: #44403c;
 	--animate-fade-in: fade-in 0.3s ease-out;
 }
 
@@ -17,6 +16,6 @@
 }
 
 body {
-	background-color: #fffbf5;
-	color: #44403c;
+	background-color: #f8fbff;
+	color: #334155;
 }

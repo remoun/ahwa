@@ -4,7 +4,7 @@
 </script>
 
 <main class="max-w-2xl mx-auto p-8 text-center">
-	<h1 class="text-5xl font-bold text-amber-200 mb-4">{page.status}</h1>
-	<p class="text-amber-800">{page.error?.message ?? 'Something went wrong.'}</p>
-	<a href="/" class="inline-block mt-6 text-sm text-amber-600/60 hover:text-amber-900 transition-colors">&larr; Back to tables</a>
+	<h1 class="text-5xl font-bold text-sky-200 mb-4">{page.status}</h1>
+	<p class="text-sky-800">{page.error?.message ?? 'Something went wrong.'}</p>
+	<a href="/" class="inline-block mt-6 text-sm text-sky-600/60 hover:text-sky-900 transition-colors">&larr; Back to tables</a>
 </main>
