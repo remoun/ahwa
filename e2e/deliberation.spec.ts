@@ -92,11 +92,7 @@ test.describe('council management', () => {
 	test('clicking a persona chip expands its system prompt', async ({ page }) => {
 		await page.goto('/councils');
 
-		await page
-			.getByRole('button')
-			.filter({ hasText: 'The Elder' })
-			.first()
-			.click();
+		await page.getByRole('button').filter({ hasText: 'The Elder' }).first().click();
 
 		await expect(
 			page.getByText(/60-year-old self|long life|patience for slow goods/i)
@@ -109,11 +105,7 @@ test.describe('council management', () => {
 
 		const councilName = 'E2E Test Council ' + Date.now();
 		await page.getByLabel('Name').fill(councilName);
-		await page
-			.getByRole('button')
-			.filter({ hasText: 'The Elder' })
-			.first()
-			.click();
+		await page.getByRole('button').filter({ hasText: 'The Elder' }).first().click();
 		await page.getByRole('button', { name: /^Create$/ }).click();
 
 		await expect(page.getByRole('heading', { name: councilName })).toBeVisible();

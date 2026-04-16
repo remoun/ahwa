@@ -17,7 +17,7 @@
 			class="w-8 h-8 rounded-full bg-surface-accent flex items-center justify-center text-base"
 			aria-hidden="true"
 		>
-			&#x2728;
+			✨
 		</div>
 		<h2 class="text-lg font-bold text-fg">Synthesis</h2>
 	</div>

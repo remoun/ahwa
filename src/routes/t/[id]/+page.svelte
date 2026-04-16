@@ -187,9 +187,7 @@
 
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<div class="flex items-center justify-between mb-6">
-		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors"
-			>&larr; Back to tables</a
-		>
+		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors">← Back to tables</a>
 		{#if done}
 			<button
 				onclick={exportMarkdown}
@@ -224,7 +222,7 @@
 			<div class="text-sm text-accent">
 				<span class="font-medium">{currentRound}</span>
 				{#if activePersona}
-					<span class="text-fg-subtle"> &middot; {activePersona} is speaking...</span>
+					<span class="text-fg-subtle"> · {activePersona} is speaking...</span>
 				{/if}
 			</div>
 		</div>

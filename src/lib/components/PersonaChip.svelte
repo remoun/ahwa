@@ -36,5 +36,6 @@
 		? 'bg-accent text-accent-fg border-accent shadow-sm'
 		: 'bg-surface text-accent border-border-strong hover:border-accent hover:shadow-sm'}"
 >
-	{#if emoji}<span class="mr-1">{emoji}</span> {/if}{name}
+	{#if emoji}<span class="mr-1">{emoji}</span>
+	{/if}{name}
 </button>
