@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { mkdirSync } from 'fs';
 import * as schema from './schema';
 import { seedFromDisk } from './seed';
+import { recoverOrphanedTables } from './recovery';
 
 const dataDir = process.env.AHWA_DATA_DIR ?? './data';
 mkdirSync(dataDir, { recursive: true });
@@ -76,3 +77,11 @@ export const db = drizzle(client, { schema });
 
 // Seed councils and personas from JSON files on startup
 seedFromDisk(db);
+
+// Recover orphaned tables from a previous process (crashed mid-deliberation).
+// Any table still in 'running' state at startup is an orphan — the orchestrator
+// that was processing it no longer exists. Mark them failed.
+const recovered = recoverOrphanedTables(db);
+if (recovered > 0) {
+	console.warn(`recovery: marked ${recovered} orphaned 'running' table(s) as 'failed'`);
+}
