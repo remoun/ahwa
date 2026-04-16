@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
 	import { renderMarkdown } from '$lib/markdown';
+	import BreathingDots from './BreathingDots.svelte';
 
 	let {
 		emoji = '',
@@ -36,8 +37,9 @@
 		</div>
 		<div class="markdown-body text-fg-muted text-sm leading-relaxed">
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html html}{#if streaming && !complete}<span class="animate-pulse text-accent">|</span
-				>{/if}
+			{@html html}{#if streaming && !complete}
+				<BreathingDots />
+			{/if}
 		</div>
 	</div>
 </div>

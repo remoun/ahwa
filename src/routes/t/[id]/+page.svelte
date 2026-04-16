@@ -234,12 +234,19 @@
 	</div>
 
 	{#if data.table?.dilemma}
-		<div
-			class="mb-8 p-5 bg-gradient-to-br from-surface-muted to-surface-accent/50 rounded-xl border border-border-strong shadow-sm"
+		<!--
+			The dilemma is "pinned" to the top of the table: warm paper tone,
+			soft drop shadow, serif body. Keeps the question feeling like a
+			note on the table rather than a form echo.
+		-->
+		<figure
+			class="mb-10 px-6 py-5 bg-surface border border-border-strong rounded-xl shadow-md"
 		>
-			<p class="text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1.5">Dilemma</p>
-			<p class="text-fg leading-relaxed">{data.table.dilemma}</p>
-		</div>
+			<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-2">
+				Dilemma
+			</figcaption>
+			<p class="font-display text-xl text-fg leading-relaxed">{data.table.dilemma}</p>
+		</figure>
 	{/if}
 
 	{#if error}
@@ -268,15 +275,29 @@
 		</h2>
 	{/if}
 
-	{#each turns as turn, i (`${turn.personaId}-${turn.round}-${i}`)}
-		<TurnCard
-			emoji={turn.emoji}
-			personaName={turn.personaName}
-			text={turn.text}
-			complete={turn.complete}
-			streaming={view === 'streaming'}
-		/>
-	{/each}
+	{#if turns.length > 0}
+		<div class="relative">
+			<!--
+				A thin vertical rule running down the middle of the persona avatars
+				(w-10 → 20px offset from left) turns the stack of turns into a
+				conversation thread rather than a pile of disconnected cards. Sits
+				behind the avatars via -z-10 so they punch through.
+			-->
+			<div
+				class="absolute left-5 top-5 bottom-5 w-px bg-border -z-10"
+				aria-hidden="true"
+			></div>
+			{#each turns as turn, i (`${turn.personaId}-${turn.round}-${i}`)}
+				<TurnCard
+					emoji={turn.emoji}
+					personaName={turn.personaName}
+					text={turn.text}
+					complete={turn.complete}
+					streaming={view === 'streaming'}
+				/>
+			{/each}
+		</div>
+	{/if}
 
 	{#if synthesizing || synthesis}
 		<SynthesisPanel text={synthesis} streaming={synthesizing} />
