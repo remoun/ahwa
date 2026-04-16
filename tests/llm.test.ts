@@ -119,7 +119,24 @@ describe('provider detection', () => {
 		// Avoids the silent-ollama-fallback trap on hosted deploys where no
 		// Ollama is actually reachable (see preview "empty replies" bug).
 		clearProviderEnv();
+		const savedMock = process.env.AHWA_MOCK_LLM;
+		delete process.env.AHWA_MOCK_LLM;
 		expect(() => detectDefaultProvider()).toThrow(/no llm provider configured/i);
+		if (savedMock !== undefined) process.env.AHWA_MOCK_LLM = savedMock;
+		restoreProviderEnv();
+	});
+
+	it('does not throw when AHWA_MOCK_LLM is set even with no provider env', () => {
+		// E2E tests start the server with AHWA_MOCK_LLM=1 and no provider
+		// credentials. The orchestrator still calls resolveModelConfig up
+		// front, so detection must succeed — the mock path downstream
+		// ignores the returned config.
+		clearProviderEnv();
+		const saved = process.env.AHWA_MOCK_LLM;
+		process.env.AHWA_MOCK_LLM = '1';
+		expect(() => detectDefaultProvider()).not.toThrow();
+		if (saved === undefined) delete process.env.AHWA_MOCK_LLM;
+		else process.env.AHWA_MOCK_LLM = saved;
 		restoreProviderEnv();
 	});
 

@@ -43,6 +43,10 @@ const DEFAULT_MODELS: Record<ProviderName, string> = {
  * Better to fail loudly at startup.
  */
 export function detectDefaultProvider(): ProviderName {
+	// In mock mode (tests/E2E), every call is short-circuited in complete()
+	// before the resolved provider matters. Return a valid value so the
+	// orchestrator's upfront resolveModelConfig() doesn't crash.
+	if (process.env.AHWA_MOCK_LLM === '1') return 'anthropic';
 	if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
 	if (process.env.OPENAI_API_KEY) return 'openai';
 	if (process.env.OPENROUTER_API_KEY) return 'openrouter';
