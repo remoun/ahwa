@@ -2,6 +2,8 @@
 
 **A private council of voices, around your table.**
 
+Background: [A table for the hard decisions](https://remoun.dev/posts/a-table-for-the-hard-decisions) — why this exists and what broke along the way.
+
 Ahwa is a privacy-first, FOSS multi-persona deliberation tool. You set a
 table, invite a council of AI personas, and pose a dilemma. The council
 debates it across structured rounds. A synthesizer produces a recommendation
@@ -147,7 +149,8 @@ never change.
 
 Ahwa is pre-release (M1). The deliberation loop works end-to-end: table
 list, council selection, multi-provider LLM routing, SSE streaming,
-markdown export. 72 tests cover the invariants.
+markdown export. A full unit + Playwright suite covers the invariants and
+runs in CI on every push.
 
 **What's built:** table list UI, council picker, persona/council CRUD,
 markdown export, multi-provider routing (Anthropic/OpenAI/OpenRouter/Ollama),
