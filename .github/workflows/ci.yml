@@ -2,7 +2,11 @@
 name: CI
 
 on:
+  # Run on push to main, and on PRs (from any branch).
+  # Push to a non-main branch that has an open PR won't duplicate —
+  # only the pull_request event fires.
   push:
+    branches: [main]
   pull_request:
 
 jobs:
