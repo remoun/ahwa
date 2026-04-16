@@ -1,5 +1,7 @@
 # Ahwa
 
+[![CI](https://github.com/remoun/ahwa/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/remoun/ahwa/actions/workflows/ci.yml)
+
 **A private council of voices, around your table.**
 
 Background: [A table for the hard decisions](https://remoun.dev/posts/a-table-for-the-hard-decisions) — why this exists and what broke along the way.
@@ -149,8 +151,8 @@ never change.
 
 Ahwa is pre-release (M1). The deliberation loop works end-to-end: table
 list, council selection, multi-provider LLM routing, SSE streaming,
-markdown export. A full unit + Playwright suite covers the invariants and
-runs in CI on every push.
+markdown export. The full unit + Playwright suite runs in CI on every push
+(see the badge above).
 
 **What's built:** table list UI, council picker, persona/council CRUD,
 markdown export, multi-provider routing (Anthropic/OpenAI/OpenRouter/Ollama),
