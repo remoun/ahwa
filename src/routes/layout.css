@@ -10,57 +10,102 @@
  *   - .dark on <html>     → force dark
  */
 
+/*
+ * Reference Tailwind's palette via its default CSS custom properties
+ * (--color-red-700, etc.) instead of hex literals — stays in sync with
+ * upstream palette updates, single source of truth for the numbers.
+ */
+
 /* Light (default) */
 :root {
-	--c-bg: #f8fbff;
-	--c-surface: #ffffff;
-	--c-surface-muted: #f0f9ff; /* sky-50 */
-	--c-surface-accent: #e0f2fe; /* sky-100 */
-	--c-fg: #0c4a6e; /* sky-900 */
-	--c-fg-muted: #475569; /* slate-600 */
-	--c-fg-subtle: #94a3b8; /* slate-400 */
-	--c-accent: #0369a1; /* sky-700 */
-	--c-accent-strong: #075985; /* sky-800 */
-	--c-accent-hover: #0284c7; /* sky-600 */
-	--c-accent-fg: #ffffff;
-	--c-border: #e0f2fe; /* sky-100 */
-	--c-border-strong: #7dd3fc; /* sky-300 */
+	--c-bg: #f8fbff; /* custom off-white, no Tailwind equivalent */
+	--c-surface: var(--color-white);
+	--c-surface-muted: var(--color-sky-50);
+	--c-surface-accent: var(--color-sky-100);
+	--c-fg: var(--color-sky-900);
+	--c-fg-muted: var(--color-slate-600);
+	--c-fg-subtle: var(--color-slate-400);
+	--c-accent: var(--color-sky-700);
+	--c-accent-strong: var(--color-sky-800);
+	--c-accent-hover: var(--color-sky-600);
+	--c-accent-fg: var(--color-white);
+	--c-border: var(--color-sky-100);
+	--c-border-strong: var(--color-sky-300);
+
+	--c-danger: var(--color-red-700);
+	--c-danger-bg: var(--color-red-50);
+	--c-danger-border: var(--color-red-200);
+	--c-success: var(--color-emerald-700);
+	--c-success-bg: var(--color-emerald-50);
+	--c-success-border: var(--color-emerald-200);
+	--c-warning: var(--color-yellow-700);
+	--c-warning-bg: var(--color-yellow-50);
+	--c-warning-border: var(--color-yellow-200);
+	--c-info: var(--color-blue-700);
+	--c-info-bg: var(--color-blue-50);
+	--c-info-border: var(--color-blue-200);
 }
 
 /* Dark: apply when prefers-color-scheme is dark AND no .light override */
 @media (prefers-color-scheme: dark) {
 	:root:not(.light) {
-		--c-bg: #020617; /* slate-950 */
-		--c-surface: #0f172a; /* slate-900 */
-		--c-surface-muted: #1e293b; /* slate-800 */
-		--c-surface-accent: #0c4a6e; /* sky-900 */
-		--c-fg: #e0f2fe; /* sky-100 */
-		--c-fg-muted: #94a3b8; /* slate-400 */
-		--c-fg-subtle: #64748b; /* slate-500 */
-		--c-accent: #38bdf8; /* sky-400 */
-		--c-accent-strong: #0ea5e9; /* sky-500 */
-		--c-accent-hover: #7dd3fc; /* sky-300 */
-		--c-accent-fg: #020617;
-		--c-border: #1e293b; /* slate-800 */
-		--c-border-strong: #0369a1; /* sky-700 */
+		--c-bg: var(--color-slate-950);
+		--c-surface: var(--color-slate-900);
+		--c-surface-muted: var(--color-slate-800);
+		--c-surface-accent: var(--color-sky-900);
+		--c-fg: var(--color-sky-100);
+		--c-fg-muted: var(--color-slate-400);
+		--c-fg-subtle: var(--color-slate-500);
+		--c-accent: var(--color-sky-400);
+		--c-accent-strong: var(--color-sky-500);
+		--c-accent-hover: var(--color-sky-300);
+		--c-accent-fg: var(--color-slate-950);
+		--c-border: var(--color-slate-800);
+		--c-border-strong: var(--color-sky-700);
+
+		--c-danger: var(--color-red-300);
+		--c-danger-bg: var(--color-red-950);
+		--c-danger-border: var(--color-red-900);
+		--c-success: var(--color-emerald-300);
+		--c-success-bg: var(--color-emerald-950);
+		--c-success-border: var(--color-emerald-800);
+		--c-warning: var(--color-yellow-300);
+		--c-warning-bg: var(--color-yellow-950);
+		--c-warning-border: var(--color-yellow-900);
+		--c-info: var(--color-blue-300);
+		--c-info-bg: var(--color-blue-950);
+		--c-info-border: var(--color-blue-900);
 	}
 }
 
 /* Dark: force via explicit class regardless of system preference */
 :root.dark {
-	--c-bg: #020617;
-	--c-surface: #0f172a;
-	--c-surface-muted: #1e293b;
-	--c-surface-accent: #0c4a6e;
-	--c-fg: #e0f2fe;
-	--c-fg-muted: #94a3b8;
-	--c-fg-subtle: #64748b;
-	--c-accent: #38bdf8;
-	--c-accent-strong: #0ea5e9;
-	--c-accent-hover: #7dd3fc;
-	--c-accent-fg: #020617;
-	--c-border: #1e293b;
-	--c-border-strong: #0369a1;
+	--c-bg: var(--color-slate-950);
+	--c-surface: var(--color-slate-900);
+	--c-surface-muted: var(--color-slate-800);
+	--c-surface-accent: var(--color-sky-900);
+	--c-fg: var(--color-sky-100);
+	--c-fg-muted: var(--color-slate-400);
+	--c-fg-subtle: var(--color-slate-500);
+	--c-accent: var(--color-sky-400);
+	--c-accent-strong: var(--color-sky-500);
+	--c-accent-hover: var(--color-sky-300);
+	--c-accent-fg: var(--color-slate-950);
+	--c-border: var(--color-slate-800);
+	--c-border-strong: var(--color-sky-700);
+
+	--c-danger: var(--color-red-300);
+	--c-danger-bg: var(--color-red-950);
+	--c-danger-border: var(--color-red-900);
+	--c-success: var(--color-emerald-300);
+	--c-success-bg: var(--color-emerald-950);
+	--c-success-border: var(--color-emerald-800);
+	--c-warning: var(--color-yellow-300);
+	--c-warning-bg: var(--color-yellow-950);
+	--c-warning-border: var(--color-yellow-900);
+	--c-info: var(--color-blue-300);
+	--c-info-bg: var(--color-blue-950);
+	--c-info-border: var(--color-blue-900);
 }
 
 @theme {
@@ -77,6 +122,19 @@
 	--color-accent-fg: var(--c-accent-fg);
 	--color-border: var(--c-border);
 	--color-border-strong: var(--c-border-strong);
+
+	--color-danger: var(--c-danger);
+	--color-danger-bg: var(--c-danger-bg);
+	--color-danger-border: var(--c-danger-border);
+	--color-success: var(--c-success);
+	--color-success-bg: var(--c-success-bg);
+	--color-success-border: var(--c-success-border);
+	--color-warning: var(--c-warning);
+	--color-warning-bg: var(--c-warning-bg);
+	--color-warning-border: var(--c-warning-border);
+	--color-info: var(--c-info);
+	--color-info-bg: var(--c-info-bg);
+	--color-info-border: var(--c-info-border);
 
 	--animate-fade-in: fade-in 0.3s ease-out;
 }

@@ -94,7 +94,7 @@
 			<h2 class="font-semibold mb-4 text-fg">Create a council</h2>
 
 			{#if error}
-				<p class="text-red-600 text-sm mb-3">{error}</p>
+				<p class="text-danger text-sm mb-3">{error}</p>
 			{/if}
 
 			<label for="council-name" class="block text-xs font-medium text-fg-subtle uppercase tracking-wide mb-1">Name</label>
@@ -147,7 +147,7 @@
 					{#if !council.isSeeded}
 						<button
 							onclick={() => deleteCouncil(council.id)}
-							class="text-xs text-red-400 hover:text-red-600 transition-colors"
+							class="text-xs text-danger/70 hover:text-danger transition-colors"
 						>
 							Delete
 						</button>

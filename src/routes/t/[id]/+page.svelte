@@ -200,8 +200,8 @@
 	{/if}
 
 	{#if error}
-		<div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 animate-fade-in">
-			<p class="text-red-800 text-sm">{error}</p>
+		<div class="bg-danger-bg border border-danger-border rounded-xl p-4 mb-6 animate-fade-in">
+			<p class="text-danger text-sm">{error}</p>
 		</div>
 	{/if}
 
@@ -248,7 +248,7 @@
 	{/if}
 
 	{#if isFailed && !error}
-		<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800">
+		<div class="p-4 bg-danger-bg border border-danger-border rounded-xl text-sm text-danger">
 			{data.table?.errorMessage ?? 'This deliberation encountered an error and could not complete.'}
 		</div>
 	{/if}
