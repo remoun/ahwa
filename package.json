@@ -40,7 +40,7 @@
 		"@openrouter/ai-sdk-provider": "^2.5.1",
 		"ai": "^6.0.159",
 		"nanoid": "^5.1.7",
-		"ollama-ai-provider": "^1.2.0",
+		"ollama-ai-provider-v2": "^3.5.0",
 		"zod": "^4.3.6"
 	}
 }
