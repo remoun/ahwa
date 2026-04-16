@@ -1,8 +1,14 @@
 @import 'tailwindcss';
 
 /*
- * Semantic color tokens. Tailwind classes like `bg-surface`, `text-fg`,
- * `border-border` resolve to these. Swap the palette in one place.
+ * Semantic color tokens. Tailwind utility classes like `bg-surface`,
+ * `text-fg`, `border-border` resolve to these — swap the palette in
+ * one place.
+ *
+ * Values come from Tailwind's default palette via its CSS custom
+ * properties (`--color-red-700` etc.) rather than hex literals, so
+ * they stay in sync with upstream and there's a single source of
+ * truth for the numbers.
  *
  * Dark mode resolution:
  *   - no class on <html>  → follow prefers-color-scheme (system)
@@ -11,101 +17,47 @@
  */
 
 /*
- * Reference Tailwind's palette via its default CSS custom properties
- * (--color-red-700, etc.) instead of hex literals — stays in sync with
- * upstream palette updates, single source of truth for the numbers.
+ * One declaration per token. `color-scheme` at :root lets light-dark() pick
+ * the right value: light when `.light` is set, dark when `.dark` is set,
+ * and system preference otherwise. `--c-bg` uses a custom off-white with
+ * no Tailwind equivalent.
  */
-
-/* Light (default) */
 :root {
-	--c-bg: #f8fbff; /* custom off-white, no Tailwind equivalent */
-	--c-surface: var(--color-white);
-	--c-surface-muted: var(--color-sky-50);
-	--c-surface-accent: var(--color-sky-100);
-	--c-fg: var(--color-sky-900);
-	--c-fg-muted: var(--color-slate-600);
-	--c-fg-subtle: var(--color-slate-400);
-	--c-accent: var(--color-sky-700);
-	--c-accent-strong: var(--color-sky-800);
-	--c-accent-hover: var(--color-sky-600);
-	--c-accent-fg: var(--color-white);
-	--c-border: var(--color-sky-100);
-	--c-border-strong: var(--color-sky-300);
+	color-scheme: light dark;
 
-	--c-danger: var(--color-red-700);
-	--c-danger-bg: var(--color-red-50);
-	--c-danger-border: var(--color-red-200);
-	--c-success: var(--color-emerald-700);
-	--c-success-bg: var(--color-emerald-50);
-	--c-success-border: var(--color-emerald-200);
-	--c-warning: var(--color-yellow-700);
-	--c-warning-bg: var(--color-yellow-50);
-	--c-warning-border: var(--color-yellow-200);
-	--c-info: var(--color-blue-700);
-	--c-info-bg: var(--color-blue-50);
-	--c-info-border: var(--color-blue-200);
+	--c-bg: light-dark(#f8fbff, var(--color-slate-950));
+	--c-surface: light-dark(var(--color-white), var(--color-slate-900));
+	--c-surface-muted: light-dark(var(--color-sky-50), var(--color-slate-800));
+	--c-surface-accent: light-dark(var(--color-sky-100), var(--color-sky-900));
+	--c-fg: light-dark(var(--color-sky-900), var(--color-sky-100));
+	--c-fg-muted: light-dark(var(--color-slate-600), var(--color-slate-400));
+	--c-fg-subtle: light-dark(var(--color-slate-400), var(--color-slate-500));
+	--c-accent: light-dark(var(--color-sky-700), var(--color-sky-400));
+	--c-accent-strong: light-dark(var(--color-sky-800), var(--color-sky-500));
+	--c-accent-hover: light-dark(var(--color-sky-600), var(--color-sky-300));
+	--c-accent-fg: light-dark(var(--color-white), var(--color-slate-950));
+	--c-border: light-dark(var(--color-sky-100), var(--color-slate-800));
+	--c-border-strong: light-dark(var(--color-sky-300), var(--color-sky-700));
+
+	--c-danger: light-dark(var(--color-red-700), var(--color-red-300));
+	--c-danger-bg: light-dark(var(--color-red-50), var(--color-red-950));
+	--c-danger-border: light-dark(var(--color-red-200), var(--color-red-900));
+	--c-success: light-dark(var(--color-emerald-700), var(--color-emerald-300));
+	--c-success-bg: light-dark(var(--color-emerald-50), var(--color-emerald-950));
+	--c-success-border: light-dark(var(--color-emerald-200), var(--color-emerald-800));
+	--c-warning: light-dark(var(--color-yellow-700), var(--color-yellow-300));
+	--c-warning-bg: light-dark(var(--color-yellow-50), var(--color-yellow-950));
+	--c-warning-border: light-dark(var(--color-yellow-200), var(--color-yellow-900));
+	--c-info: light-dark(var(--color-blue-700), var(--color-blue-300));
+	--c-info-bg: light-dark(var(--color-blue-50), var(--color-blue-950));
+	--c-info-border: light-dark(var(--color-blue-200), var(--color-blue-900));
 }
 
-/* Dark: apply when prefers-color-scheme is dark AND no .light override */
-@media (prefers-color-scheme: dark) {
-	:root:not(.light) {
-		--c-bg: var(--color-slate-950);
-		--c-surface: var(--color-slate-900);
-		--c-surface-muted: var(--color-slate-800);
-		--c-surface-accent: var(--color-sky-900);
-		--c-fg: var(--color-sky-100);
-		--c-fg-muted: var(--color-slate-400);
-		--c-fg-subtle: var(--color-slate-500);
-		--c-accent: var(--color-sky-400);
-		--c-accent-strong: var(--color-sky-500);
-		--c-accent-hover: var(--color-sky-300);
-		--c-accent-fg: var(--color-slate-950);
-		--c-border: var(--color-slate-800);
-		--c-border-strong: var(--color-sky-700);
-
-		--c-danger: var(--color-red-300);
-		--c-danger-bg: var(--color-red-950);
-		--c-danger-border: var(--color-red-900);
-		--c-success: var(--color-emerald-300);
-		--c-success-bg: var(--color-emerald-950);
-		--c-success-border: var(--color-emerald-800);
-		--c-warning: var(--color-yellow-300);
-		--c-warning-bg: var(--color-yellow-950);
-		--c-warning-border: var(--color-yellow-900);
-		--c-info: var(--color-blue-300);
-		--c-info-bg: var(--color-blue-950);
-		--c-info-border: var(--color-blue-900);
-	}
+:root.light {
+	color-scheme: light;
 }
-
-/* Dark: force via explicit class regardless of system preference */
 :root.dark {
-	--c-bg: var(--color-slate-950);
-	--c-surface: var(--color-slate-900);
-	--c-surface-muted: var(--color-slate-800);
-	--c-surface-accent: var(--color-sky-900);
-	--c-fg: var(--color-sky-100);
-	--c-fg-muted: var(--color-slate-400);
-	--c-fg-subtle: var(--color-slate-500);
-	--c-accent: var(--color-sky-400);
-	--c-accent-strong: var(--color-sky-500);
-	--c-accent-hover: var(--color-sky-300);
-	--c-accent-fg: var(--color-slate-950);
-	--c-border: var(--color-slate-800);
-	--c-border-strong: var(--color-sky-700);
-
-	--c-danger: var(--color-red-300);
-	--c-danger-bg: var(--color-red-950);
-	--c-danger-border: var(--color-red-900);
-	--c-success: var(--color-emerald-300);
-	--c-success-bg: var(--color-emerald-950);
-	--c-success-border: var(--color-emerald-800);
-	--c-warning: var(--color-yellow-300);
-	--c-warning-bg: var(--color-yellow-950);
-	--c-warning-border: var(--color-yellow-900);
-	--c-info: var(--color-blue-300);
-	--c-info-bg: var(--color-blue-950);
-	--c-info-border: var(--color-blue-900);
+	color-scheme: dark;
 }
 
 @theme {
