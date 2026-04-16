@@ -147,39 +147,37 @@
 
 			case 'persona_turn_started':
 				activePersona = event.personaName;
-				turns.push({
-					personaId: event.personaId,
-					personaName: event.personaName,
-					emoji: event.emoji,
-					text: '',
-					complete: false,
-					round: currentRoundNum
-				});
+				turns = [
+					...turns,
+					{
+						personaId: event.personaId,
+						personaName: event.personaName,
+						emoji: event.emoji,
+						text: '',
+						complete: false,
+						round: currentRoundNum
+					}
+				];
 				break;
 
-			case 'token': {
-				// Replace the matching turn with an updated copy — this is
-				// more reliable for Svelte 5 reactivity than mutating in place
-				// when the object came out of .find() on a reactive array.
-				const idx = turns.findIndex(
-					(t) => t.personaId === event.personaId && !t.complete
+			case 'token':
+				// Reassign the whole array to guarantee reactivity — individual
+				// element or property mutations have been flaky in production.
+				turns = turns.map((t) =>
+					t.personaId === event.personaId && !t.complete
+						? { ...t, text: t.text + event.text }
+						: t
 				);
-				if (idx >= 0) {
-					turns[idx] = { ...turns[idx], text: turns[idx].text + event.text };
-				}
 				break;
-			}
 
-			case 'persona_turn_completed': {
-				const idx = turns.findIndex(
-					(t) => t.personaId === event.personaId && !t.complete
+			case 'persona_turn_completed':
+				turns = turns.map((t) =>
+					t.personaId === event.personaId && !t.complete
+						? { ...t, complete: true }
+						: t
 				);
-				if (idx >= 0) {
-					turns[idx] = { ...turns[idx], complete: true };
-				}
 				activePersona = '';
 				break;
-			}
 
 			case 'synthesis_started':
 				synthesizing = true;
