@@ -5,6 +5,7 @@ import { mkdirSync } from 'fs';
 import * as schema from './schema';
 import { seedFromDisk } from './seed';
 import { recoverOrphanedTables } from './recovery';
+import { ensureMigrated } from './migrate-runner';
 
 const dataDir = process.env.AHWA_DATA_DIR ?? './data';
 mkdirSync(dataDir, { recursive: true });
@@ -13,85 +14,10 @@ const dbPath = `${dataDir}/ahwa.db`;
 const client = new Database(dbPath, { create: true });
 client.exec('PRAGMA journal_mode=WAL');
 
-// Create tables if they don't exist (M0: inline DDL, M1: drizzle-kit migrations)
-client.exec(`
-	CREATE TABLE IF NOT EXISTS parties (
-		id TEXT PRIMARY KEY,
-		display_name TEXT,
-		created_at INTEGER
-	);
-	CREATE TABLE IF NOT EXISTS tables (
-		id TEXT PRIMARY KEY,
-		title TEXT,
-		dilemma TEXT,
-		council_id TEXT,
-		status TEXT DEFAULT 'pending',
-		synthesis TEXT,
-		error_message TEXT,
-		is_demo INTEGER DEFAULT 0,
-		created_at INTEGER,
-		updated_at INTEGER
-	);
-	CREATE TABLE IF NOT EXISTS table_parties (
-		table_id TEXT NOT NULL,
-		party_id TEXT NOT NULL,
-		role TEXT,
-		PRIMARY KEY (table_id, party_id)
-	);
-	CREATE TABLE IF NOT EXISTS turns (
-		id TEXT PRIMARY KEY,
-		table_id TEXT NOT NULL,
-		round INTEGER NOT NULL,
-		party_id TEXT,
-		persona_name TEXT,
-		text TEXT,
-		visible_to TEXT,
-		created_at INTEGER
-	);
-	CREATE TABLE IF NOT EXISTS personas (
-		id TEXT PRIMARY KEY,
-		name TEXT,
-		emoji TEXT,
-		system_prompt TEXT,
-		requires TEXT,
-		owner_party TEXT,
-		created_at INTEGER
-	);
-	CREATE TABLE IF NOT EXISTS councils (
-		id TEXT PRIMARY KEY,
-		name TEXT,
-		persona_ids TEXT,
-		synthesis_prompt TEXT,
-		round_structure TEXT,
-		model_config TEXT,
-		owner_party TEXT,
-		created_at INTEGER
-	);
-	CREATE TABLE IF NOT EXISTS memory (
-		party_id TEXT PRIMARY KEY,
-		content TEXT,
-		updated_at INTEGER
-	);
-`);
-
-// Lightweight migrations for pre-existing DBs (columns added after the initial DDL).
-// Each ALTER TABLE is idempotent via try/catch on "duplicate column" errors.
-// This lets existing deployments (e.g., Fly preview apps with persistent volumes)
-// pick up new columns without a volume reset. M2 switches to drizzle-kit migrations.
-function addColumnIfMissing(table: string, column: string, type: string) {
-	try {
-		client.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-	} catch (err) {
-		// SQLite throws "duplicate column name" if the column already exists — ignore
-		if (!(err instanceof Error && /duplicate column/i.test(err.message))) {
-			throw err;
-		}
-	}
-}
-addColumnIfMissing('tables', 'error_message', 'TEXT');
-addColumnIfMissing('councils', 'model_config', 'TEXT');
-
 export const db = drizzle(client, { schema });
+
+// Bring schema up to date via drizzle-kit migrations.
+ensureMigrated(db);
 
 // Seed councils and personas from JSON files on startup
 seedFromDisk(db);
