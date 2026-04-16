@@ -52,15 +52,43 @@ export async function* runDeliberation(
 	const requestedPersonas: PersonaRow[] = personaIds
 		.map((id) => allPersonas.find((p) => p.id === id))
 		.filter((p): p is PersonaRow => p !== undefined);
-	const { eligible: personas } = filterPersonas(requestedPersonas);
+	const { eligible: personas, excluded } = filterPersonas(requestedPersonas);
+	if (excluded.length > 0) {
+		// Warn visibly when personas are dropped — invariant #10 says the UI
+		// should surface this. For M1 we log; M3 adds proper UI warnings.
+		console.warn(
+			`orchestrator: excluded ${excluded.length} persona(s) from council "${councilId}" due to unmet feature requirements: ${excluded.map((p) => p.id).join(', ')}`
+		);
+	}
 
-	// Defensively set status to 'running'. The HTTP guard already does this
-	// atomically to prevent races, but the orchestrator shouldn't assume the
-	// guard ran — it's called directly by tests and potentially future code.
-	db.update(schema.tables)
-		.set({ status: 'running', updatedAt: Date.now() })
-		.where(eq(schema.tables.id, tableId))
-		.run();
+	// Load party IDs at this table for visible_to. Invariant #8:
+	// in single-party tables, visible_to = [all parties]. When M3 adds
+	// two-party mode, this query still returns the right set — visibility
+	// filtering per-party happens at the read layer, not here.
+	const allPartyIds = db.select({ partyId: schema.tableParties.partyId })
+		.from(schema.tableParties)
+		.where(eq(schema.tableParties.tableId, tableId))
+		.all()
+		.map((r) => r.partyId);
+	// Fallback for callers that haven't linked the party yet (shouldn't happen in prod)
+	const visibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
+
+	// Guard: the orchestrator should only run against pending/running tables.
+	// The HTTP guard already ensures this, but callers (tests, future code)
+	// might skip it. Fail loud rather than silently clobbering a completed row.
+	const existing = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
+	if (!existing) throw new Error(`Table not found: ${tableId}`);
+	if (existing.status !== 'pending' && existing.status !== 'running') {
+		throw new Error(`Table is in terminal state: ${existing.status}`);
+	}
+
+	// Set status to 'running' if it wasn't already (guard may have done it).
+	if (existing.status === 'pending') {
+		db.update(schema.tables)
+			.set({ status: 'running', updatedAt: Date.now() })
+			.where(eq(schema.tables.id, tableId))
+			.run();
+	}
 
 	try {
 
@@ -120,7 +148,7 @@ export async function* runDeliberation(
 					partyId,
 					personaName: persona.name,
 					text: fullText,
-					visibleTo: JSON.stringify([partyId])
+					visibleTo: JSON.stringify(visibleTo)
 				})
 				.run();
 
@@ -162,7 +190,7 @@ export async function* runDeliberation(
 				partyId: 'synthesizer',
 				personaName: 'Synthesizer',
 				text: synthesisText,
-				visibleTo: JSON.stringify([partyId])
+				visibleTo: JSON.stringify(visibleTo)
 			})
 			.run();
 

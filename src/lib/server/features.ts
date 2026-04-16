@@ -30,7 +30,16 @@ export function filterPersonas<T extends PersonaWithRequires>(
 			eligible.push(persona);
 			continue;
 		}
-		const required: string[] = JSON.parse(persona.requires);
+		let required: string[];
+		try {
+			required = JSON.parse(persona.requires);
+			if (!Array.isArray(required)) throw new Error('requires must be an array');
+		} catch (err) {
+			// Malformed requires JSON — log and treat as eligible rather than crash
+			console.warn(`features: persona ${persona.id} has malformed requires: ${err instanceof Error ? err.message : err}`);
+			eligible.push(persona);
+			continue;
+		}
 		if (required.every((f) => availableFeatures.includes(f))) {
 			eligible.push(persona);
 		} else {

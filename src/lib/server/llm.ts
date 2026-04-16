@@ -32,9 +32,6 @@ const DEFAULT_MODELS: Record<ProviderName, string> = {
 	ollama: 'llama3.1'
 };
 
-// M0 backward compat
-export const DEFAULT_MODEL = DEFAULT_MODELS.openrouter;
-
 /**
  * Detect the first available provider by checking env vars.
  * Priority: Anthropic → OpenAI → OpenRouter → Ollama (always available).

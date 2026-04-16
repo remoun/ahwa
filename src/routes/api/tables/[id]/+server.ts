@@ -5,7 +5,13 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
 
-/** Get a single table with its turns */
+/**
+ * Get a single table with its turns.
+ *
+ * M1 TODO: no party-membership check. Acceptable because M1 is
+ * localhost-only behind reverse-proxy auth (invariant #5). M3 adds
+ * party-scoped read access when two-party share links land.
+ */
 export const GET: RequestHandler = async ({ params }) => {
 	const table = db
 		.select()

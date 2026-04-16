@@ -23,17 +23,17 @@
 	let turns = $state<Turn[]>([]);
 	let currentRound = $state('');
 	let currentRoundNum = $state(0);
-	let totalRounds = $state(0);
 	let activePersona = $state('');
-	let completedTurns = $state(0);
-	let totalPersonas = $state(0);
 	let synthesis = $state('');
 	let synthesizing = $state(false);
 	let done = $state(false);
 	let error = $state('');
 
 	$effect(() => {
-		if (data.table?.status === 'completed') {
+		// Render persisted turns for completed AND failed tables — a failed
+		// deliberation may have completed some turns before the error, and
+		// users should see what the council said before things went wrong.
+		if (data.table?.status === 'completed' || data.table?.status === 'failed') {
 			turns = data.turns
 				.filter((t) => t.round > 0)
 				.map((t) => ({
@@ -132,14 +132,10 @@
 			case 'round_started':
 				currentRound = event.kind === 'opening' ? 'Opening Round' : 'Cross-Examination';
 				currentRoundNum = event.round;
-				// We don't know totalRounds from the event; estimate from council structure
-				if (event.round > totalRounds) totalRounds = event.round;
-				completedTurns = 0;
 				break;
 
 			case 'persona_turn_started':
 				activePersona = event.personaName;
-				totalPersonas++;
 				turns.push({
 					personaId: event.personaId,
 					personaName: event.personaName,
@@ -163,7 +159,6 @@
 					(t) => t.personaId === event.personaId && !t.complete
 				);
 				if (turn) turn.complete = true;
-				completedTurns++;
 				activePersona = '';
 				break;
 			}
@@ -187,6 +182,9 @@
 
 			case 'error':
 				error = event.message;
+				done = true;
+				synthesizing = false;
+				activePersona = '';
 				break;
 		}
 	}

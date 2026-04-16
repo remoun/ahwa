@@ -5,7 +5,11 @@ import * as schema from '$lib/server/db/schema';
 import { generateMarkdown } from '$lib/server/export';
 import type { RequestHandler } from './$types';
 
-/** Export a completed table as a markdown file download */
+/**
+ * Export a completed table as a markdown file download.
+ *
+ * M1 TODO: no party-membership check. See GET /api/tables/[id] for context.
+ */
 export const GET: RequestHandler = async ({ params }) => {
 	const table = db
 		.select()
