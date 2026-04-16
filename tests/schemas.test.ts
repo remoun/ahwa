@@ -43,6 +43,7 @@ describe('CouncilSchema', () => {
 			expect(result.data.personas.length).toBe(5);
 			expect(result.data.round_structure.rounds.length).toBe(2);
 			expect(result.data.round_structure.synthesize).toBe(true);
+			expect(result.data.description).toMatch(/balanced five-persona council/i);
 		}
 	});
 

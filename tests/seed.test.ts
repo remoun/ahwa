@@ -59,6 +59,13 @@ describe('seedFromDisk', () => {
 		expect(ids.length).toBe(5);
 	});
 
+	it('persists council descriptions from JSON into the DB', () => {
+		seedFromDisk(db);
+		const row = db.select().from(schema.councils).where(eq(schema.councils.id, 'default')).get();
+		expect(row?.description).toBeTruthy();
+		expect(row!.description).toMatch(/balanced five-persona council/i);
+	});
+
 	it('skips malformed JSON files without crashing', () => {
 		const testDir = '/tmp/ahwa-test-councils';
 
