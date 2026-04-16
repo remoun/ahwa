@@ -158,18 +158,25 @@
 				break;
 
 			case 'token': {
-				const turn = turns.find(
+				// Replace the matching turn with an updated copy — this is
+				// more reliable for Svelte 5 reactivity than mutating in place
+				// when the object came out of .find() on a reactive array.
+				const idx = turns.findIndex(
 					(t) => t.personaId === event.personaId && !t.complete
 				);
-				if (turn) turn.text += event.text;
+				if (idx >= 0) {
+					turns[idx] = { ...turns[idx], text: turns[idx].text + event.text };
+				}
 				break;
 			}
 
 			case 'persona_turn_completed': {
-				const turn = turns.find(
+				const idx = turns.findIndex(
 					(t) => t.personaId === event.personaId && !t.complete
 				);
-				if (turn) turn.complete = true;
+				if (idx >= 0) {
+					turns[idx] = { ...turns[idx], complete: true };
+				}
 				activePersona = '';
 				break;
 			}
