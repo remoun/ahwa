@@ -23,9 +23,10 @@ export default defineConfig({
 		}
 	],
 
-	// Build then start SvelteKit with a mock LLM and an ephemeral data dir
+	// Build then start SvelteKit with a mock LLM and an ephemeral data dir.
+	// --bun forces Bun's module resolver so bun:sqlite works.
 	webServer: {
-		command: `AHWA_MOCK_LLM=1 AHWA_DATA_DIR=./e2e/.data PORT=${PORT} bun build/index.js`,
+		command: `AHWA_MOCK_LLM=1 AHWA_DATA_DIR=./e2e/.data PORT=${PORT} bun --bun build/index.js`,
 		port: PORT,
 		reuseExistingServer: !process.env.CI,
 		timeout: 60_000
