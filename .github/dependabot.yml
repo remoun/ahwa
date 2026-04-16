@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+version: 2
+updates:
+  # Bun / npm dependencies
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      ai-sdk:
+        patterns:
+          - '@ai-sdk/*'
+          - 'ai'
+          - '@openrouter/ai-sdk-provider'
+          - 'ollama-ai-provider-v2'
+      drizzle:
+        patterns:
+          - 'drizzle-orm'
+          - 'drizzle-kit'
+      sveltekit:
+        patterns:
+          - '@sveltejs/*'
+          - 'svelte'
+          - 'svelte-check'
+      dev-tooling:
+        dependency-type: development
+        patterns:
+          - '*'
+        exclude-patterns:
+          - '@sveltejs/*'
+          - 'svelte'
+          - 'svelte-check'
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, ci]
+
+  # Docker base image
+  - package-ecosystem: docker
+    directory: /packaging/docker
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, docker]
