@@ -34,25 +34,31 @@ const DEFAULT_MODELS: Record<ProviderName, string> = {
 
 /**
  * Detect the first available provider by checking env vars.
- * Priority: Anthropic → OpenAI → OpenRouter → Ollama (always available).
+ * Priority: Anthropic → OpenAI → OpenRouter → Ollama.
+ *
+ * Ollama is only picked when OLLAMA_BASE_URL is explicitly set — we used
+ * to treat it as an "always available" fallback, but on hosted deploys
+ * with no local Ollama daemon that silently produces empty streams and
+ * leaves the user staring at a finished deliberation with no text.
+ * Better to fail loudly at startup.
  */
 export function detectDefaultProvider(): ProviderName {
 	if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
 	if (process.env.OPENAI_API_KEY) return 'openai';
 	if (process.env.OPENROUTER_API_KEY) return 'openrouter';
-	return 'ollama';
+	if (process.env.OLLAMA_BASE_URL) return 'ollama';
+	throw new Error(
+		'No LLM provider configured. Set one of: ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, OLLAMA_BASE_URL.'
+	);
 }
 
-/**
- * List all providers that have their required credentials configured.
- * Ollama is always available (local, no key needed).
- */
+/** List all providers whose credentials/URL are configured via env vars. */
 export function getAvailableProviders(): ProviderName[] {
 	const available: ProviderName[] = [];
 	if (process.env.ANTHROPIC_API_KEY) available.push('anthropic');
 	if (process.env.OPENAI_API_KEY) available.push('openai');
 	if (process.env.OPENROUTER_API_KEY) available.push('openrouter');
-	available.push('ollama'); // always available
+	if (process.env.OLLAMA_BASE_URL) available.push('ollama');
 	return available;
 }
 

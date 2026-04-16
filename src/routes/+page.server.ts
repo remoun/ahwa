@@ -3,6 +3,7 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { loadOrFail } from '$lib/server/load';
 import { signShareToken } from '$lib/server/share';
+import { expandCouncilPersonas } from '$lib/server/councils';
 import * as schema from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
@@ -16,6 +17,7 @@ export const load: PageServerLoad = () =>
 			.all();
 
 		const councils = db.select().from(schema.councils).all();
+		const personas = db.select().from(schema.personas).all();
 
 		// M1: one party per table, so last-write-wins is fine. M3 will need
 		// to filter by role === 'initiator' when two-party tables exist.
@@ -31,6 +33,6 @@ export const load: PageServerLoad = () =>
 					token: partyId ? signShareToken(t.id, partyId) : ''
 				};
 			}),
-			councils
+			councils: councils.map((c) => expandCouncilPersonas(c, personas))
 		};
 	});

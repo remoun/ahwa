@@ -59,14 +59,22 @@
 								? 'bg-surface-muted border-border-strong shadow-sm ring-1 ring-border-strong'
 								: 'bg-surface border-border hover:border-border-strong hover:shadow-sm'}"
 						>
-							<div class="font-medium text-sm text-fg">{council.name}</div>
-							{#if council.description}
-								<div class="text-xs text-fg-subtle mt-1 line-clamp-2 leading-snug">
-									{council.description}
+							<div class="font-display text-base text-fg">{council.name}</div>
+							{#if council.personas.length > 0}
+								<div class="mt-1.5 flex items-center gap-0.5" aria-hidden="true">
+									{#each council.personas as p (p.id)}
+										<span
+											class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-muted border border-border text-sm"
+											title={p.name ?? ''}
+										>
+											{p.emoji ?? '•'}
+										</span>
+									{/each}
 								</div>
-							{:else if council.personaIds}
-								<div class="text-xs text-fg-subtle mt-0.5">
-									{JSON.parse(council.personaIds).length} personas
+							{/if}
+							{#if council.description}
+								<div class="text-xs text-fg-subtle mt-2 line-clamp-2 leading-snug">
+									{council.description}
 								</div>
 							{/if}
 						</button>

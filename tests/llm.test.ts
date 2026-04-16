@@ -108,22 +108,37 @@ describe('provider detection', () => {
 		restoreProviderEnv();
 	});
 
-	it('falls back to ollama when no API keys are set', () => {
+	it('returns ollama only when OLLAMA_BASE_URL is explicitly set', () => {
 		clearProviderEnv();
-		const result = detectDefaultProvider();
-		expect(result).toBe('ollama');
+		process.env.OLLAMA_BASE_URL = 'http://localhost:11434/api';
+		expect(detectDefaultProvider()).toBe('ollama');
 		restoreProviderEnv();
 	});
 
-	it('lists all available providers', () => {
+	it('throws a configured-message error when no provider env is set', () => {
+		// Avoids the silent-ollama-fallback trap on hosted deploys where no
+		// Ollama is actually reachable (see preview "empty replies" bug).
+		clearProviderEnv();
+		expect(() => detectDefaultProvider()).toThrow(/no llm provider configured/i);
+		restoreProviderEnv();
+	});
+
+	it('lists only providers whose credentials are present', () => {
 		clearProviderEnv();
 		process.env.ANTHROPIC_API_KEY = 'test-key';
 		process.env.OPENROUTER_API_KEY = 'test-key';
 		const available = getAvailableProviders();
 		expect(available).toContain('anthropic');
 		expect(available).toContain('openrouter');
-		expect(available).toContain('ollama'); // always available
+		expect(available).not.toContain('ollama'); // not configured here
 		expect(available).not.toContain('openai');
+		restoreProviderEnv();
+	});
+
+	it('includes ollama in available providers when OLLAMA_BASE_URL is set', () => {
+		clearProviderEnv();
+		process.env.OLLAMA_BASE_URL = 'http://localhost:11434/api';
+		expect(getAvailableProviders()).toContain('ollama');
 		restoreProviderEnv();
 	});
 });
@@ -136,10 +151,13 @@ describe('resolveModelConfig', () => {
 		expect(result.model).toBe('claude-sonnet-4-20250514');
 	});
 
-	it('auto-detects when no model_config is provided', () => {
-		// Just verify it returns something valid
+	it('auto-detects when no model_config is provided and a provider env is set', () => {
+		const saved = process.env.ANTHROPIC_API_KEY;
+		process.env.ANTHROPIC_API_KEY = 'test-key';
 		const result = resolveModelConfig(undefined);
-		expect(result.provider).toBeDefined();
+		expect(result.provider).toBe('anthropic');
 		expect(result.model).toBeDefined();
+		if (saved === undefined) delete process.env.ANTHROPIC_API_KEY;
+		else process.env.ANTHROPIC_API_KEY = saved;
 	});
 });
