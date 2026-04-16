@@ -6,6 +6,19 @@
 	import { consumeSseStream } from '$lib/sse-client';
 	import type { PageData } from './$types';
 
+	/** Display labels per round kind; unknown kinds fall back to title-case. */
+	const ROUND_LABELS: Record<string, string> = {
+		opening: 'Opening Round',
+		cross_examination: 'Cross-Examination',
+		closing: 'Closing Round'
+	};
+	function labelForRound(kind: string): string {
+		return (
+			ROUND_LABELS[kind] ??
+			kind.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+		);
+	}
+
 	let { data }: { data: PageData } = $props();
 
 	interface Turn {
@@ -104,7 +117,7 @@
 	function handleEvent(event: any) {
 		switch (event.type) {
 			case 'round_started':
-				currentRound = event.kind === 'opening' ? 'Opening Round' : 'Cross-Examination';
+				currentRound = labelForRound(event.kind);
 				currentRoundNum = event.round;
 				break;
 

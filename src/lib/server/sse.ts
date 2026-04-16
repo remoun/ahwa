@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { errorMessage } from '../util';
 
 /**
  * Wrap an async generator in a Server-Sent Events ReadableStream.
@@ -28,8 +29,7 @@ export function toSseStream<T>(generator: AsyncIterable<T>): ReadableStream<Uint
 					// Log server-side so operators can see the full error with
 					// stack trace, then send a clean message to the client.
 					console.error('SSE stream error:', err);
-					const message = err instanceof Error ? err.message : String(err);
-					const payload = { type: 'error', message };
+					const payload = { type: 'error', message: errorMessage(err) };
 					controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 				}
 			} finally {

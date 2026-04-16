@@ -4,6 +4,7 @@ import { join } from 'path';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
 import { parseJsonSafe } from '../parse';
+import { jsonOrNull } from '../../util';
 import * as schema from './schema';
 
 type Db = BunSQLiteDatabase<typeof schema>;
@@ -42,7 +43,7 @@ export function seedFromDisk(
 					name: persona.name,
 					emoji: persona.emoji,
 					systemPrompt: persona.system_prompt,
-					requires: persona.requires ? JSON.stringify(persona.requires) : null,
+					requires: jsonOrNull(persona.requires),
 					ownerParty: null
 				})
 				.onConflictDoUpdate({
@@ -51,7 +52,7 @@ export function seedFromDisk(
 						name: persona.name,
 						emoji: persona.emoji,
 						systemPrompt: persona.system_prompt,
-						requires: persona.requires ? JSON.stringify(persona.requires) : null
+						requires: jsonOrNull(persona.requires)
 					}
 				})
 				.run();
@@ -59,7 +60,7 @@ export function seedFromDisk(
 
 		// Upsert the council
 		const personaIds = parsed.personas.map((p) => p.id);
-		const modelConfig = parsed.model_config ? JSON.stringify(parsed.model_config) : null;
+		const modelConfig = jsonOrNull(parsed.model_config);
 		db.insert(schema.councils)
 			.values({
 				id: parsed.id,
@@ -106,7 +107,7 @@ export function seedFromDisk(
 				name: parsed.name,
 				emoji: parsed.emoji,
 				systemPrompt: parsed.system_prompt,
-				requires: parsed.requires ? JSON.stringify(parsed.requires) : null,
+				requires: jsonOrNull(parsed.requires),
 				ownerParty: null
 			})
 			.onConflictDoUpdate({
@@ -115,7 +116,7 @@ export function seedFromDisk(
 					name: parsed.name,
 					emoji: parsed.emoji,
 					systemPrompt: parsed.system_prompt,
-					requires: parsed.requires ? JSON.stringify(parsed.requires) : null
+					requires: jsonOrNull(parsed.requires)
 				}
 			})
 			.run();

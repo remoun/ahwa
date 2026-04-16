@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { listHandler, createHandler } from '$lib/server/crud';
 import { CouncilBodySchema, type CouncilBody } from '$lib/schemas/council';
+import { jsonOrNull } from '$lib/util';
 import type { RequestHandler } from './$types';
 
 const config = {
@@ -15,7 +16,7 @@ const config = {
 		personaIds: JSON.stringify(body.personaIds),
 		synthesisPrompt: body.synthesisPrompt,
 		roundStructure: JSON.stringify(body.roundStructure),
-		modelConfig: body.modelConfig ? JSON.stringify(body.modelConfig) : null,
+		modelConfig: jsonOrNull(body.modelConfig),
 		ownerParty: 'user' // M1: single user, custom councils owned by 'user'
 	}),
 	toUpdateValues: (body: CouncilBody) => ({
@@ -23,7 +24,7 @@ const config = {
 		personaIds: JSON.stringify(body.personaIds),
 		synthesisPrompt: body.synthesisPrompt,
 		roundStructure: JSON.stringify(body.roundStructure),
-		modelConfig: body.modelConfig ? JSON.stringify(body.modelConfig) : null
+		modelConfig: jsonOrNull(body.modelConfig)
 	})
 };
 

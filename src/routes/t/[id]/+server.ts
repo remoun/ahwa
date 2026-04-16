@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { validateDeliberationRequest } from '$lib/server/guards';
 import { runDeliberation } from '$lib/server/orchestrator';
 import { toSseStream } from '$lib/server/sse';
+import { errorMessage } from '$lib/util';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, url, request }) => {
@@ -38,9 +39,8 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 		// Handler-level failures (e.g., DB unavailable) never reach the
 		// SSE stream, so return a JSON error body the client can surface.
 		console.error('SSE handler error:', err);
-		const message = err instanceof Error ? err.message : String(err);
 		return new Response(
-			JSON.stringify({ error: message }),
+			JSON.stringify({ error: errorMessage(err) }),
 			{ status: 500, headers: { 'Content-Type': 'application/json' } }
 		);
 	}

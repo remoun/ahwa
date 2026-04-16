@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { complete as defaultComplete, resolveModelConfig, type CompleteRequest, type CompleteResult } from './llm';
 import { filterPersonas } from './features';
 import { parseJson } from './parse';
+import { errorMessage } from '../util';
 import { RoundStructureSchema, ModelConfigSchema } from '../schemas/council';
 import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
@@ -218,9 +219,8 @@ export async function* runDeliberation(
 		// Mark table as failed so it doesn't stay stuck in 'running'.
 		// Persist the error message so users see the cause when they
 		// revisit the table instead of a generic "encountered an error".
-		const errorMessage = err instanceof Error ? err.message : String(err);
 		db.update(schema.tables)
-			.set({ status: 'failed', errorMessage, updatedAt: Date.now() })
+			.set({ status: 'failed', errorMessage: errorMessage(err), updatedAt: Date.now() })
 			.where(eq(schema.tables.id, tableId))
 			.run();
 		throw err;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { error as svelteError } from '@sveltejs/kit';
+import { errorMessage } from '../util';
 
 /**
  * Wrap a `+page.server.ts` load function so any synchronous or async
@@ -11,7 +12,6 @@ export async function loadOrFail<T>(context: string, fn: () => T | Promise<T>): 
 		return await fn();
 	} catch (err) {
 		console.error(`${context}: load error:`, err);
-		const message = err instanceof Error ? err.message : String(err);
-		throw svelteError(500, `${context}: ${message}`);
+		throw svelteError(500, `${context}: ${errorMessage(err)}`);
 	}
 }

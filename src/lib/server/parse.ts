@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { ZodType } from 'zod';
+import { errorMessage } from '../util';
 
 /**
  * Parse a JSON string and validate with a Zod schema. Returns a result
@@ -14,7 +15,7 @@ export function parseJsonSafe<T>(
 	try {
 		data = JSON.parse(raw);
 	} catch (err) {
-		return { ok: false, error: `invalid JSON: ${err instanceof Error ? err.message : err}` };
+		return { ok: false, error: `invalid JSON: ${errorMessage(err)}` };
 	}
 	const result = schema.safeParse(data);
 	if (!result.success) {

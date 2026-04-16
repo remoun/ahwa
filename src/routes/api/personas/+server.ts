@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { listHandler, createHandler } from '$lib/server/crud';
 import { PersonaBodySchema, type PersonaBody } from '$lib/schemas/council';
+import { jsonOrNull } from '$lib/util';
 import type { RequestHandler } from './$types';
 
 const config = {
@@ -14,14 +15,14 @@ const config = {
 		name: body.name,
 		emoji: body.emoji,
 		systemPrompt: body.systemPrompt,
-		requires: body.requires ? JSON.stringify(body.requires) : null,
+		requires: jsonOrNull(body.requires),
 		ownerParty: 'user' // M1: single user
 	}),
 	toUpdateValues: (body: PersonaBody) => ({
 		name: body.name,
 		emoji: body.emoji,
 		systemPrompt: body.systemPrompt,
-		requires: body.requires ? JSON.stringify(body.requires) : null
+		requires: jsonOrNull(body.requires)
 	})
 };
 

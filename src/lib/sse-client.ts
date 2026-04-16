@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { errorMessage } from './util';
 
 export interface SseClientOptions<T> {
 	url: string;
@@ -27,7 +28,7 @@ export async function consumeSseStream<T>(opts: SseClientOptions<T>): Promise<vo
 		res = await fetchImpl(url, { signal });
 	} catch (err) {
 		if (err instanceof DOMException && err.name === 'AbortError') return;
-		onError?.(err instanceof Error ? err.message : String(err));
+		onError?.(errorMessage(err));
 		return;
 	}
 
@@ -69,6 +70,6 @@ export async function consumeSseStream<T>(opts: SseClientOptions<T>): Promise<vo
 		}
 	} catch (err) {
 		if (err instanceof DOMException && err.name === 'AbortError') return;
-		onError?.(err instanceof Error ? err.message : String(err));
+		onError?.(errorMessage(err));
 	}
 }
