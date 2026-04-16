@@ -15,13 +15,10 @@ export const load: PageServerLoad = () => loadOrFail('home', () => {
 
 	const councils = db.select().from(schema.councils).all();
 
+	// M1: one party per table, so last-write-wins is fine. M3 will need
+	// to filter by role === 'initiator' when two-party tables exist.
 	const tableParties = db.select().from(schema.tableParties).all();
-	const partyByTable = new Map<string, string>();
-	for (const tp of tableParties) {
-		if (!partyByTable.has(tp.tableId)) {
-			partyByTable.set(tp.tableId, tp.partyId);
-		}
-	}
+	const partyByTable = new Map(tableParties.map((tp) => [tp.tableId, tp.partyId]));
 
 	return {
 		tables: tables.map((t) => ({
