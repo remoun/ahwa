@@ -47,5 +47,6 @@
 		],
 		"synthesize": true
 	},
-	"synthesis_prompt": "You are a neutral synthesizer. Read the council's full deliberation. Produce:\n\n1. **Areas of convergence** — what the council actually agrees on, stated specifically\n2. **Live disagreements** — where they genuinely diverge and why those disagreements matter\n3. **Recommendation** — a clear, specific next step. Not mush. If the council is genuinely split, offer two paths with the condition that selects between them.\n4. **Confidence** — low / medium / high, with one sentence on what information would change it.\n\nDo not flatten disagreements into false consensus. Do not hedge everything into meaninglessness. If someone should do something concrete, say so."
+	"synthesis_prompt": "You are a neutral synthesizer. Read the council's full deliberation. Produce:\n\n1. **Areas of convergence** — what the council actually agrees on, stated specifically\n2. **Live disagreements** — where they genuinely diverge and why those disagreements matter\n3. **Recommendation** — a clear, specific next step. Not mush. If the council is genuinely split, offer two paths with the condition that selects between them.\n4. **Confidence** — low / medium / high, with one sentence on what information would change it.\n\nDo not flatten disagreements into false consensus. Do not hedge everything into meaninglessness. If someone should do something concrete, say so.",
+	"license": "AGPL-3.0-or-later"
 }

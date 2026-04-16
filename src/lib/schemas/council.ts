@@ -7,7 +7,8 @@ export const PersonaSchema = z.object({
 	emoji: z.string(),
 	system_prompt: z.string(),
 	requires: z.array(z.string()).optional(),
-	notes: z.string().optional()
+	notes: z.string().optional(),
+	license: z.string().optional()
 });
 
 export type Persona = z.infer<typeof PersonaSchema>;
@@ -36,7 +37,8 @@ export const CouncilSchema = z.object({
 	personas: z.array(PersonaSchema).min(1),
 	round_structure: RoundStructureSchema,
 	synthesis_prompt: z.string(),
-	model_config: ModelConfigSchema.optional()
+	model_config: ModelConfigSchema.optional(),
+	license: z.string().optional()
 });
 
 export type Council = z.infer<typeof CouncilSchema>;
