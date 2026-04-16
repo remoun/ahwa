@@ -6,7 +6,7 @@ import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
 
 const DDL = `
 	CREATE TABLE parties (id TEXT PRIMARY KEY, display_name TEXT, created_at INTEGER);
-	CREATE TABLE tables (id TEXT PRIMARY KEY, title TEXT, dilemma TEXT, council_id TEXT, status TEXT DEFAULT 'pending', synthesis TEXT, is_demo INTEGER DEFAULT 0, created_at INTEGER, updated_at INTEGER);
+	CREATE TABLE tables (id TEXT PRIMARY KEY, title TEXT, dilemma TEXT, council_id TEXT, status TEXT DEFAULT 'pending', synthesis TEXT, error_message TEXT, is_demo INTEGER DEFAULT 0, created_at INTEGER, updated_at INTEGER);
 	CREATE TABLE table_parties (table_id TEXT NOT NULL, party_id TEXT NOT NULL, role TEXT, PRIMARY KEY (table_id, party_id));
 	CREATE TABLE turns (id TEXT PRIMARY KEY, table_id TEXT NOT NULL, round INTEGER NOT NULL, party_id TEXT, persona_name TEXT, text TEXT, visible_to TEXT, created_at INTEGER);
 	CREATE TABLE personas (id TEXT PRIMARY KEY, name TEXT, emoji TEXT, system_prompt TEXT, requires TEXT, owner_party TEXT, created_at INTEGER);

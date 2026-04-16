@@ -27,6 +27,7 @@ client.exec(`
 		council_id TEXT,
 		status TEXT DEFAULT 'pending',
 		synthesis TEXT,
+		error_message TEXT,
 		is_demo INTEGER DEFAULT 0,
 		created_at INTEGER,
 		updated_at INTEGER
@@ -72,6 +73,23 @@ client.exec(`
 		updated_at INTEGER
 	);
 `);
+
+// Lightweight migrations for pre-existing DBs (columns added after the initial DDL).
+// Each ALTER TABLE is idempotent via try/catch on "duplicate column" errors.
+// This lets existing deployments (e.g., Fly preview apps with persistent volumes)
+// pick up new columns without a volume reset. M2 switches to drizzle-kit migrations.
+function addColumnIfMissing(table: string, column: string, type: string) {
+	try {
+		client.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+	} catch (err) {
+		// SQLite throws "duplicate column name" if the column already exists — ignore
+		if (!(err instanceof Error && /duplicate column/i.test(err.message))) {
+			throw err;
+		}
+	}
+}
+addColumnIfMissing('tables', 'error_message', 'TEXT');
+addColumnIfMissing('councils', 'model_config', 'TEXT');
 
 export const db = drizzle(client, { schema });
 

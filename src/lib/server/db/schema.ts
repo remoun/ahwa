@@ -15,6 +15,7 @@ export const tables = sqliteTable('tables', {
 	councilId: text('council_id'),
 	status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }).default('pending'),
 	synthesis: text('synthesis'),
+	errorMessage: text('error_message'),
 	isDemo: integer('is_demo').default(0),
 	createdAt: integer('created_at').$defaultFn(() => Date.now()),
 	updatedAt: integer('updated_at').$defaultFn(() => Date.now())

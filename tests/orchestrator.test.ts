@@ -243,6 +243,7 @@ describe('orchestrator', () => {
 
 		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-fail')).get();
 		expect(table!.status).toBe('failed');
+		expect(table!.errorMessage).toBe('LLM provider down');
 	});
 
 	it('throws when council does not exist', async () => {

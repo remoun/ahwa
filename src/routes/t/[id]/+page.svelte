@@ -279,7 +279,7 @@
 
 	{#if isFailed && !error}
 		<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800">
-			This deliberation encountered an error and could not complete.
+			{data.table?.errorMessage ?? 'This deliberation encountered an error and could not complete.'}
 		</div>
 	{/if}
 

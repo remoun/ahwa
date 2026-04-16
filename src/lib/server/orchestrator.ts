@@ -215,9 +215,12 @@ export async function* runDeliberation(
 	yield { type: 'table_closed' };
 
 	} catch (err) {
-		// Mark table as failed so it doesn't stay stuck in 'running'
+		// Mark table as failed so it doesn't stay stuck in 'running'.
+		// Persist the error message so users see the cause when they
+		// revisit the table instead of a generic "encountered an error".
+		const errorMessage = err instanceof Error ? err.message : String(err);
 		db.update(schema.tables)
-			.set({ status: 'failed', updatedAt: Date.now() })
+			.set({ status: 'failed', errorMessage, updatedAt: Date.now() })
 			.where(eq(schema.tables.id, tableId))
 			.run();
 		throw err;
