@@ -176,8 +176,19 @@
 		}
 	}
 
-	function exportMarkdown() {
-		window.location.href = `/api/tables/${data.tableId}/export`;
+	let copyState = $state<'idle' | 'copied' | 'error'>('idle');
+	async function copyMarkdown() {
+		try {
+			const res = await fetch(`/api/tables/${data.tableId}/export`);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const text = await res.text();
+			await navigator.clipboard.writeText(text);
+			copyState = 'copied';
+			setTimeout(() => (copyState = 'idle'), 2000);
+		} catch {
+			copyState = 'error';
+			setTimeout(() => (copyState = 'idle'), 2000);
+		}
 	}
 </script>
 
@@ -190,10 +201,16 @@
 		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors">← Back to tables</a>
 		{#if done}
 			<button
-				onclick={exportMarkdown}
+				onclick={copyMarkdown}
 				class="text-sm px-3 py-1.5 border border-border-strong rounded-lg hover:bg-surface-muted text-fg-muted transition-colors"
 			>
-				Export Markdown
+				{#if copyState === 'copied'}
+					Copied!
+				{:else if copyState === 'error'}
+					Copy failed
+				{:else}
+					Copy Markdown
+				{/if}
 			</button>
 		{/if}
 	</div>

@@ -28,7 +28,7 @@ test.describe('deliberation flow', () => {
 		await expect(page.getByText(/mocked response for E2E testing/i).first()).toBeVisible();
 
 		await expect(page.getByRole('heading', { name: 'Synthesis' })).toBeVisible();
-		await expect(page.getByRole('button', { name: /export markdown/i })).toBeVisible();
+		await expect(page.getByRole('button', { name: /copy markdown/i })).toBeVisible();
 	});
 
 	test('revisiting a completed table renders from DB without re-streaming', async ({ page }) => {
@@ -66,14 +66,12 @@ test.describe('deliberation flow', () => {
 		await expect(page.getByRole('main').locator('.animate-pulse')).toHaveCount(0);
 	});
 
-	test('markdown export downloads after completion', async ({ page }) => {
+	test('copy markdown button reports success after completion', async ({ context, page }) => {
+		await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 		await runDeliberation(page, 'Export test');
 
-		const downloadPromise = page.waitForEvent('download');
-		await page.getByRole('button', { name: /export markdown/i }).click();
-		const download = await downloadPromise;
-
-		expect(download.suggestedFilename()).toMatch(/^table-.+\.md$/);
+		await page.getByRole('button', { name: /copy markdown/i }).click();
+		await expect(page.getByRole('button', { name: /copied/i })).toBeVisible();
 	});
 });
 
