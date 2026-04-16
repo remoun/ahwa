@@ -1,5 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+	import { renderMarkdown } from '$lib/markdown';
+
 	let {
 		emoji = '',
 		personaName = '',
@@ -13,6 +15,8 @@
 		complete?: boolean;
 		streaming?: boolean;
 	} = $props();
+
+	const html = $derived(renderMarkdown(text));
 </script>
 
 <div class="mb-4 flex gap-3 animate-fade-in">
@@ -30,8 +34,10 @@
 		<div class="font-medium text-sm text-fg mb-1.5">
 			{personaName}
 		</div>
-		<div class="whitespace-pre-wrap text-fg-muted text-sm leading-relaxed">
-			{text}{#if streaming && !complete}<span class="animate-pulse text-accent">|</span>{/if}
+		<div class="markdown-body text-fg-muted text-sm leading-relaxed">
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+			{@html html}{#if streaming && !complete}<span class="animate-pulse text-accent">|</span
+				>{/if}
 		</div>
 	</div>
 </div>

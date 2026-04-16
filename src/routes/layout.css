@@ -154,3 +154,96 @@ body {
 	background-color: var(--c-bg);
 	color: var(--c-fg-muted);
 }
+
+/*
+ * Minimal prose styling for LLM-generated markdown. Tailwind resets
+ * headings/lists/emphasis; these rules restore enough structure for
+ * turn text and synthesis to read cleanly without pulling in
+ * @tailwindcss/typography.
+ */
+.markdown-body {
+	white-space: normal;
+
+	& > *:first-child {
+		margin-top: 0;
+	}
+	& > *:last-child {
+		margin-bottom: 0;
+	}
+	& p {
+		margin: 0 0 0.75em;
+	}
+	& :is(h1, h2, h3, h4) {
+		font-weight: 600;
+		color: var(--c-fg);
+		margin: 1em 0 0.5em;
+		line-height: 1.3;
+	}
+	& h1 {
+		font-size: 1.15em;
+	}
+	& h2 {
+		font-size: 1.05em;
+	}
+	& :is(h3, h4) {
+		font-size: 1em;
+	}
+	& strong {
+		color: var(--c-fg);
+		font-weight: 600;
+	}
+	& em {
+		font-style: italic;
+	}
+	& :is(ul, ol) {
+		margin: 0 0 0.75em;
+		padding-left: 1.5em;
+	}
+	& ul {
+		list-style: disc;
+	}
+	& ol {
+		list-style: decimal;
+	}
+	& li {
+		margin: 0.25em 0;
+
+		& > p {
+			margin: 0;
+		}
+	}
+	& code {
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.9em;
+		background: var(--c-surface-muted);
+		padding: 0.1em 0.35em;
+		border-radius: 4px;
+	}
+	& pre {
+		background: var(--c-surface-muted);
+		padding: 0.75em 1em;
+		border-radius: 8px;
+		overflow-x: auto;
+		margin: 0 0 0.75em;
+
+		& code {
+			background: transparent;
+			padding: 0;
+		}
+	}
+	& blockquote {
+		border-left: 3px solid var(--c-border-strong);
+		padding-left: 0.75em;
+		margin: 0 0 0.75em;
+		color: var(--c-fg-muted);
+	}
+	& a {
+		color: var(--c-accent);
+		text-decoration: underline;
+	}
+	& hr {
+		border: none;
+		border-top: 1px solid var(--c-border);
+		margin: 1em 0;
+	}
+}
