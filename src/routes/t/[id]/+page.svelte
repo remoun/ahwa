@@ -203,7 +203,6 @@
 			<button
 				onclick={copyMarkdown}
 				title="Copy this deliberation to your clipboard as Markdown"
-				aria-label="Copy deliberation as Markdown"
 				class="text-sm px-3 py-1.5 border border-border-strong rounded-lg hover:bg-surface-muted text-fg-muted transition-colors inline-flex items-center gap-1.5"
 			>
 				{#if copyState === 'copied'}
