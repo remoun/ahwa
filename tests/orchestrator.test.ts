@@ -188,6 +188,38 @@ describe('orchestrator', () => {
 		expect(receivedConfigs[0].provider).toBe('anthropic');
 	});
 
+	it('fails when the LLM returns an empty stream (no tokens)', async () => {
+		createTable(db, 'tbl-empty', 'Empty response test', 'test-council', 'party-1');
+
+		const emptyComplete = async () => ({
+			textStream: (async function* () {
+				// yields nothing
+			})()
+		});
+
+		const events: SseEvent[] = [];
+		let threw = false;
+		try {
+			for await (const event of runDeliberation(db, {
+				tableId: 'tbl-empty',
+				dilemma: 'Empty response test',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: emptyComplete
+			})) {
+				events.push(event);
+			}
+		} catch (err: any) {
+			threw = true;
+			// Message should name the persona so ops can diagnose which provider call silently failed
+			expect(err.message).toMatch(/empty|no tokens/i);
+		}
+		expect(threw).toBe(true);
+
+		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-empty')).get();
+		expect(table!.status).toBe('failed');
+	});
+
 	it('sets table status to failed when completeFn throws', async () => {
 		createTable(db, 'tbl-fail', 'Failure test', 'test-council', 'party-1');
 

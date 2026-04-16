@@ -86,7 +86,7 @@
 
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<div class="flex items-center justify-between mb-6">
-		<h1 class="text-2xl font-bold text-fg">Councils</h1>
+		<h1 class="font-display text-3xl text-fg">Councils</h1>
 		<button
 			onclick={() => (showForm = !showForm)}
 			class="text-sm px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent-hover transition-colors shadow-sm"
@@ -99,7 +99,7 @@
 		<div
 			class="mb-8 p-5 border border-border-strong rounded-xl bg-surface-muted/50 shadow-sm animate-fade-in"
 		>
-			<h2 class="font-semibold mb-4 text-fg">Create a council</h2>
+			<h2 class="font-display text-xl mb-4 text-fg">Create a council</h2>
 
 			{#if error}
 				<p class="text-danger text-sm mb-3">{error}</p>
@@ -168,7 +168,7 @@
 			<div class="p-4 bg-surface border border-border rounded-xl shadow-sm">
 				<div class="flex items-start justify-between gap-4">
 					<div class="flex-1">
-						<h3 class="font-medium text-fg">{council.name}</h3>
+						<h3 class="font-display text-lg text-fg">{council.name}</h3>
 						{#if council.isSeeded}
 							<span
 								class="inline-block mt-1 px-1.5 py-0.5 bg-surface-accent text-fg-muted rounded text-xs"

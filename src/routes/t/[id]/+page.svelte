@@ -285,7 +285,7 @@
 		</div>
 	{/if}
 
-	{#if !currentRound && !error && !isCompleted && !isRunning && !isFailed}
+	{#if !currentRound && !error && !done && !isCompleted && !isRunning && !isFailed}
 		<div class="flex items-center gap-3 text-fg-subtle text-sm">
 			<div class="w-2 h-2 rounded-full bg-accent-hover animate-pulse"></div>
 			Connecting to the council...

@@ -31,7 +31,7 @@
 
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
 	<section class="mb-12">
-		<h1 class="text-2xl font-bold mb-1 text-fg">Set a table</h1>
+		<h1 class="font-display text-3xl mb-1 text-fg">Set a table</h1>
 		<p class="text-fg-subtle text-sm mb-5">Pose a dilemma. The council will deliberate.</p>
 
 		<form
@@ -86,7 +86,7 @@
 
 	{#if data.tables.length > 0}
 		<section>
-			<h2 class="text-base font-semibold text-fg mb-3">Your tables</h2>
+			<h2 class="font-display text-xl text-fg mb-3">Your tables</h2>
 			<div class="space-y-2">
 				{#each data.tables as table (table.id)}
 					<TableCard

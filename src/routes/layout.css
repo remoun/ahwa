@@ -89,6 +89,16 @@
 	--color-info-border: var(--c-info-border);
 
 	--animate-fade-in: fade-in 0.3s ease-out;
+
+	/*
+	 * Humanist system-serif stack for display/headings. No webfont download,
+	 * no Google Fonts request (zero-telemetry promise). Each OS gets its
+	 * warmest available option: Charter/Iowan on Apple, Palatino on
+	 * Linux/Windows, Georgia as broad fallback.
+	 */
+	--font-display:
+		Charter, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'URW Palladio L', 'Hoefler Text',
+		Georgia, Cambria, serif;
 }
 
 @keyframes fade-in {

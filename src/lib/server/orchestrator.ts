@@ -156,6 +156,17 @@ export async function* runDeliberation(
 					yield { type: 'token', personaId: persona.id, text: chunk };
 				}
 
+				// A provider that closes the stream without yielding anything is
+				// almost always a silent failure (rate-limit, bad model id, dead
+				// connection) rather than a model legitimately choosing to say
+				// nothing. Surface it as an error so the table fails loudly
+				// instead of persisting an empty turn.
+				if (fullText === '') {
+					throw new Error(
+						`LLM returned empty response for ${persona.name ?? persona.id} (provider: ${resolvedConfig.provider}, model: ${resolvedConfig.model}). Check provider credentials and model availability.`
+					);
+				}
+
 				yield { type: 'persona_turn_completed', personaId: persona.id };
 
 				// Persist the turn
