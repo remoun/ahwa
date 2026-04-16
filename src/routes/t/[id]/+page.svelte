@@ -45,7 +45,11 @@
 					round: t.round
 				}));
 			synthesis = data.table?.synthesis ?? '';
-			done = true;
+			// Only mark done for successfully completed tables; failed tables
+			// show their own banner via isFailed.
+			if (data.table?.status === 'completed') {
+				done = true;
+			}
 		}
 	});
 
@@ -201,6 +205,8 @@
 				done = true;
 				synthesizing = false;
 				activePersona = '';
+				// Drop any in-flight turns — they never got content
+				turns = turns.filter((t) => t.complete);
 				break;
 		}
 	}
@@ -271,7 +277,7 @@
 		<SynthesisPanel text={synthesis} streaming={synthesizing} />
 	{/if}
 
-	{#if isCompleted}
+	{#if done && !error}
 		<p class="mt-8 text-amber-600/40 text-sm text-center">Deliberation complete.</p>
 	{/if}
 
