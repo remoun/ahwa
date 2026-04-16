@@ -35,7 +35,10 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 			headers: {
 				'Content-Type': 'text/event-stream',
 				'Cache-Control': 'no-cache',
-				Connection: 'keep-alive'
+				Connection: 'keep-alive',
+				// Disable proxy buffering (Fly, nginx, etc.) so tokens arrive
+				// as they're produced instead of batched when the stream ends.
+				'X-Accel-Buffering': 'no'
 			}
 		});
 	} catch (err) {
