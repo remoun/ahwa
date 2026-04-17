@@ -36,7 +36,8 @@ See [CLAUDE.md](./CLAUDE.md#milestones) for the full milestone plan.
   broken out into testable modules
 - Playwright E2E suite covering the streaming flow, historical view,
   council CRUD, error surfacing, and markdown export
-- Docker image, PR preview deploys on Fly.io, CI on every push/PR
+- Docker image, PR preview deploys on Fly.io, CI on every PR,
+  auto-deploy to ahwa.app (Fly) on main merge via a CD workflow
 - Dependabot (npm, GitHub Actions, Docker base), ESLint + Prettier
   flat config
 - SPDX license headers on all source files; optional `license` field
