@@ -2,11 +2,9 @@
 name: CI
 
 on:
-  # Run on push to main, and on PRs (from any branch).
-  # Push to a non-main branch that has an open PR won't duplicate —
-  # only the pull_request event fires.
-  push:
-    branches: [main]
+  # PRs only. Branch protection requires these checks to pass before a
+  # PR can merge to main, so re-running on the main push would duplicate
+  # the same checks that just passed.
   pull_request:
 
 jobs:
