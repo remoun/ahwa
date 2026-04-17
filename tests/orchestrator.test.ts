@@ -477,9 +477,7 @@ describe('orchestrator', () => {
 		// Inside round 1: persona_turn_started events for both personas must
 		// precede the first token event so the frontend can open N cards upfront.
 		const round1Start = events.findIndex((e) => e.type === 'round_started');
-		const round2Start = events.findIndex(
-			(e, i) => i > round1Start && e.type === 'round_started'
-		);
+		const round2Start = events.findIndex((e, i) => i > round1Start && e.type === 'round_started');
 		const round1Events = events.slice(round1Start, round2Start);
 
 		const firstTokenIdx = round1Events.findIndex((e) => e.type === 'token');
