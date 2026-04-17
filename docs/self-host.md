@@ -82,14 +82,29 @@ Set `AHWA_DATA_DIR` to control where the database lives:
 
 ## Environment variables
 
-| Variable             | Required | Description                                                                                                                                                                                         |
-| -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`               | No       | HTTP port (default: 3000)                                                                                                                                                                           |
-| `AHWA_DATA_DIR`      | No       | Data directory path                                                                                                                                                                                 |
-| `AHWA_SHARE_SECRET`  | No       | Hex secret used to sign share-link tokens. If unset, a random one is generated at startup — fine for dev, but links will break across restarts in production. Generate with `openssl rand -hex 32`. |
-| `ANTHROPIC_API_KEY`  | No\*     | Anthropic API key                                                                                                                                                                                   |
-| `OPENAI_API_KEY`     | No\*     | OpenAI API key                                                                                                                                                                                      |
-| `OPENROUTER_API_KEY` | No\*     | OpenRouter API key (includes a free tier — easiest to start with)                                                                                                                                   |
-| `OLLAMA_BASE_URL`    | No\*     | Ollama URL, e.g. `http://localhost:11434/api`. Must be set explicitly — not inferred — so hosted deploys without a reachable Ollama don't silently fail.                                            |
+### Runtime
+
+| Variable            | Required | Description                                                                                                                                                                                         |
+| ------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`              | No       | HTTP port (default: 3000)                                                                                                                                                                           |
+| `AHWA_DATA_DIR`     | No       | Data directory path                                                                                                                                                                                 |
+| `AHWA_SHARE_SECRET` | No       | Hex secret used to sign share-link tokens. If unset, a random one is generated at startup — fine for dev, but links will break across restarts in production. Generate with `openssl rand -hex 32`. |
+
+### LLM providers
+
+At least one provider must be configured via its API key (or base URL for
+Ollama). The matching `AHWA_{PROVIDER}_MODEL` override is optional and only
+applies when the council being run has no explicit `model_config`.
+
+| Variable                | Required | Description                                                                                                                                              |
+| ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`     | No\*     | Anthropic API key                                                                                                                                        |
+| `AHWA_ANTHROPIC_MODEL`  | No       | Override the default Anthropic model (default: `claude-sonnet-4-20250514`)                                                                               |
+| `OPENAI_API_KEY`        | No\*     | OpenAI API key                                                                                                                                           |
+| `AHWA_OPENAI_MODEL`     | No       | Override the default OpenAI model (default: `gpt-4o`)                                                                                                    |
+| `OPENROUTER_API_KEY`    | No\*     | OpenRouter API key (includes a free tier — easiest to start with)                                                                                        |
+| `AHWA_OPENROUTER_MODEL` | No       | Override the default OpenRouter model (default: `anthropic/claude-sonnet-4-6`)                                                                           |
+| `OLLAMA_BASE_URL`       | No\*     | Ollama URL, e.g. `http://localhost:11434/api`. Must be set explicitly — not inferred — so hosted deploys without a reachable Ollama don't silently fail. |
+| `AHWA_OLLAMA_MODEL`     | No       | Override the default Ollama model (default: `llama3.1`)                                                                                                  |
 
 \*At least one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, or `OLLAMA_BASE_URL` must be set.

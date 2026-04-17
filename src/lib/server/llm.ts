@@ -27,19 +27,35 @@ export interface CompleteResult {
 /**
  * Default models per provider when only the provider is known.
  *
- * OpenRouter default is an NVIDIA Nemotron `:free` variant — NVIDIA
- * subsidizes these to showcase their models on NIM, which tends to mean
- * more consistent availability than the other free-tier options. If
- * this model gets retired or rate-limits bite, the symptom is "LLM
- * returned empty response" surfaced loudly from the orchestrator;
- * users can override via council.model_config.
+ * OpenRouter default is Claude Sonnet 4.6. Deliberation quality matters
+ * for this product — users bring decisions that matter to them, and the
+ * difference between a nuanced 4-paragraph take and a terse 3-sentence
+ * one is load-bearing. `:free` tier models were tried first but rotate
+ * reliability / get rate-limited / occasionally return empty, which the
+ * orchestrator's fail-loud guard catches but doesn't fix.
+ *
+ * At ~$3/1M input + $15/1M output via OpenRouter, a typical 5-persona
+ * 2-round deliberation runs ~$0.12 — about 80 deliberations per $10/wk
+ * spend cap. Override per-council via council.model_config for cheaper
+ * defaults on demo-style councils or higher tiers for critical work.
  */
-const DEFAULT_MODELS: Record<ProviderName, string> = {
+const HARDCODED_DEFAULT_MODELS: Record<ProviderName, string> = {
 	anthropic: 'claude-sonnet-4-20250514',
 	openai: 'gpt-4o',
-	openrouter: 'nvidia/nemotron-3-super-120b-a12b:free',
+	openrouter: 'anthropic/claude-sonnet-4-6',
 	ollama: 'llama3.1'
 };
+
+/**
+ * Per-provider env overrides so operators can swap the default model
+ * without a code change — e.g. `AHWA_OPENROUTER_MODEL=google/gemini-2.5-pro`
+ * on a staging deploy. Reads env on each call (rather than at module load)
+ * so tests can set it after import.
+ */
+export function defaultModelFor(provider: ProviderName): string {
+	const envKey = `AHWA_${provider.toUpperCase()}_MODEL` as const;
+	return process.env[envKey] || HARDCODED_DEFAULT_MODELS[provider];
+}
 
 /**
  * Detect the first available provider by checking env vars.
@@ -82,7 +98,7 @@ export function getAvailableProviders(): ProviderName[] {
 export function resolveModelConfig(config: ModelConfig | undefined): ModelConfig {
 	if (config) return config;
 	const provider = detectDefaultProvider();
-	return { provider, model: DEFAULT_MODELS[provider] };
+	return { provider, model: defaultModelFor(provider) };
 }
 
 /** Create the appropriate Vercel AI SDK model instance for a provider+model pair */
