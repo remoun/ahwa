@@ -103,7 +103,7 @@ applies when the council being run has no explicit `model_config`.
 | `OPENAI_API_KEY`        | No\*     | OpenAI API key                                                                                                                                           |
 | `AHWA_OPENAI_MODEL`     | No       | Override the default OpenAI model (default: `gpt-4o`)                                                                                                    |
 | `OPENROUTER_API_KEY`    | No\*     | OpenRouter API key (includes a free tier — easiest to start with)                                                                                        |
-| `AHWA_OPENROUTER_MODEL` | No       | Override the default OpenRouter model (default: `anthropic/claude-sonnet-4-6`)                                                                           |
+| `AHWA_OPENROUTER_MODEL` | No       | Override the default OpenRouter model (default: `anthropic/claude-sonnet-4.6`)                                                                           |
 | `OLLAMA_BASE_URL`       | No\*     | Ollama URL, e.g. `http://localhost:11434/api`. Must be set explicitly — not inferred — so hosted deploys without a reachable Ollama don't silently fail. |
 | `AHWA_OLLAMA_MODEL`     | No       | Override the default Ollama model (default: `llama3.1`)                                                                                                  |
 
