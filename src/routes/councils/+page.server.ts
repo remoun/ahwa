@@ -7,7 +7,11 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = () =>
 	loadOrFail('councils', () => {
-		const councils = db.select().from(schema.councils).all();
+		const councils = db
+			.select()
+			.from(schema.councils)
+			.all()
+			.filter((c) => !c.id.startsWith('_'));
 		const personas = db.select().from(schema.personas).all();
 
 		return {

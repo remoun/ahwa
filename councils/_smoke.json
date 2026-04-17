@@ -1,0 +1,24 @@
+{
+	"id": "_smoke",
+	"name": "Smoke Test Council",
+	"description": "Internal — used by the post-deploy smoke test to verify the deliberation loop works end-to-end with the real LLM provider. Leave it alone; it's intentionally minimal (one persona, one short round, no synthesis) to keep smoke-test cost near zero.",
+	"personas": [
+		{
+			"id": "_smoke-voice",
+			"name": "The Smoke Voice",
+			"emoji": "💨",
+			"system_prompt": "You are a diagnostic voice for a smoke test. Reply with a short sentence (5-15 words) acknowledging the dilemma. Do not offer advice; the purpose is to verify the streaming pipeline, not to deliberate."
+		}
+	],
+	"round_structure": {
+		"rounds": [
+			{
+				"kind": "opening",
+				"prompt_suffix": "Acknowledge briefly."
+			}
+		],
+		"synthesize": false
+	},
+	"synthesis_prompt": "",
+	"license": "AGPL-3.0-or-later"
+}
