@@ -1,0 +1,1 @@
+ALTER TABLE `turns` ADD `truncated` integer DEFAULT 0;

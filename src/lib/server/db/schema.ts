@@ -47,6 +47,10 @@ export const turns = sqliteTable('turns', {
 	personaName: text('persona_name'),
 	text: text('text'),
 	visibleTo: text('visible_to'), // JSON array of party_ids
+	// 1 if the LLM hit maxOutputTokens and the text was cut off — the
+	// persisted text is incomplete. Ops can see this on reload without
+	// re-running the deliberation.
+	truncated: integer('truncated').default(0),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });
 

@@ -145,6 +145,7 @@ export async function* runDeliberation(
 			// Kick off all LLM calls in parallel. Each persona gets the same
 			// prior-round context built from turnsByRound.
 			const fullTexts: string[] = personas.map(() => '');
+			const truncatedFlags: boolean[] = personas.map(() => false);
 			const personaStreams = personas.map((persona, idx) =>
 				(async function* (): AsyncGenerator<SseEvent> {
 					const messages = buildMessages(dilemma, round, roundIdx, turnsByRound);
@@ -167,6 +168,18 @@ export async function* runDeliberation(
 					if (fullTexts[idx] === '') {
 						throw new Error(
 							`LLM returned empty response for ${persona.name ?? persona.id} (provider: ${resolvedConfig.provider}, model: ${resolvedConfig.model}). Check provider credentials and model availability.`
+						);
+					}
+
+					// Truncation happens when the model hits maxOutputTokens mid-
+					// response. Not a fatal error (we have partial content), but
+					// worth flagging so a reloader can see the text is incomplete
+					// and ops can decide whether to raise the cap.
+					const { truncated } = await result.finished;
+					truncatedFlags[idx] = truncated;
+					if (truncated) {
+						console.warn(
+							`orchestrator: persona "${persona.name ?? persona.id}" was truncated at maxOutputTokens in round ${roundIdx + 1}`
 						);
 					}
 
@@ -193,7 +206,8 @@ export async function* runDeliberation(
 						partyId,
 						personaName: persona.name,
 						text: fullTexts[i],
-						visibleTo: JSON.stringify(visibleTo)
+						visibleTo: JSON.stringify(visibleTo),
+						truncated: truncatedFlags[i] ? 1 : 0
 					})
 					.run();
 				roundTurns.push({
@@ -212,20 +226,32 @@ export async function* runDeliberation(
 			const allTurns = Array.from(turnsByRound.values()).flat();
 			const deliberationText = allTurns.map((t) => `**${t.personaName}:** ${t.text}`).join('\n\n');
 
+			// Synthesis is the load-bearing output users actually act on —
+			// letting ops swap in a stronger model just for this one call
+			// (e.g. Opus for the Sonnet default) buys noticeable depth on
+			// the only part of a deliberation that's a recommendation, for
+			// a small fraction of total deliberation cost (~1 call of 11).
+			const synthesisModel = process.env.AHWA_SYNTHESIS_MODEL || resolvedConfig.model;
+			const synthesisConfig = { ...resolvedConfig, model: synthesisModel };
+
 			const result = await completeFn({
-				model: resolvedConfig.model,
+				model: synthesisModel,
 				system: council.synthesisPrompt,
 				messages: [
 					{ role: 'user', content: `Here is the full deliberation:\n\n${deliberationText}` }
 				],
 				stream: true,
-				modelConfig: resolvedConfig
+				modelConfig: synthesisConfig
 			});
 
 			let synthesisText = '';
 			for await (const chunk of result.textStream) {
 				synthesisText += chunk;
 				yield { type: 'synthesis_token', text: chunk };
+			}
+			const { truncated: synthTruncated } = await result.finished;
+			if (synthTruncated) {
+				console.warn('orchestrator: synthesis was truncated at maxOutputTokens');
 			}
 
 			// Persist synthesis turn
@@ -237,7 +263,8 @@ export async function* runDeliberation(
 					partyId: 'synthesizer',
 					personaName: 'Synthesizer',
 					text: synthesisText,
-					visibleTo: JSON.stringify(visibleTo)
+					visibleTo: JSON.stringify(visibleTo),
+					truncated: synthTruncated ? 1 : 0
 				})
 				.run();
 
