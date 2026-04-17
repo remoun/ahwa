@@ -320,6 +320,13 @@ async function* mergeAsync<T>(streams: AsyncGenerator<T>[]): AsyncGenerator<T> {
 			pending.delete(idx);
 		} else {
 			yield result.value;
+			// Force a macrotask boundary so the HTTP writable can flush
+			// between merged yields. Without this, N streams with buffered
+			// tokens can loop entirely inside microtasks — each token gets
+			// enqueued into the ReadableStream but nothing reaches the
+			// socket until the stream closes, which looks to the client
+			// like "all responses appear at once."
+			await new Promise((resolve) => setImmediate(resolve));
 			pending.set(
 				idx,
 				iters[idx].next().then((result) => ({ idx, result }))
