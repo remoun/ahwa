@@ -1,7 +1,7 @@
 {
 	"id": "_smoke",
 	"name": "Smoke Test Council",
-	"description": "Internal — used by the post-deploy smoke test to verify the deliberation loop works end-to-end with the real LLM provider. Pinned to NVIDIA Nemotron (free tier) since smoke doesn't need production-quality output. Leave it alone; one persona, one round, no synthesis keeps it fast.",
+	"description": "Internal — used by the post-deploy smoke test to verify the deliberation loop works end-to-end with the real LLM provider. Uses the production default model (via env) so smoke also catches model-ID or API-key regressions on the main path. Leave it alone; one persona, one round, no synthesis keeps it fast.",
 	"personas": [
 		{
 			"id": "_smoke-voice",
@@ -18,10 +18,6 @@
 			}
 		],
 		"synthesize": false
-	},
-	"model_config": {
-		"provider": "openrouter",
-		"model": "nvidia/nemotron-3-super-120b-a12b:free"
 	},
 	"synthesis_prompt": "",
 	"license": "AGPL-3.0-or-later"
