@@ -66,6 +66,9 @@ surgery recovery. Optimize for:
 - **Commit after each green step** with a descriptive message so the user can
   `git reset` by voice without reading diffs. Commit messages follow
   conventional-commits lightly: `feat:`, `fix:`, `test:`, `refactor:`, `chore:`.
+- **Prefer merge commits over rebasing** when integrating branches. Preserves
+  the actual history of how work happened and keeps blame useful. If a branch
+  has noisy fixup/WIP commits, squash-merge rather than rebasing.
 - **Ask before major structural decisions.** Don't silently choose an ORM, a
   test framework, a CSS approach. These decisions compound.
 - **"Done" means tests pass and the feature works end-to-end**, not "I wrote
