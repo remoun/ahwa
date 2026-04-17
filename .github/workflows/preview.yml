@@ -33,3 +33,8 @@ jobs:
           config: fly.toml
           vmsize: shared-cpu-1x
           memory: 256
+          # PR preview apps don't inherit secrets from the production
+          # ahwa app — Fly has no cross-app secret store. Anything a
+          # preview needs at runtime has to come from GitHub Secrets
+          # and be passed through here.
+          secrets: OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
