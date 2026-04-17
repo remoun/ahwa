@@ -69,6 +69,12 @@ surgery recovery. Optimize for:
 - **Prefer merge commits over rebasing** when integrating branches. Preserves
   the actual history of how work happened and keeps blame useful. If a branch
   has noisy fixup/WIP commits, squash-merge rather than rebasing.
+- **Never force-push.** No `git push --force`, no `--force-with-lease`, no
+  `git commit --amend` on commits that have already been pushed. Rewriting
+  published history is the same problem as rebasing — it hides work that
+  actually happened. If a pushed commit needs fixing, make a new one
+  (`fix:`, `style:`, etc.). The history of the fix is itself useful
+  information.
 - **Ask before major structural decisions.** Don't silently choose an ORM, a
   test framework, a CSS approach. These decisions compound.
 - **"Done" means tests pass and the feature works end-to-end**, not "I wrote
