@@ -297,9 +297,14 @@
 				: undefined}
 		>
 			{#if !dilemmaStuck}
-				<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-2">
-					Dilemma
-				</figcaption>
+				<div class="flex items-baseline justify-between gap-3 mb-2">
+					<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider">
+						Dilemma
+					</figcaption>
+					{#if data.council}
+						<span class="text-xs text-fg-subtle">{data.council.name}</span>
+					{/if}
+				</div>
 			{/if}
 			<p class={dilemmaClass}>{data.table.dilemma}</p>
 		</figure>
