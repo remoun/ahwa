@@ -17,11 +17,14 @@ export const load: PageServerLoad = () =>
 			.all();
 
 		// Put the default council first so the preselected option leads the
-		// picker grid; everything else keeps insertion order.
+		// picker grid; everything else keeps insertion order. Councils
+		// whose id starts with `_` are treated as internal (e.g. `_smoke`
+		// used by the post-deploy smoke test) and hidden from the picker.
 		const councils = db
 			.select()
 			.from(schema.councils)
 			.all()
+			.filter((c) => !c.id.startsWith('_'))
 			.sort((a, b) => (a.id === 'default' ? -1 : b.id === 'default' ? 1 : 0));
 		const personas = db.select().from(schema.personas).all();
 
