@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'bun:test';
 import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
 import {
+	defaultModelFor,
 	detectDefaultProvider,
 	getAvailableProviders,
 	resolveModelConfig,
@@ -176,5 +177,47 @@ describe('resolveModelConfig', () => {
 		expect(result.model).toBeDefined();
 		if (saved === undefined) delete process.env.ANTHROPIC_API_KEY;
 		else process.env.ANTHROPIC_API_KEY = saved;
+	});
+});
+
+describe('defaultModelFor', () => {
+	it('returns the hardcoded default when no env override is set', () => {
+		const saved = process.env.AHWA_OPENROUTER_MODEL;
+		delete process.env.AHWA_OPENROUTER_MODEL;
+		try {
+			expect(defaultModelFor('openrouter')).toBe('anthropic/claude-sonnet-4-6');
+		} finally {
+			if (saved !== undefined) process.env.AHWA_OPENROUTER_MODEL = saved;
+		}
+	});
+
+	it('honors AHWA_OPENROUTER_MODEL when set', () => {
+		const saved = process.env.AHWA_OPENROUTER_MODEL;
+		process.env.AHWA_OPENROUTER_MODEL = 'google/gemini-2.5-pro';
+		try {
+			expect(defaultModelFor('openrouter')).toBe('google/gemini-2.5-pro');
+		} finally {
+			if (saved === undefined) delete process.env.AHWA_OPENROUTER_MODEL;
+			else process.env.AHWA_OPENROUTER_MODEL = saved;
+		}
+	});
+
+	it('honors AHWA_ANTHROPIC_MODEL, AHWA_OPENAI_MODEL, AHWA_OLLAMA_MODEL in the same pattern', () => {
+		// One assertion per provider — the env-key derivation is the thing under test.
+		const cases = [
+			{ provider: 'anthropic', envKey: 'AHWA_ANTHROPIC_MODEL', value: 'custom-sonnet' },
+			{ provider: 'openai', envKey: 'AHWA_OPENAI_MODEL', value: 'custom-gpt' },
+			{ provider: 'ollama', envKey: 'AHWA_OLLAMA_MODEL', value: 'custom-llama' }
+		] as const;
+		for (const { provider, envKey, value } of cases) {
+			const saved = process.env[envKey];
+			process.env[envKey] = value;
+			try {
+				expect(defaultModelFor(provider)).toBe(value);
+			} finally {
+				if (saved === undefined) delete process.env[envKey];
+				else process.env[envKey] = saved;
+			}
+		}
 	});
 });

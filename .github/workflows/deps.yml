@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: Dependabot Autofix
+
+# Dependabot's npm ecosystem sometimes bumps package.json without
+# regenerating bun.lock, which breaks CI's --frozen-lockfile install.
+# This workflow fires on Dependabot's PRs, regenerates the lockfile,
+# and commits the result back to the PR branch.
+#
+# Uses pull_request_target (not pull_request) so the workflow has a
+# write token. The workflow file itself comes from the default branch
+# (safe), but we check out the PR's head to regenerate against the
+# PR's package.json. `bun install --ignore-scripts` keeps Dependabot
+# (or anyone impersonating it) from running arbitrary postinstall
+# code with the write token.
+#
+# Caveat: pushes made with the default GITHUB_TOKEN do not re-trigger
+# pull_request workflows (GitHub's anti-loop protection). If CI was
+# failing before this autofix, close and reopen the PR to rerun the
+# checks. Alternatively, set a DEPENDABOT_AUTOFIX_TOKEN secret with a
+# PAT that has `repo` scope and CI will retrigger automatically.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'package.json'
+      - 'bun.lock'
+
+permissions:
+  contents: write
+
+jobs:
+  regen-lockfile:
+    # Only Dependabot's PRs, and only when they come from a branch in
+    # this repository (never a fork — pull_request_target with write
+    # access on a fork PR is the classic privilege escalation).
+    if: >-
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.DEPENDABOT_AUTOFIX_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: ./.github/actions/setup-bun
+
+      - run: bun install --ignore-scripts
+
+      - name: Commit regenerated lockfile
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet bun.lock; then
+            echo "bun.lock unchanged; nothing to commit"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bun.lock
+          git commit -m "chore: regenerate bun.lock"
+          git push origin "HEAD:${HEAD_REF}"
