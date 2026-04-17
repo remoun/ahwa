@@ -3,15 +3,16 @@ name: Dependabot Autofix
 
 # Dependabot's npm ecosystem sometimes bumps package.json without
 # regenerating bun.lock, which breaks CI's --frozen-lockfile install.
-# This workflow fires on Dependabot's PRs, regenerates the lockfile,
-# and commits the result back to the PR branch.
+# This workflow fires on pushes to dependabot/** branches that touch
+# the manifest or lockfile, regenerates bun.lock, and commits the
+# result back to the branch.
 #
-# Uses pull_request_target (not pull_request) so the workflow has a
-# write token. The workflow file itself comes from the default branch
-# (safe), but we check out the PR's head to regenerate against the
-# PR's package.json. `bun install --ignore-scripts` keeps Dependabot
-# (or anyone impersonating it) from running arbitrary postinstall
-# code with the write token.
+# We trigger on `push` (not `pull_request_target`) so the workflow
+# only ever appears on Dependabot's branches — non-dependabot PRs
+# never get a "skipped" autofix row in their checks list.
+# `bun install --ignore-scripts` keeps Dependabot (or anyone
+# impersonating it) from running arbitrary postinstall code with the
+# write token.
 #
 # Caveat: pushes made with the default GITHUB_TOKEN do not re-trigger
 # pull_request workflows (GitHub's anti-loop protection). If CI was
@@ -20,8 +21,9 @@ name: Dependabot Autofix
 # PAT that has `repo` scope and CI will retrigger automatically.
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - 'dependabot/**'
     paths:
       - 'package.json'
       - 'bun.lock'
@@ -31,17 +33,16 @@ permissions:
 
 jobs:
   regen-lockfile:
-    # Only Dependabot's PRs, and only when they come from a branch in
-    # this repository (never a fork — pull_request_target with write
-    # access on a fork PR is the classic privilege escalation).
-    if: >-
-      github.actor == 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    # Belt-and-suspenders: the branch filter already restricts this to
+    # dependabot/** branches, but if a human with write access ever
+    # pushes such a branch by hand, the actor check makes the autofix
+    # skip rather than silently rewrite their lockfile.
+    if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.ref_name }}
           token: ${{ secrets.DEPENDABOT_AUTOFIX_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: ./.github/actions/setup-bun
@@ -50,7 +51,7 @@ jobs:
 
       - name: Commit regenerated lockfile
         env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           if git diff --quiet bun.lock; then
@@ -61,4 +62,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add bun.lock
           git commit -m "chore: regenerate bun.lock"
-          git push origin "HEAD:${HEAD_REF}"
+          git push origin "HEAD:${BRANCH}"
