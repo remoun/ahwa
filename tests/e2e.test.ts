@@ -22,7 +22,7 @@ describe('e2e: full deliberation with real councils', () => {
 		seedFromDisk(db);
 	});
 
-	it('runs a complete deliberation with the default council (5 personas, 2 rounds, synthesis)', async () => {
+	it('runs a complete deliberation with the default council (6 personas, 2 rounds, synthesis)', async () => {
 		// Verify seed worked
 		const councils = db.select().from(schema.councils).all();
 		expect(councils.length).toBeGreaterThanOrEqual(2);
@@ -74,13 +74,13 @@ describe('e2e: full deliberation with real councils', () => {
 		expect((roundStarts[0] as any).kind).toBe('opening');
 		expect((roundStarts[1] as any).kind).toBe('cross_examination');
 
-		// Must have 10 persona_turn_started events (5 personas x 2 rounds)
+		// Must have 12 persona_turn_started events (6 personas x 2 rounds)
 		const turnStarts = events.filter((e) => e.type === 'persona_turn_started');
-		expect(turnStarts.length).toBe(10);
+		expect(turnStarts.length).toBe(12);
 
-		// Must have 10 persona_turn_completed events
+		// Must have 12 persona_turn_completed events
 		const turnCompletes = events.filter((e) => e.type === 'persona_turn_completed');
-		expect(turnCompletes.length).toBe(10);
+		expect(turnCompletes.length).toBe(12);
 
 		// Must have synthesis_started
 		expect(types).toContain('synthesis_started');
@@ -91,7 +91,7 @@ describe('e2e: full deliberation with real councils', () => {
 
 		// Must have token events (at least one per persona turn)
 		const tokens = events.filter((e) => e.type === 'token');
-		expect(tokens.length).toBeGreaterThanOrEqual(10);
+		expect(tokens.length).toBeGreaterThanOrEqual(12);
 
 		// Verify event ordering: table_opened < round_started < ... < synthesis_started < table_closed
 		const tableOpenedIdx = types.indexOf('table_opened');
@@ -134,9 +134,9 @@ describe('e2e: full deliberation with real councils', () => {
 		expect(table!.synthesis).toBeTruthy();
 		expect(table!.dilemma).toBe('Test dilemma for persistence check');
 
-		// Verify turns: 5 personas x 2 rounds + 1 synthesis = 11
+		// Verify turns: 6 personas x 2 rounds + 1 synthesis = 13
 		const turns = db.select().from(schema.turns).all();
-		expect(turns.length).toBe(11);
+		expect(turns.length).toBe(13);
 
 		// Verify each turn has text content
 		for (const turn of turns) {
@@ -459,13 +459,13 @@ describe('e2e: table status transitions', () => {
 			.where(eq(schema.turns.tableId, 'round-table'))
 			.all();
 
-		// Round 1: 5 persona turns
+		// Round 1: 6 persona turns
 		const round1 = turns.filter((t) => t.round === 1);
-		expect(round1.length).toBe(5);
+		expect(round1.length).toBe(6);
 
-		// Round 2: 5 persona turns
+		// Round 2: 6 persona turns
 		const round2 = turns.filter((t) => t.round === 2);
-		expect(round2.length).toBe(5);
+		expect(round2.length).toBe(6);
 
 		// Round 0: synthesis
 		const synthesis = turns.filter((t) => t.round === 0);
