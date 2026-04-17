@@ -215,6 +215,9 @@
 	 */
 	let sentinel: HTMLElement | undefined = $state();
 	let dilemmaStuck = $state(false);
+	const dilemmaClass = $derived(
+		`font-display text-fg leading-relaxed whitespace-pre-wrap ${dilemmaStuck ? 'text-base line-clamp-3' : 'text-xl'}`
+	);
 	$effect(() => {
 		if (!sentinel) return;
 		const io = new IntersectionObserver(
@@ -298,13 +301,7 @@
 					Dilemma
 				</figcaption>
 			{/if}
-			<p
-				class="font-display text-fg leading-relaxed {dilemmaStuck
-					? 'text-base line-clamp-3'
-					: 'text-xl'}"
-			>
-				{data.table.dilemma}
-			</p>
+			<p class={dilemmaClass}>{data.table.dilemma}</p>
 		</figure>
 	{/if}
 
