@@ -19,6 +19,10 @@
 		],
 		"synthesize": false
 	},
+	"model_config": {
+		"provider": "openrouter",
+		"model": "nvidia/nemotron-3-super-120b-a12b:free"
+	},
 	"synthesis_prompt": "",
 	"license": "AGPL-3.0-or-later"
 }
