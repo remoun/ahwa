@@ -116,60 +116,75 @@ export async function* runDeliberation(
 		// Track all turns for cross-examination context
 		const turnsByRound: Map<number, Array<{ personaName: string; text: string }>> = new Map();
 
-		// Run each round
+		// Run each round. Personas within a round run in parallel; rounds
+		// themselves are serial because each round reads the complete
+		// transcript of prior rounds.
 		for (let roundIdx = 0; roundIdx < roundStructure.rounds.length; roundIdx++) {
 			const round = roundStructure.rounds[roundIdx];
+
+			// Abort between rounds — mid-round cancellation would orphan
+			// in-flight LLM calls. Between-rounds is the natural seam.
+			if (signal?.aborted) {
+				throw new Error('Deliberation aborted');
+			}
+
 			yield { type: 'round_started', round: roundIdx + 1, kind: round.kind };
 
-			const roundTurns: Array<{ personaName: string; text: string }> = [];
-
+			// Emit all persona_turn_started events up front so the frontend
+			// can open N cards simultaneously. Council order is preserved
+			// here regardless of which LLM call finishes first.
 			for (const persona of personas) {
-				// Check for cancellation between turns (not mid-token — partial
-				// turns would be lost). This is the natural cancellation point.
-				if (signal?.aborted) {
-					throw new Error('Deliberation aborted');
-				}
-
 				yield {
 					type: 'persona_turn_started',
 					personaId: persona.id,
 					personaName: persona.name ?? persona.id,
 					emoji: persona.emoji ?? '💬'
 				};
+			}
 
-				// Build messages for this persona
-				const messages = buildMessages(dilemma, round, roundIdx, turnsByRound);
+			// Kick off all LLM calls in parallel. Each persona gets the same
+			// prior-round context built from turnsByRound.
+			const fullTexts: string[] = personas.map(() => '');
+			const personaStreams = personas.map((persona, idx) =>
+				(async function* (): AsyncGenerator<SseEvent> {
+					const messages = buildMessages(dilemma, round, roundIdx, turnsByRound);
+					const result = await completeFn({
+						model: resolvedConfig.model,
+						system: persona.systemPrompt ?? '',
+						messages,
+						stream: true,
+						modelConfig: resolvedConfig
+					});
 
-				// Call LLM
-				const result = await completeFn({
-					model: resolvedConfig.model,
-					system: persona.systemPrompt ?? '',
-					messages,
-					stream: true,
-					modelConfig: resolvedConfig
-				});
+					for await (const chunk of result.textStream) {
+						fullTexts[idx] += chunk;
+						yield { type: 'token', personaId: persona.id, text: chunk };
+					}
 
-				// Collect the full text while streaming tokens
-				let fullText = '';
-				for await (const chunk of result.textStream) {
-					fullText += chunk;
-					yield { type: 'token', personaId: persona.id, text: chunk };
-				}
+					// Empty response = silent provider failure (rate-limit, bad
+					// model id, dead connection). Fail loudly instead of
+					// persisting an empty turn.
+					if (fullTexts[idx] === '') {
+						throw new Error(
+							`LLM returned empty response for ${persona.name ?? persona.id} (provider: ${resolvedConfig.provider}, model: ${resolvedConfig.model}). Check provider credentials and model availability.`
+						);
+					}
 
-				// A provider that closes the stream without yielding anything is
-				// almost always a silent failure (rate-limit, bad model id, dead
-				// connection) rather than a model legitimately choosing to say
-				// nothing. Surface it as an error so the table fails loudly
-				// instead of persisting an empty turn.
-				if (fullText === '') {
-					throw new Error(
-						`LLM returned empty response for ${persona.name ?? persona.id} (provider: ${resolvedConfig.provider}, model: ${resolvedConfig.model}). Check provider credentials and model availability.`
-					);
-				}
+					yield { type: 'persona_turn_completed', personaId: persona.id };
+				})()
+			);
 
-				yield { type: 'persona_turn_completed', personaId: persona.id };
+			// Interleave token + completion events from all streams.
+			for await (const event of mergeAsync(personaStreams)) {
+				yield event;
+			}
 
-				// Persist the turn
+			// Persist in council order — not completion order — so reload of
+			// a completed table renders the same top-to-bottom sequence the
+			// user saw streaming.
+			const roundTurns: Array<{ personaName: string; text: string }> = [];
+			for (let i = 0; i < personas.length; i++) {
+				const persona = personas[i];
 				db.insert(schema.turns)
 					.values({
 						id: nanoid(),
@@ -177,12 +192,14 @@ export async function* runDeliberation(
 						round: roundIdx + 1,
 						partyId,
 						personaName: persona.name,
-						text: fullText,
+						text: fullTexts[i],
 						visibleTo: JSON.stringify(visibleTo)
 					})
 					.run();
-
-				roundTurns.push({ personaName: persona.name ?? persona.id, text: fullText });
+				roundTurns.push({
+					personaName: persona.name ?? persona.id,
+					text: fullTexts[i]
+				});
 			}
 
 			turnsByRound.set(roundIdx, roundTurns);
@@ -279,4 +296,34 @@ function buildMessages(
 			content: `The person is facing this dilemma:\n\n${dilemma}\n\nHere is what the council has said so far:\n\n${context}\n\n${round.prompt_suffix}`
 		}
 	];
+}
+
+/**
+ * Fair merge of N async iterators: yields items as soon as any source has one
+ * ready. If any source rejects, the merged stream rejects (other in-flight
+ * sources are left to be GCd — acceptable for orchestrator-scoped lifetimes).
+ */
+async function* mergeAsync<T>(streams: AsyncGenerator<T>[]): AsyncGenerator<T> {
+	const iters = streams.map((s) => s[Symbol.asyncIterator]());
+	const pending = new Map<number, Promise<{ idx: number; result: IteratorResult<T> }>>();
+
+	iters.forEach((iter, idx) => {
+		pending.set(
+			idx,
+			iter.next().then((result) => ({ idx, result }))
+		);
+	});
+
+	while (pending.size > 0) {
+		const { idx, result } = await Promise.race(pending.values());
+		if (result.done) {
+			pending.delete(idx);
+		} else {
+			yield result.value;
+			pending.set(
+				idx,
+				iters[idx].next().then((result) => ({ idx, result }))
+			);
+		}
+	}
 }

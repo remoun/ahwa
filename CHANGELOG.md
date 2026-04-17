@@ -19,6 +19,11 @@ See [CLAUDE.md](./CLAUDE.md#milestones) for the full milestone plan.
 - Visual polish: sticky dilemma card that shrinks when it sticks,
   thread gutter, breathing dots while a persona speaks, synthesis
   "ceremony" on completion
+- Personas within a round now deliberate in parallel — each persona's
+  turn kicks off concurrently, tokens interleave in the UI, and the
+  full round completes in roughly `max(single-turn-time)` instead of
+  `N × avg-turn-time`. Render order stays consistent with the council's
+  declared order regardless of which finishes first.
 - Multi-provider LLM routing (Anthropic, OpenAI, OpenRouter, Ollama)
   with per-council `model_config` and auto-detect fallback
 - Semantic theme tokens with light/dark modes and a toggle

@@ -356,11 +356,10 @@ describe('orchestrator', () => {
 		expect(table!.synthesis).toBeNull();
 	});
 
-	it('stops deliberation when abort signal fires between turns', async () => {
+	it('stops deliberation when abort signal fires between rounds', async () => {
 		createTable(db, 'tbl-abort', 'Abort test', 'test-council', 'party-1');
 
 		const controller = new AbortController();
-		let turnCount = 0;
 
 		const events: SseEvent[] = [];
 		try {
@@ -373,22 +372,120 @@ describe('orchestrator', () => {
 				signal: controller.signal
 			})) {
 				events.push(event);
-				if (event.type === 'persona_turn_completed') {
-					turnCount++;
-					// Abort after the first persona finishes
-					if (turnCount === 1) controller.abort();
+				// Abort after round 1 finishes but before round 2 starts.
+				// Parallel within-round means we can't cancel mid-round;
+				// between-rounds is the natural seam.
+				if (
+					event.type === 'persona_turn_completed' &&
+					events.filter((e) => e.type === 'persona_turn_completed').length === 2
+				) {
+					controller.abort();
 				}
 			}
 		} catch (err: any) {
 			expect(err.message).toContain('aborted');
 		}
 
-		// Should have stopped — not all 4 turns (2 personas × 2 rounds)
+		// Round 1 completed (2 personas), round 2 never started.
 		const allTurnCompletes = events.filter((e) => e.type === 'persona_turn_completed');
-		expect(allTurnCompletes.length).toBe(1);
+		expect(allTurnCompletes.length).toBe(2);
+		const roundStarts = events.filter((e) => e.type === 'round_started');
+		expect(roundStarts.length).toBe(1);
 
 		// Table should be marked failed (aborted = not completed)
 		const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-abort')).get();
 		expect(table!.status).toBe('failed');
+	});
+
+	it('runs all personas concurrently within a round', async () => {
+		createTable(db, 'tbl-parallel', 'Test dilemma', 'test-council', 'party-1');
+
+		let inFlight = 0;
+		let maxConcurrent = 0;
+		const gate = Promise.withResolvers<void>();
+		let started = 0;
+
+		const trackingComplete = async (opts: any) => {
+			inFlight++;
+			maxConcurrent = Math.max(maxConcurrent, inFlight);
+			started++;
+			// Wait until all personas in the round have started before letting any finish
+			if (started >= 2) gate.resolve();
+			await gate.promise;
+			inFlight--;
+			return mockComplete(opts);
+		};
+
+		for await (const _ of runDeliberation(db, {
+			tableId: 'tbl-parallel',
+			dilemma: 'Test dilemma',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: trackingComplete
+		})) {
+			// consume
+		}
+
+		// Both personas must have been in flight at the same time.
+		expect(maxConcurrent).toBeGreaterThanOrEqual(2);
+	});
+
+	it('persists turns in council order regardless of completion order', async () => {
+		createTable(db, 'tbl-order', 'Test dilemma', 'test-council', 'party-1');
+
+		// Elder intentionally finishes *after* Mirror — mimics real API jitter.
+		// Council order is [elder, mirror]; the DB should reflect that order.
+		const delayedComplete = async (opts: any) => {
+			const isElder = opts.system.toLowerCase().includes('elder');
+			if (isElder) await new Promise((r) => setTimeout(r, 20));
+			return mockComplete(opts);
+		};
+
+		for await (const _ of runDeliberation(db, {
+			tableId: 'tbl-order',
+			dilemma: 'Test dilemma',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: delayedComplete
+		})) {
+			// consume
+		}
+
+		// Round 1 persona turns in insertion order.
+		const round1 = db
+			.select()
+			.from(schema.turns)
+			.where(eq(schema.turns.round, 1))
+			.all()
+			.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+		expect(round1.map((t) => t.personaName)).toEqual(['The Elder', 'The Mirror']);
+	});
+
+	it('emits persona_turn_started for all personas in a round before any tokens', async () => {
+		createTable(db, 'tbl-stagger', 'Test dilemma', 'test-council', 'party-1');
+		const events: SseEvent[] = [];
+		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-stagger',
+			dilemma: 'Test dilemma',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: mockComplete
+		})) {
+			events.push(event);
+		}
+
+		// Inside round 1: persona_turn_started events for both personas must
+		// precede the first token event so the frontend can open N cards upfront.
+		const round1Start = events.findIndex((e) => e.type === 'round_started');
+		const round2Start = events.findIndex(
+			(e, i) => i > round1Start && e.type === 'round_started'
+		);
+		const round1Events = events.slice(round1Start, round2Start);
+
+		const firstTokenIdx = round1Events.findIndex((e) => e.type === 'token');
+		const turnStartsBeforeFirstToken = round1Events
+			.slice(0, firstTokenIdx)
+			.filter((e) => e.type === 'persona_turn_started');
+		expect(turnStartsBeforeFirstToken.length).toBe(2);
 	});
 });

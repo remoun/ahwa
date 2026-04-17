@@ -31,11 +31,21 @@
 	let turns = $state<Turn[]>([]);
 	let currentRound = $state('');
 	let currentRoundNum = $state(0);
-	let activePersona = $state('');
 	let synthesis = $state('');
 	let synthesizing = $state(false);
 	let done = $state(false);
 	let error = $state('');
+
+	// With personas running in parallel inside a round, multiple are speaking
+	// at once. Derive the speaking label from the turns themselves so the
+	// banner reflects reality rather than a single overwritten name.
+	const speakingLabel = $derived.by(() => {
+		if (synthesizing || done) return '';
+		const active = turns.filter((t) => t.round === currentRoundNum && !t.complete);
+		if (active.length === 0) return '';
+		if (active.length === 1) return `${active[0].personaName} is speaking...`;
+		return 'the council is speaking...';
+	});
 
 	/**
 	 * A single derived view state replaces a handful of overlapping bools
@@ -53,7 +63,7 @@
 		if (error || data.table?.status === 'failed') return 'failed';
 		if (done || data.table?.status === 'completed') return 'completed';
 		if (data.table?.status === 'running') return 'runningElsewhere';
-		if (currentRound || activePersona || synthesizing || turns.length > 0) return 'streaming';
+		if (currentRound || speakingLabel || synthesizing || turns.length > 0) return 'streaming';
 		return 'connecting';
 	});
 
@@ -144,7 +154,6 @@
 				break;
 
 			case 'persona_turn_started':
-				activePersona = event.personaName;
 				turns = [
 					...turns,
 					{
@@ -170,12 +179,10 @@
 				turns = turns.map((t) =>
 					t.personaId === event.personaId && !t.complete ? { ...t, complete: true } : t
 				);
-				activePersona = '';
 				break;
 
 			case 'synthesis_started':
 				synthesizing = true;
-				activePersona = '';
 				currentRound = 'Synthesis';
 				break;
 
@@ -186,7 +193,6 @@
 			case 'table_closed':
 				synthesizing = false;
 				done = true;
-				activePersona = '';
 				currentRound = '';
 				break;
 
@@ -194,7 +200,6 @@
 				error = event.message;
 				done = true;
 				synthesizing = false;
-				activePersona = '';
 				// Drop any in-flight turns — they never got content
 				turns = turns.filter((t) => t.complete);
 				break;
@@ -297,15 +302,15 @@
 		</div>
 	{/if}
 
-	{#if view === 'streaming' && (currentRound || activePersona)}
+	{#if view === 'streaming' && (currentRound || speakingLabel)}
 		<div
 			class="mb-6 p-3 bg-surface border border-border rounded-xl shadow-sm flex items-center gap-3"
 		>
 			<div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
 			<div class="text-sm text-accent">
 				<span class="font-medium">{currentRound}</span>
-				{#if activePersona}
-					<span class="text-fg-subtle"> · {activePersona} is speaking...</span>
+				{#if speakingLabel}
+					<span class="text-fg-subtle"> · {speakingLabel}</span>
 				{/if}
 			</div>
 		</div>
