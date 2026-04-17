@@ -22,6 +22,13 @@ export interface CompleteRequest {
 
 export interface CompleteResult {
 	textStream: AsyncIterable<string>;
+	/**
+	 * Resolves after the stream ends. `truncated: true` means the model
+	 * hit the output-token cap (maxOutputTokens or similar) and the text
+	 * was cut off mid-generation — the persisted turn should be flagged
+	 * so a later reader knows the response is incomplete.
+	 */
+	finished: Promise<{ truncated: boolean }>;
 }
 
 /**
@@ -155,7 +162,8 @@ function mockComplete(request: CompleteRequest): CompleteResult {
 		textStream: (async function* () {
 			yield `[${name}] `;
 			yield 'This is a mocked response for E2E testing.';
-		})()
+		})(),
+		finished: Promise.resolve({ truncated: false })
 	};
 }
 
@@ -173,11 +181,33 @@ export async function complete(request: CompleteRequest): Promise<CompleteResult
 	const config = resolveModelConfig(request.modelConfig);
 	const model = createModel(config);
 
+	// Cap output tokens so each turn stays within a reasonable per-request
+	// budget. Without a cap, the AI SDK sends the model's full context
+	// window as max_tokens, which can exceed a spend-limited OR key's
+	// per-request allowance and cause OR to reject the call with 402
+	// ("more credits or fewer max_tokens needed"). The SDK swallows that
+	// into an empty stream; we'd surface a generic "empty response" error
+	// with no useful signal. 2000 tokens is ~3x the longest persona turn
+	// we've observed, leaving headroom without burning through a weekly
+	// spend cap.
 	const result = streamText({
 		model,
 		system: request.system,
-		messages: request.messages
+		messages: request.messages,
+		maxOutputTokens: 2000
 	});
 
-	return { textStream: result.textStream };
+	// Surface underlying stream errors (rate limits, credit caps, provider
+	// failures) instead of letting the SDK turn them into an empty stream
+	// that only manifests later as our generic fail-loud empty-response
+	// guard. fullStream yields typed parts including { type: 'error' }.
+	return {
+		textStream: (async function* () {
+			for await (const part of result.fullStream) {
+				if (part.type === 'text-delta') yield part.text;
+				else if (part.type === 'error') throw part.error;
+			}
+		})(),
+		finished: result.finishReason.then((reason) => ({ truncated: reason === 'length' }))
+	};
 }
