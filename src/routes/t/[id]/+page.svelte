@@ -67,7 +67,7 @@
 				.map((t) => ({
 					personaId: '',
 					personaName: t.personaName ?? '',
-					emoji: '',
+					emoji: t.emoji ?? '',
 					text: t.text ?? '',
 					complete: true,
 					round: t.round
