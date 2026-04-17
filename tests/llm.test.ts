@@ -185,7 +185,7 @@ describe('defaultModelFor', () => {
 		const saved = process.env.AHWA_OPENROUTER_MODEL;
 		delete process.env.AHWA_OPENROUTER_MODEL;
 		try {
-			expect(defaultModelFor('openrouter')).toBe('anthropic/claude-sonnet-4-6');
+			expect(defaultModelFor('openrouter')).toBe('anthropic/claude-sonnet-4.6');
 		} finally {
 			if (saved !== undefined) process.env.AHWA_OPENROUTER_MODEL = saved;
 		}
