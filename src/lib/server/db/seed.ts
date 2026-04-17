@@ -3,6 +3,8 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
+import { parseJsonSafe } from '../parse';
+import { jsonOrNull } from '../../util';
 import * as schema from './schema';
 
 type Db = BunSQLiteDatabase<typeof schema>;
@@ -11,11 +13,7 @@ type Db = BunSQLiteDatabase<typeof schema>;
  * Seed councils and personas from JSON files on disk.
  * Idempotent — uses INSERT OR REPLACE so it's safe to call on every startup.
  */
-export function seedFromDisk(
-	db: Db,
-	councilsDir = 'councils',
-	personasDir = 'personas'
-): void {
+export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'personas'): void {
 	// Load council JSON files
 	let councilFiles: string[] = [];
 	try {
@@ -25,8 +23,13 @@ export function seedFromDisk(
 	}
 
 	for (const file of councilFiles) {
-		const raw = JSON.parse(readFileSync(join(councilsDir, file), 'utf-8'));
-		const parsed = CouncilSchema.parse(raw);
+		const raw = readFileSync(join(councilsDir, file), 'utf-8');
+		const result = parseJsonSafe(raw, CouncilSchema);
+		if (!result.ok) {
+			console.warn(`seed: skipping ${file}: ${result.error}`);
+			continue;
+		}
+		const parsed = result.data;
 
 		// Upsert each persona from this council
 		for (const persona of parsed.personas) {
@@ -36,7 +39,7 @@ export function seedFromDisk(
 					name: persona.name,
 					emoji: persona.emoji,
 					systemPrompt: persona.system_prompt,
-					requires: persona.requires ? JSON.stringify(persona.requires) : null,
+					requires: jsonOrNull(persona.requires),
 					ownerParty: null
 				})
 				.onConflictDoUpdate({
@@ -45,7 +48,7 @@ export function seedFromDisk(
 						name: persona.name,
 						emoji: persona.emoji,
 						systemPrompt: persona.system_prompt,
-						requires: persona.requires ? JSON.stringify(persona.requires) : null
+						requires: jsonOrNull(persona.requires)
 					}
 				})
 				.run();
@@ -53,22 +56,27 @@ export function seedFromDisk(
 
 		// Upsert the council
 		const personaIds = parsed.personas.map((p) => p.id);
+		const modelConfig = jsonOrNull(parsed.model_config);
 		db.insert(schema.councils)
 			.values({
 				id: parsed.id,
 				name: parsed.name,
+				description: parsed.description ?? null,
 				personaIds: JSON.stringify(personaIds),
 				synthesisPrompt: parsed.synthesis_prompt,
 				roundStructure: JSON.stringify(parsed.round_structure),
+				modelConfig,
 				ownerParty: null
 			})
 			.onConflictDoUpdate({
 				target: schema.councils.id,
 				set: {
 					name: parsed.name,
+					description: parsed.description ?? null,
 					personaIds: JSON.stringify(personaIds),
 					synthesisPrompt: parsed.synthesis_prompt,
-					roundStructure: JSON.stringify(parsed.round_structure)
+					roundStructure: JSON.stringify(parsed.round_structure),
+					modelConfig
 				}
 			})
 			.run();
@@ -83,8 +91,13 @@ export function seedFromDisk(
 	}
 
 	for (const file of personaFiles) {
-		const raw = JSON.parse(readFileSync(join(personasDir, file), 'utf-8'));
-		const parsed = PersonaSchema.parse(raw);
+		const raw = readFileSync(join(personasDir, file), 'utf-8');
+		const result = parseJsonSafe(raw, PersonaSchema);
+		if (!result.ok) {
+			console.warn(`seed: skipping ${file}: ${result.error}`);
+			continue;
+		}
+		const parsed = result.data;
 
 		db.insert(schema.personas)
 			.values({
@@ -92,7 +105,7 @@ export function seedFromDisk(
 				name: parsed.name,
 				emoji: parsed.emoji,
 				systemPrompt: parsed.system_prompt,
-				requires: parsed.requires ? JSON.stringify(parsed.requires) : null,
+				requires: jsonOrNull(parsed.requires),
 				ownerParty: null
 			})
 			.onConflictDoUpdate({
@@ -101,7 +114,7 @@ export function seedFromDisk(
 					name: parsed.name,
 					emoji: parsed.emoji,
 					systemPrompt: parsed.system_prompt,
-					requires: parsed.requires ? JSON.stringify(parsed.requires) : null
+					requires: jsonOrNull(parsed.requires)
 				}
 			})
 			.run();

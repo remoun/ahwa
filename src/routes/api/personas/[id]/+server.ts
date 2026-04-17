@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+import { db } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
+import { getHandler, updateHandler, deleteHandler } from '$lib/server/crud';
+import { PersonaBodySchema, type PersonaBody } from '$lib/schemas/council';
+import { jsonOrNull } from '$lib/util';
+import type { RequestHandler } from './$types';
+
+const config = {
+	db,
+	table: schema.personas,
+	bodySchema: PersonaBodySchema,
+	toValues: () => ({}), // not used for get/update/delete
+	toUpdateValues: (body: PersonaBody) => ({
+		name: body.name,
+		emoji: body.emoji,
+		systemPrompt: body.systemPrompt,
+		requires: jsonOrNull(body.requires)
+	}),
+	canDelete: (id: string) => {
+		// Check if any council references this persona
+		const councils = db.select().from(schema.councils).all();
+		for (const council of councils) {
+			if (!council.personaIds) continue;
+			const ids: string[] = JSON.parse(council.personaIds);
+			if (ids.includes(id)) {
+				return `Persona is referenced by council "${council.name}"`;
+			}
+		}
+		return null;
+	}
+};
+
+export const GET: RequestHandler = getHandler(config);
+export const PUT: RequestHandler = updateHandler(config);
+export const DELETE: RequestHandler = deleteHandler(config);

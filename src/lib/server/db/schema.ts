@@ -3,18 +3,25 @@ import { integer, sqliteTable, text, primaryKey } from 'drizzle-orm/sqlite-core'
 import { nanoid } from 'nanoid';
 
 export const parties = sqliteTable('parties', {
-	id: text('id').primaryKey().$defaultFn(() => nanoid()),
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => nanoid()),
 	displayName: text('display_name'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });
 
 export const tables = sqliteTable('tables', {
-	id: text('id').primaryKey().$defaultFn(() => nanoid()),
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => nanoid()),
 	title: text('title'),
 	dilemma: text('dilemma'),
 	councilId: text('council_id'),
-	status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }).default('pending'),
+	status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }).default(
+		'pending'
+	),
 	synthesis: text('synthesis'),
+	errorMessage: text('error_message'),
 	isDemo: integer('is_demo').default(0),
 	createdAt: integer('created_at').$defaultFn(() => Date.now()),
 	updatedAt: integer('updated_at').$defaultFn(() => Date.now())
@@ -31,7 +38,9 @@ export const tableParties = sqliteTable(
 );
 
 export const turns = sqliteTable('turns', {
-	id: text('id').primaryKey().$defaultFn(() => nanoid()),
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => nanoid()),
 	tableId: text('table_id').notNull(),
 	round: integer('round').notNull(),
 	partyId: text('party_id'),
@@ -54,9 +63,11 @@ export const personas = sqliteTable('personas', {
 export const councils = sqliteTable('councils', {
 	id: text('id').primaryKey(),
 	name: text('name'),
+	description: text('description'),
 	personaIds: text('persona_ids'), // JSON array
 	synthesisPrompt: text('synthesis_prompt'),
 	roundStructure: text('round_structure'), // JSON
+	modelConfig: text('model_config'), // JSON: { provider, model }
 	ownerParty: text('owner_party'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });

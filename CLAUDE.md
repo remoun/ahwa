@@ -43,7 +43,12 @@ surgery recovery. Optimize for:
   Specs describe inputs, outputs, and side effects — never implementation.
   If you cannot write a testable spec for the task, the task is underspecified;
   stop and ask the user for clarification.
-- **Red-green TDD, strictly.** Every behavior change follows this loop:
+- **Red-green TDD, by default.** This is the posture for every behavior
+  change — not a practice reserved for "important" work. Default to the
+  loop below; only deviate (with a one-sentence note in the commit) for
+  changes that are genuinely untestable (pure CSS, copy, config). If you
+  catch yourself writing production code without a failing test in front
+  of it, stop and write the test.
   1. Write the test. Run it. Confirm it fails for the right reason (red).
      "Right reason" means the assertion fires on the behavior under test, not
      an import error or missing file.
@@ -51,10 +56,13 @@ surgery recovery. Optimize for:
      to add code the failing test doesn't demand.
   3. Refactor if needed, with tests green throughout.
   4. Commit.
-  Skipping red is the most common failure mode — it produces tests that pass
-  regardless of whether the code works. If a test passes on first run, it is
-  suspect; make it fail deliberately (break the code, tweak the assertion)
-  to confirm it actually exercises the behavior, then restore.
+     Skipping red is the most common failure mode — it produces tests that pass
+     regardless of whether the code works. If a test passes on first run, it is
+     suspect; make it fail deliberately (break the code, tweak the assertion)
+     to confirm it actually exercises the behavior, then restore.
+     Adding tests _after_ the code has shipped is the anti-pattern this rule
+     exists to prevent — if you find yourself doing that, treat it as a bug
+     in your process, not a neutral alternative.
 - **Commit after each green step** with a descriptive message so the user can
   `git reset` by voice without reading diffs. Commit messages follow
   conventional-commits lightly: `feat:`, `fix:`, `test:`, `refactor:`, `chore:`.
@@ -82,17 +90,22 @@ When in doubt, do less and check in.
 - **Validation:** Zod for all schemas (personas, councils, SSE events, API
   bodies).
 - **Styling:** Tailwind. Defer visual polish until the user can look at a screen.
-- **Production builds:** `bun build --compile` produces a single
-  self-contained binary. Both the Docker image and the YunoHost package
-  distribute this binary; no runtime Bun dependency on the host.
+- **Production builds:** the shipping unit is the SvelteKit build output
+  (`build/`) run under the Bun runtime. Both the Docker image and the
+  YunoHost package consume it identically. The long-term target is a
+  single statically-linked binary via `bun build --compile`, but that
+  path is blocked on an adapter-node / `import.meta.url` incompatibility
+  (see invariant #12).
 
 ## Distribution & hosting
 
 See README for user-facing install docs. The architectural constraints:
 
-- **Single binary** via `bun build --compile`. Docker and YunoHost consume
-  the same binary. No "runs only via `bun run`" paths (invariant #12).
-- **Runtime contract:** binary reads `AHWA_DATA_DIR` and `PORT`, writes
+- **Uniform runtime surface.** Docker and YunoHost both install Bun and
+  run `build/index.js` with systemd. Keep the two paths reading from the
+  same build artifact — divergence is a bug. Single-binary via
+  `bun build --compile` remains the target (invariant #12).
+- **Runtime contract:** the app reads `AHWA_DATA_DIR` and `PORT`, writes
   only to its data directory, runs its own SQLite migrations on startup.
 - **Never multi-tenant SaaS.** No user accounts, billing, GDPR data-subject
   workflows. Self-hosted or demo mode only.
@@ -122,12 +135,17 @@ break one of these, stop and ask.
    `persona_turn_completed`, `synthesis_started`, `synthesis_token`,
    `table_closed`, `error`. Frontend dispatches on event type.
 
-5. **No in-app auth.** M1 is localhost-only. M1's personal public instance
-   sits behind Caddy basic-auth at the reverse proxy; Ahwa itself knows
-   nothing about login. M2 delivers real auth via SSOwat on YunoHost, which
-   Ahwa consumes by trusting reverse-proxy-supplied identity headers. Never
-   key anything off "the logged-in user" — everything is party-scoped via
-   UUIDs. Share links are `/t/{table_id}?party={party_id}&token={hmac}`.
+5. **No in-app auth.** Ahwa itself knows nothing about login. M1's
+   personal public instance at ahwa.app is protected by per-provider
+   spend caps (OpenRouter, etc.) rather than a credential wall — the
+   data surface is narrow (content is server-side, party-scoped, not
+   user-to-user shared) so the real risk is API bills, which a spend
+   cap handles. Basic-auth stays on the shelf, added only if abuse
+   appears. M2 delivers real auth via SSOwat on YunoHost, which Ahwa
+   consumes by trusting reverse-proxy-supplied identity headers. Never
+   key anything off "the logged-in user" — everything is party-scoped
+   via UUIDs. Share links are
+   `/t/{table_id}?party={party_id}&token={hmac}`.
 
 6. **Provider abstraction is request-shaped.** The orchestrator calls
    `llm.complete({ model, system, messages, stream })` and nothing else. No
@@ -159,12 +177,19 @@ break one of these, stop and ask.
     - Are auto-deleted by a cleanup job after a short TTL
     - Are rendered with visible "demo" chrome in the UI so users never confuse
       them with owned tables
-    If a query could plausibly mix demo and owned tables, the query is wrong.
+      If a query could plausibly mix demo and owned tables, the query is wrong.
 
-12. **Production builds are single binaries.** Releases are cut as statically
-    linked binaries via `bun build --compile`. Docker images and YunoHost
-    packages consume the same binary. No path leaks into "runs only via
-    `bun run`" that would make packaging painful later.
+12. **Production builds are self-contained.** The shipping unit is the
+    SvelteKit build output (`build/`) plus the Bun runtime, consumed
+    identically by Docker and YunoHost. A single statically-linked
+    binary via `bun build --compile` is the long-term goal but is
+    currently **blocked upstream**: the compiled binary's
+    `import.meta.url` resolves to `/$bunfs/root/` (Bun's internal
+    virtual FS), which breaks adapter-node's static asset serving for
+    `build/client/`. Revisit when Bun's compiler handles
+    `import.meta.url` against the real filesystem, or switch adapters.
+    Until then, both packaging paths install Bun and run
+    `build/index.js` with systemd.
 
 ## Data model
 
@@ -241,13 +266,14 @@ memory
 ```
 
 `round_structure` JSON shape:
+
 ```json
 {
-  "rounds": [
-    { "kind": "opening", "prompt_suffix": "Give a 2-3 paragraph opening take." },
-    { "kind": "cross_examination", "prompt_suffix": "..." }
-  ],
-  "synthesize": true
+	"rounds": [
+		{ "kind": "opening", "prompt_suffix": "Give a 2-3 paragraph opening take." },
+		{ "kind": "cross_examination", "prompt_suffix": "..." }
+	],
+	"synthesize": true
 }
 ```
 
@@ -257,11 +283,11 @@ The orchestrator maintains a set of available features. Personas whose
 `requires` array contains any unavailable feature are filtered out (with a
 visible warning in the UI) before a table opens.
 
-| Feature     | Available from | Notes                                      |
-|-------------|----------------|--------------------------------------------|
-| `memory`    | M3             | Per-party markdown memory passed to LLMs   |
-| `two_party` | M3             | Second party via share link                |
-| `sync`      | M4             | E2E-encrypted cross-device sync            |
+| Feature     | Available from | Notes                                    |
+| ----------- | -------------- | ---------------------------------------- |
+| `memory`    | M3             | Per-party markdown memory passed to LLMs |
+| `two_party` | M3             | Second party via share link              |
+| `sync`      | M4             | E2E-encrypted cross-device sync          |
 
 ## Milestones
 
@@ -293,16 +319,18 @@ publicly.
 - Markdown export of a table
 - Vercel AI SDK fully integrated; Anthropic, OpenAI, OpenRouter, Ollama
 - Provider + model selectable per council
-- Production single-binary build via `bun build --compile` in CI
 - Docker image (`ghcr.io/remoun/ahwa`) and compose file
+- Single-binary build via `bun build --compile` remains aspirational
+  (see invariant #12); M1 ships build + Bun runtime inside the Docker image
 - README with screenshots, Ollama quickstart, AGPL notice, zero-telemetry promise
 - Community councils directory: `councils/` and `personas/` folders loadable
   from UI
 - Ships with two councils: `default.json` (Elder / Mirror / Engineer / Weaver
   / Instigator) and `federation.json` (Federation Delegate / Ancestor /
   Organizer / Therapist / Trickster)
-- Personal public instance goes live behind Caddy basic-auth on ahwa.app (or
-  subdomain) for real-world usage and bug-shakedown
+- Personal public instance goes live at ahwa.app on Fly.io for real-world
+  usage and bug-shakedown. No credential wall (see invariant #5); protected
+  by OpenRouter spend cap and Fly auto-scaling limits.
 
 **Definition of done:** A technically-comfortable friend can follow the
 README and self-host a working instance in 15 minutes. You've used the
@@ -445,7 +473,7 @@ confirm compatibility during M0 setup).
 **What not to test:**
 
 - Trivial getters, thin passthroughs, or framework code you don't own.
-- Visual styling. Add tests for component *behavior* (click this, see that
+- Visual styling. Add tests for component _behavior_ (click this, see that
   state change); do not test CSS.
 - Third-party libraries. Test your own adapter layer around them instead.
 

@@ -2,7 +2,9 @@
 name: CI
 
 on:
-  push:
+  # PRs only. Branch protection requires these checks to pass before a
+  # PR can merge to main, so re-running on the main push would duplicate
+  # the same checks that just passed.
   pull_request:
 
 jobs:
@@ -13,9 +15,11 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.3.11"
+          bun-version: '1.3.11'
 
       - run: bun install --frozen-lockfile
+
+      - run: bun run lint
 
       - run: bun test
 
@@ -27,7 +31,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.3.11"
+          bun-version: '1.3.11'
 
       - run: bun install --frozen-lockfile
 
@@ -37,3 +41,28 @@ jobs:
         with:
           name: build
           path: build/
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.11'
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+
+      - run: bunx playwright install chromium --with-deps
+
+      - run: bun run test:e2e
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

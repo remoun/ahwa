@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+services:
+  ahwa:
+    build:
+      context: ../..
+      dockerfile: packaging/docker/Dockerfile
+    ports:
+      - '${PORT:-3000}:3000'
+    volumes:
+      - ahwa-data:/data
+    environment:
+      - AHWA_DATA_DIR=/data
+      - PORT=3000
+      # Uncomment and set the providers you want to use:
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # - OLLAMA_BASE_URL=http://host.docker.internal:11434/api
+    restart: unless-stopped
+
+volumes:
+  ahwa-data:

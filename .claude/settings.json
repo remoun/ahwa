@@ -1,23 +1,21 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(bun:*)",
-      "Bash(bunx:*)",
-      "Bash(git:*)",
-      "Bash(mkdir:*)",
-      "Bash(mv:*)",
-      "Bash(ls:*)",
-      "Bash(cat:*)",
-      "Bash(find:*)",
-      "Bash(npx drizzle-kit:*)",
-      "Edit",
-      "Write",
-      "Read",
-      "Glob",
-      "Grep"
-    ],
-    "additionalDirectories": [
-      "/Users/remoun/code/ahwa"
-    ]
-  }
+	"permissions": {
+		"allow": [
+			"Bash(bun:*)",
+			"Bash(bunx:*)",
+			"Bash(git:*)",
+			"Bash(mkdir:*)",
+			"Bash(mv:*)",
+			"Bash(ls:*)",
+			"Bash(cat:*)",
+			"Bash(find:*)",
+			"Bash(npx drizzle-kit:*)",
+			"Edit",
+			"Write",
+			"Read",
+			"Glob",
+			"Grep"
+		],
+		"additionalDirectories": ["/Users/remoun/code/ahwa"]
+	}
 }

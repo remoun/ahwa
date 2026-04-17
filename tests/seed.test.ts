@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect, beforeEach } from 'bun:test';
+import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
@@ -56,5 +57,45 @@ describe('seedFromDisk', () => {
 		expect(ids).toContain('elder');
 		expect(ids).toContain('mirror');
 		expect(ids.length).toBe(5);
+	});
+
+	it('persists council descriptions from JSON into the DB', () => {
+		seedFromDisk(db);
+		const row = db.select().from(schema.councils).where(eq(schema.councils.id, 'default')).get();
+		expect(row?.description).toBeTruthy();
+		expect(row!.description).toMatch(/balanced five-persona council/i);
+	});
+
+	it('skips malformed JSON files without crashing', () => {
+		const testDir = '/tmp/ahwa-test-councils';
+
+		try {
+			mkdirSync(testDir, { recursive: true });
+			// One valid council
+			writeFileSync(
+				`${testDir}/good.json`,
+				JSON.stringify({
+					id: 'good',
+					name: 'Good Council',
+					personas: [{ id: 'p1', name: 'P', emoji: '!', system_prompt: 'test' }],
+					round_structure: {
+						rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
+						synthesize: false
+					},
+					synthesis_prompt: 'n/a'
+				})
+			);
+			// One broken file
+			writeFileSync(`${testDir}/broken.json`, '{ this is not valid json }}}');
+
+			// Should not throw — should skip the broken file
+			seedFromDisk(db, testDir, '/tmp/ahwa-test-personas-empty');
+
+			// The good council should still be loaded
+			const councils = db.select().from(schema.councils).all();
+			expect(councils.map((c) => c.id)).toContain('good');
+		} finally {
+			rmSync(testDir, { recursive: true, force: true });
+		}
 	});
 });
