@@ -145,6 +145,7 @@ export async function* runDeliberation(
 			// Kick off all LLM calls in parallel. Each persona gets the same
 			// prior-round context built from turnsByRound.
 			const fullTexts: string[] = personas.map(() => '');
+			const truncatedFlags: boolean[] = personas.map(() => false);
 			const personaStreams = personas.map((persona, idx) =>
 				(async function* (): AsyncGenerator<SseEvent> {
 					const messages = buildMessages(dilemma, round, roundIdx, turnsByRound);
@@ -167,6 +168,18 @@ export async function* runDeliberation(
 					if (fullTexts[idx] === '') {
 						throw new Error(
 							`LLM returned empty response for ${persona.name ?? persona.id} (provider: ${resolvedConfig.provider}, model: ${resolvedConfig.model}). Check provider credentials and model availability.`
+						);
+					}
+
+					// Truncation happens when the model hits maxOutputTokens mid-
+					// response. Not a fatal error (we have partial content), but
+					// worth flagging so a reloader can see the text is incomplete
+					// and ops can decide whether to raise the cap.
+					const { truncated } = await result.finished;
+					truncatedFlags[idx] = truncated;
+					if (truncated) {
+						console.warn(
+							`orchestrator: persona "${persona.name ?? persona.id}" was truncated at maxOutputTokens in round ${roundIdx + 1}`
 						);
 					}
 
@@ -193,7 +206,8 @@ export async function* runDeliberation(
 						partyId,
 						personaName: persona.name,
 						text: fullTexts[i],
-						visibleTo: JSON.stringify(visibleTo)
+						visibleTo: JSON.stringify(visibleTo),
+						truncated: truncatedFlags[i] ? 1 : 0
 					})
 					.run();
 				roundTurns.push({
@@ -227,6 +241,10 @@ export async function* runDeliberation(
 				synthesisText += chunk;
 				yield { type: 'synthesis_token', text: chunk };
 			}
+			const { truncated: synthTruncated } = await result.finished;
+			if (synthTruncated) {
+				console.warn('orchestrator: synthesis was truncated at maxOutputTokens');
+			}
 
 			// Persist synthesis turn
 			db.insert(schema.turns)
@@ -237,7 +255,8 @@ export async function* runDeliberation(
 					partyId: 'synthesizer',
 					personaName: 'Synthesizer',
 					text: synthesisText,
-					visibleTo: JSON.stringify(visibleTo)
+					visibleTo: JSON.stringify(visibleTo),
+					truncated: synthTruncated ? 1 : 0
 				})
 				.run();
 

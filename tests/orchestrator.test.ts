@@ -486,4 +486,31 @@ describe('orchestrator', () => {
 			.filter((e) => e.type === 'persona_turn_started');
 		expect(turnStartsBeforeFirstToken.length).toBe(2);
 	});
+
+	it('persists truncated=1 on turns where the LLM hit maxOutputTokens', async () => {
+		createTable(db, 'tbl-trunc', 'Test dilemma', 'test-council', 'party-1');
+
+		const truncatingComplete = async (opts: any) => {
+			const base = await mockComplete(opts);
+			// Only truncate Elder — Mirror finishes normally.
+			const truncated = opts.system.toLowerCase().includes('elder');
+			return { ...base, finished: Promise.resolve({ truncated }) };
+		};
+
+		for await (const _ of runDeliberation(db, {
+			tableId: 'tbl-trunc',
+			dilemma: 'Test dilemma',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: truncatingComplete
+		})) {
+			// consume
+		}
+
+		const turns = db.select().from(schema.turns).where(eq(schema.turns.tableId, 'tbl-trunc')).all();
+		const elderTurns = turns.filter((t) => t.personaName === 'The Elder');
+		const mirrorTurns = turns.filter((t) => t.personaName === 'The Mirror');
+		expect(elderTurns.every((t) => t.truncated === 1)).toBe(true);
+		expect(mirrorTurns.every((t) => t.truncated === 0)).toBe(true);
+	});
 });

@@ -22,6 +22,13 @@ export interface CompleteRequest {
 
 export interface CompleteResult {
 	textStream: AsyncIterable<string>;
+	/**
+	 * Resolves after the stream ends. `truncated: true` means the model
+	 * hit the output-token cap (maxOutputTokens or similar) and the text
+	 * was cut off mid-generation — the persisted turn should be flagged
+	 * so a later reader knows the response is incomplete.
+	 */
+	finished: Promise<{ truncated: boolean }>;
 }
 
 /**
@@ -155,7 +162,8 @@ function mockComplete(request: CompleteRequest): CompleteResult {
 		textStream: (async function* () {
 			yield `[${name}] `;
 			yield 'This is a mocked response for E2E testing.';
-		})()
+		})(),
+		finished: Promise.resolve({ truncated: false })
 	};
 }
 
@@ -199,6 +207,7 @@ export async function complete(request: CompleteRequest): Promise<CompleteResult
 				if (part.type === 'text-delta') yield part.text;
 				else if (part.type === 'error') throw part.error;
 			}
-		})()
+		})(),
+		finished: result.finishReason.then((reason) => ({ truncated: reason === 'length' }))
 	};
 }
