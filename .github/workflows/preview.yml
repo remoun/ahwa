@@ -33,3 +33,16 @@ jobs:
           config: fly.toml
           vmsize: shared-cpu-1x
           memory: 256
+          # PR preview apps don't inherit secrets from production — Fly
+          # has no cross-app secret store. OPENROUTER_API_KEY costs real
+          # money per request, so it stays in GitHub Secrets.
+          #
+          # AHWA_SHARE_SECRET just needs to be stable across preview
+          # restarts (otherwise Fly's auto-stop cycle invalidates share
+          # links mid-testing). It's hardcoded here intentionally:
+          # previews have no real users and no valuable data, so secret
+          # strength buys nothing that a constant doesn't. NEVER reuse
+          # this value in production.
+          secrets: |
+            OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+            AHWA_SHARE_SECRET=preview-only-not-a-real-secret
