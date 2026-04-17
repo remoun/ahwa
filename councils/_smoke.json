@@ -19,10 +19,6 @@
 		],
 		"synthesize": false
 	},
-	"model_config": {
-		"provider": "openrouter",
-		"model": "google/gemini-2.5-flash"
-	},
 	"synthesis_prompt": "",
 	"license": "AGPL-3.0-or-later"
 }
