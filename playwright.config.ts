@@ -5,6 +5,10 @@ const PORT = 4173; // vite preview default
 
 export default defineConfig({
 	testDir: './e2e',
+	// smoke.spec.ts is the post-deploy UI smoke — see
+	// playwright.smoke.config.ts. It targets the real provider and isn't
+	// meant to run in the normal mock-LLM e2e job.
+	testIgnore: /smoke\.spec\.ts$/,
 	fullyParallel: false, // shared SQLite DB — keep sequential
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
