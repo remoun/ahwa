@@ -56,14 +56,14 @@ describe('seedFromDisk', () => {
 		const ids = JSON.parse(row!.personaIds!);
 		expect(ids).toContain('elder');
 		expect(ids).toContain('mirror');
-		expect(ids.length).toBe(5);
+		expect(ids.length).toBe(6);
 	});
 
 	it('persists council descriptions from JSON into the DB', () => {
 		seedFromDisk(db);
 		const row = db.select().from(schema.councils).where(eq(schema.councils.id, 'default')).get();
 		expect(row?.description).toBeTruthy();
-		expect(row!.description).toMatch(/balanced five-persona council/i);
+		expect(row!.description).toMatch(/balanced six-persona council/i);
 	});
 
 	it('skips malformed JSON files without crashing', () => {

@@ -200,6 +200,21 @@ break one of these, stop and ask.
     Until then, both packaging paths install Bun and run
     `build/index.js` with systemd.
 
+13. **Opinionated councils correct ambient imbalance; they are not
+    themselves balanced.** The default council aims at neutral balance
+    across angles. Opinionated councils are deliberately tilted — users
+    select them precisely to carve out space from voices already dominant
+    in their lives (capitalism, monogamy, cynicism, individualism). Do
+    not add "counterweight" voices to opinionated councils to restore
+    balance; the user already hears the opposing voice at infinite volume
+    outside the council, and adding it inside defeats the council's
+    purpose. A voice belongs in an opinionated council only if it fills
+    a cognitive-move gap the council cannot produce from within itself
+    _and_ that move is also absent or quiet in the user's ambient
+    environment (e.g., Praxis's Uncommitted is not ambient for organizers
+    already surrounded by committed people; RA's Body is not ambient in
+    principle-heavy discourse).
+
 ## Data model
 
 The three core entities create a clean separation:
