@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Multi-stage build: build with Bun, run with Bun on a minimal base.
 
-FROM oven/bun:1.3.11 AS build
+FROM oven/bun:1.3.12 AS build
 WORKDIR /app
 
 # Install deps
@@ -17,7 +17,7 @@ RUN bun run build
 
 # Production stage — copy the whole /app directory, which includes
 # build/, node_modules/, councils/, personas/, package.json, etc.
-FROM oven/bun:1.3.11-slim
+FROM oven/bun:1.3.12-slim
 
 WORKDIR /app
 COPY --from=build /app ./
