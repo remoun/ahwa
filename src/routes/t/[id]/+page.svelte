@@ -299,7 +299,7 @@
 				</figcaption>
 			{/if}
 			<p
-				class="font-display text-fg leading-relaxed {dilemmaStuck
+				class="font-display text-fg leading-relaxed whitespace-pre-wrap {dilemmaStuck
 					? 'text-base line-clamp-3'
 					: 'text-xl'}"
 			>
