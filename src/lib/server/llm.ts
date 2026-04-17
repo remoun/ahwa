@@ -39,17 +39,23 @@ export interface CompleteResult {
  * spend cap. Override per-council via council.model_config for cheaper
  * defaults on demo-style councils or higher tiers for critical work.
  */
+const HARDCODED_DEFAULT_MODELS: Record<ProviderName, string> = {
+	anthropic: 'claude-sonnet-4-20250514',
+	openai: 'gpt-4o',
+	openrouter: 'anthropic/claude-sonnet-4-6',
+	ollama: 'llama3.1'
+};
+
 /**
  * Per-provider env overrides so operators can swap the default model
- * without a code change — e.g. set `AHWA_OPENROUTER_MODEL=google/gemini-2.5-pro`
- * to try a different default on a staging deploy.
+ * without a code change — e.g. `AHWA_OPENROUTER_MODEL=google/gemini-2.5-pro`
+ * on a staging deploy. Reads env on each call (rather than at module load)
+ * so tests can set it after import.
  */
-const DEFAULT_MODELS: Record<ProviderName, string> = {
-	anthropic: process.env.AHWA_ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
-	openai: process.env.AHWA_OPENAI_MODEL || 'gpt-4o',
-	openrouter: process.env.AHWA_OPENROUTER_MODEL || 'anthropic/claude-sonnet-4-6',
-	ollama: process.env.AHWA_OLLAMA_MODEL || 'llama3.1'
-};
+export function defaultModelFor(provider: ProviderName): string {
+	const envKey = `AHWA_${provider.toUpperCase()}_MODEL` as const;
+	return process.env[envKey] || HARDCODED_DEFAULT_MODELS[provider];
+}
 
 /**
  * Detect the first available provider by checking env vars.
@@ -92,7 +98,7 @@ export function getAvailableProviders(): ProviderName[] {
 export function resolveModelConfig(config: ModelConfig | undefined): ModelConfig {
 	if (config) return config;
 	const provider = detectDefaultProvider();
-	return { provider, model: DEFAULT_MODELS[provider] };
+	return { provider, model: defaultModelFor(provider) };
 }
 
 /** Create the appropriate Vercel AI SDK model instance for a provider+model pair */
