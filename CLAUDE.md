@@ -210,7 +210,7 @@ break one of these, stop and ask.
     outside the council, and adding it inside defeats the council's
     purpose. A voice belongs in an opinionated council only if it fills
     a cognitive-move gap the council cannot produce from within itself
-    *and* that move is also absent or quiet in the user's ambient
+    _and_ that move is also absent or quiet in the user's ambient
     environment (e.g., Praxis's Uncommitted is not ambient for organizers
     already surrounded by committed people; RA's Body is not ambient in
     principle-heavy discourse).
