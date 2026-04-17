@@ -1,18 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 name: CD
 
-# Chain off CI: deploy to Fly only if the CI workflow succeeded on the
-# same commit. This avoids the "red main, broken prod" failure mode of
-# firing deploy + CI in parallel.
+# Branch protection on main requires CI's 4 checks to pass before any
+# commit can land here, so by the time this fires the commit is already
+# known-good. No need for a workflow_run chain.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  push:
     branches: [main]
 
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     concurrency:
