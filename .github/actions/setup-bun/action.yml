@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: Setup Bun
+description: >
+  Installs the Bun version pinned in packaging/docker/Dockerfile so CI
+  and the production image share a single version string. Dependabot's
+  Docker ecosystem bumps the Dockerfile's FROM line; this action makes
+  that bump the single source of truth for Bun across the repo.
+
+runs:
+  using: composite
+  steps:
+    - id: bunver
+      shell: bash
+      run: |
+        set -euo pipefail
+        version=$(sed -nE 's|^FROM oven/bun:([0-9.]+).*|\1|p' packaging/docker/Dockerfile | head -1)
+        if [ -z "$version" ]; then
+          echo "::error::Could not parse bun version from packaging/docker/Dockerfile"
+          exit 1
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: ${{ steps.bunver.outputs.version }}
