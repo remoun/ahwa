@@ -279,7 +279,19 @@
 		<div bind:this={sentinel} aria-hidden="true" class="h-px"></div>
 		<figure
 			class="sticky top-14 z-10 bg-surface border border-border-strong rounded-xl shadow-md transition-all
-				{dilemmaStuck ? 'mb-10 px-4 py-2' : 'mb-10 px-6 py-5'}"
+				{dilemmaStuck ? 'mb-10 px-4 py-2 cursor-pointer hover:border-accent' : 'mb-10 px-6 py-5'}"
+			role={dilemmaStuck ? 'button' : undefined}
+			tabindex={dilemmaStuck ? 0 : undefined}
+			aria-label={dilemmaStuck ? 'Scroll to top to see the full dilemma' : undefined}
+			onclick={dilemmaStuck ? () => window.scrollTo({ top: 0, behavior: 'smooth' }) : undefined}
+			onkeydown={dilemmaStuck
+				? (e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							window.scrollTo({ top: 0, behavior: 'smooth' });
+						}
+					}
+				: undefined}
 		>
 			{#if !dilemmaStuck}
 				<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-2">
@@ -288,7 +300,7 @@
 			{/if}
 			<p
 				class="font-display text-fg leading-relaxed {dilemmaStuck
-					? 'text-base line-clamp-1'
+					? 'text-base line-clamp-3'
 					: 'text-xl'}"
 			>
 				{data.table.dilemma}
