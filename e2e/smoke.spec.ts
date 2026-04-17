@@ -23,12 +23,22 @@ test('UI drives a full deliberation against the real provider', async ({ page })
 
 	await expect(page).toHaveURL(/\/t\//);
 
-	// Streaming proof: the first persona card fills with actual text.
-	// Catches the class of bug where the card scaffolds appear but the
-	// SSE token stream is broken (#11-style issues).
+	// Streaming proof: sample the first persona card's text at intervals
+	// and confirm it grew through multiple intermediate sizes. Catches
+	// the #11-class bug where tokens accumulate in a buffer and the card
+	// jumps from empty to full in a single DOM update — under that bug,
+	// distinct text lengths observed would be 2 (empty, final); under
+	// real streaming it's typically >10.
 	await expect(page.getByText('The Elder').first()).toBeVisible({ timeout: 30_000 });
 	const elderCard = page.getByText('The Elder').first().locator('..');
-	await expect(elderCard).not.toHaveText('The Elder', { timeout: 60_000 });
+
+	const lengths = new Set<number>();
+	for (let i = 0; i < 30; i++) {
+		const text = (await elderCard.textContent()) ?? '';
+		lengths.add(text.length);
+		await page.waitForTimeout(500);
+	}
+	expect(lengths.size).toBeGreaterThan(5);
 
 	// Completion proof: synthesis renders.
 	await expect(page.getByRole('heading', { name: /^synthesis$/i })).toBeVisible({
