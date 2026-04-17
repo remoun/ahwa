@@ -11,6 +11,8 @@ table, invite a council of AI personas, and pose a dilemma. The council
 debates it across structured rounds. A synthesizer produces a recommendation
 that preserves real disagreement rather than flattening it.
 
+![An Ahwa table mid-deliberation. Dilemma: "My aging parents want me to move back to my hometown. Do I?" The Elder is speaking.](./docs/screenshots/hero.png)
+
 Inspired by [Moot](https://getmoot.app) and [Auralink](https://auralink.com),
 but forkable, self-hostable, and built around user-owned data.
 
@@ -20,15 +22,24 @@ but forkable, self-hostable, and built around user-owned data.
 
 ## What it does
 
-You describe a decision you're wrestling with. A council of AI personas —
-each with a distinct worldview and voice — takes it on. They open with
-their first takes. They cross-examine each other. A synthesizer reads the
-whole deliberation and gives you back:
+You describe a decision you're wrestling with and pick a council.
+
+![The "Set a table" screen. A dilemma textarea, below it four councils to choose from: Default, Federation, Praxis, Relationship Anarchist.](./docs/screenshots/set-a-table.png)
+
+A council of AI personas — each with a distinct worldview and voice — takes
+it on. They open with their first takes, streaming live. They cross-examine
+each other in the next round.
+
+![The Elder's opening take on the aging-parents dilemma, reframing it as a question about where to place relational and professional capital over decades.](./docs/screenshots/persona-turn.png)
+
+A synthesizer reads the whole deliberation and gives you back:
 
 - What the council actually agreed on
 - Where they genuinely disagreed, and why it matters
 - A specific recommended next step
 - How confident the synthesizer is, and what would change that
+
+![Synthesis view showing an "Areas of convergence" table: each point of agreement alongside the personas who expressed it across rounds 1 and 2.](./docs/screenshots/synthesis.png)
 
 The defaults ship with four councils:
 
