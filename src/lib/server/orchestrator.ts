@@ -226,14 +226,22 @@ export async function* runDeliberation(
 			const allTurns = Array.from(turnsByRound.values()).flat();
 			const deliberationText = allTurns.map((t) => `**${t.personaName}:** ${t.text}`).join('\n\n');
 
+			// Synthesis is the load-bearing output users actually act on —
+			// letting ops swap in a stronger model just for this one call
+			// (e.g. Opus for the Sonnet default) buys noticeable depth on
+			// the only part of a deliberation that's a recommendation, for
+			// a small fraction of total deliberation cost (~1 call of 11).
+			const synthesisModel = process.env.AHWA_SYNTHESIS_MODEL || resolvedConfig.model;
+			const synthesisConfig = { ...resolvedConfig, model: synthesisModel };
+
 			const result = await completeFn({
-				model: resolvedConfig.model,
+				model: synthesisModel,
 				system: council.synthesisPrompt,
 				messages: [
 					{ role: 'user', content: `Here is the full deliberation:\n\n${deliberationText}` }
 				],
 				stream: true,
-				modelConfig: resolvedConfig
+				modelConfig: synthesisConfig
 			});
 
 			let synthesisText = '';
