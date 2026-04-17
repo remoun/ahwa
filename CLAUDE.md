@@ -90,17 +90,22 @@ When in doubt, do less and check in.
 - **Validation:** Zod for all schemas (personas, councils, SSE events, API
   bodies).
 - **Styling:** Tailwind. Defer visual polish until the user can look at a screen.
-- **Production builds:** `bun build --compile` produces a single
-  self-contained binary. Both the Docker image and the YunoHost package
-  distribute this binary; no runtime Bun dependency on the host.
+- **Production builds:** the shipping unit is the SvelteKit build output
+  (`build/`) run under the Bun runtime. Both the Docker image and the
+  YunoHost package consume it identically. The long-term target is a
+  single statically-linked binary via `bun build --compile`, but that
+  path is blocked on an adapter-node / `import.meta.url` incompatibility
+  (see invariant #12).
 
 ## Distribution & hosting
 
 See README for user-facing install docs. The architectural constraints:
 
-- **Single binary** via `bun build --compile`. Docker and YunoHost consume
-  the same binary. No "runs only via `bun run`" paths (invariant #12).
-- **Runtime contract:** binary reads `AHWA_DATA_DIR` and `PORT`, writes
+- **Uniform runtime surface.** Docker and YunoHost both install Bun and
+  run `build/index.js` with systemd. Keep the two paths reading from the
+  same build artifact — divergence is a bug. Single-binary via
+  `bun build --compile` remains the target (invariant #12).
+- **Runtime contract:** the app reads `AHWA_DATA_DIR` and `PORT`, writes
   only to its data directory, runs its own SQLite migrations on startup.
 - **Never multi-tenant SaaS.** No user accounts, billing, GDPR data-subject
   workflows. Self-hosted or demo mode only.
@@ -130,12 +135,17 @@ break one of these, stop and ask.
    `persona_turn_completed`, `synthesis_started`, `synthesis_token`,
    `table_closed`, `error`. Frontend dispatches on event type.
 
-5. **No in-app auth.** M1 is localhost-only. M1's personal public instance
-   sits behind Caddy basic-auth at the reverse proxy; Ahwa itself knows
-   nothing about login. M2 delivers real auth via SSOwat on YunoHost, which
-   Ahwa consumes by trusting reverse-proxy-supplied identity headers. Never
-   key anything off "the logged-in user" — everything is party-scoped via
-   UUIDs. Share links are `/t/{table_id}?party={party_id}&token={hmac}`.
+5. **No in-app auth.** Ahwa itself knows nothing about login. M1's
+   personal public instance at ahwa.app is protected by per-provider
+   spend caps (OpenRouter, etc.) rather than a credential wall — the
+   data surface is narrow (content is server-side, party-scoped, not
+   user-to-user shared) so the real risk is API bills, which a spend
+   cap handles. Basic-auth stays on the shelf, added only if abuse
+   appears. M2 delivers real auth via SSOwat on YunoHost, which Ahwa
+   consumes by trusting reverse-proxy-supplied identity headers. Never
+   key anything off "the logged-in user" — everything is party-scoped
+   via UUIDs. Share links are
+   `/t/{table_id}?party={party_id}&token={hmac}`.
 
 6. **Provider abstraction is request-shaped.** The orchestrator calls
    `llm.complete({ model, system, messages, stream })` and nothing else. No
@@ -169,10 +179,17 @@ break one of these, stop and ask.
       them with owned tables
       If a query could plausibly mix demo and owned tables, the query is wrong.
 
-12. **Production builds are single binaries.** Releases are cut as statically
-    linked binaries via `bun build --compile`. Docker images and YunoHost
-    packages consume the same binary. No path leaks into "runs only via
-    `bun run`" that would make packaging painful later.
+12. **Production builds are self-contained.** The shipping unit is the
+    SvelteKit build output (`build/`) plus the Bun runtime, consumed
+    identically by Docker and YunoHost. A single statically-linked
+    binary via `bun build --compile` is the long-term goal but is
+    currently **blocked upstream**: the compiled binary's
+    `import.meta.url` resolves to `/$bunfs/root/` (Bun's internal
+    virtual FS), which breaks adapter-node's static asset serving for
+    `build/client/`. Revisit when Bun's compiler handles
+    `import.meta.url` against the real filesystem, or switch adapters.
+    Until then, both packaging paths install Bun and run
+    `build/index.js` with systemd.
 
 ## Data model
 
@@ -302,16 +319,18 @@ publicly.
 - Markdown export of a table
 - Vercel AI SDK fully integrated; Anthropic, OpenAI, OpenRouter, Ollama
 - Provider + model selectable per council
-- Production single-binary build via `bun build --compile` in CI
 - Docker image (`ghcr.io/remoun/ahwa`) and compose file
+- Single-binary build via `bun build --compile` remains aspirational
+  (see invariant #12); M1 ships build + Bun runtime inside the Docker image
 - README with screenshots, Ollama quickstart, AGPL notice, zero-telemetry promise
 - Community councils directory: `councils/` and `personas/` folders loadable
   from UI
 - Ships with two councils: `default.json` (Elder / Mirror / Engineer / Weaver
   / Instigator) and `federation.json` (Federation Delegate / Ancestor /
   Organizer / Therapist / Trickster)
-- Personal public instance goes live behind Caddy basic-auth on ahwa.app (or
-  subdomain) for real-world usage and bug-shakedown
+- Personal public instance goes live at ahwa.app on Fly.io for real-world
+  usage and bug-shakedown. No credential wall (see invariant #5); protected
+  by OpenRouter spend cap and Fly auto-scaling limits.
 
 **Definition of done:** A technically-comfortable friend can follow the
 README and self-host a working instance in 15 minutes. You've used the
