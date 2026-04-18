@@ -6,6 +6,8 @@ import {
 	getDemoUsageToday,
 	recordDemoTokens,
 	withinDemoBudget,
+	tryReserveDemoBudget,
+	reconcileDemoTokens,
 	DEMO_USD_PER_MILLION_TOKENS_DEFAULT
 } from '../src/lib/server/demo-usage';
 
@@ -110,6 +112,97 @@ describe('demo-usage', () => {
 		it("treats yesterday's tokens as not counting against today", () => {
 			recordDemoTokens({ db, tokens: 9_999_999, now: () => Date.UTC(2026, 3, 17, 23, 0, 0) });
 			expect(withinDemoBudget({ db, capTokens: 1000, now: clock })).toBe(true);
+		});
+	});
+
+	describe('tryReserveDemoBudget (pre-charge an estimate atomically)', () => {
+		it('reserves and debits the estimate when the cap allows', () => {
+			const result = tryReserveDemoBudget({
+				db,
+				capTokens: 1000,
+				estimateTokens: 100,
+				now: clock
+			});
+
+			expect(result.reserved).toBe(true);
+			if (result.reserved) {
+				expect(result.usageAfter.tokens).toBe(100);
+			}
+			// And it actually wrote to the DB
+			expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(100);
+		});
+
+		it('refuses (and writes nothing) when the estimate would push us past the cap', () => {
+			recordDemoTokens({ db, tokens: 950, now: clock });
+
+			const result = tryReserveDemoBudget({
+				db,
+				capTokens: 1000,
+				estimateTokens: 100,
+				now: clock
+			});
+
+			expect(result.reserved).toBe(false);
+			if (!result.reserved) {
+				expect(result.usageNow.tokens).toBe(950);
+			}
+			// Confirm no debit happened
+			expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(950);
+		});
+
+		it('rejects exactly at the cap (>, not >=)', () => {
+			recordDemoTokens({ db, tokens: 900, now: clock });
+			// 900 + 100 = 1000 → exactly at cap → still allowed
+			expect(
+				tryReserveDemoBudget({ db, capTokens: 1000, estimateTokens: 100, now: clock }).reserved
+			).toBe(true);
+			// 1000 + 1 = 1001 → over → refused
+			expect(
+				tryReserveDemoBudget({ db, capTokens: 1000, estimateTokens: 1, now: clock }).reserved
+			).toBe(false);
+		});
+
+		it('serializes back-to-back reservations (cap-1 estimate twice → one wins)', () => {
+			// Cap 200, estimate 150 — two parallel demos can't both fit.
+			const a = tryReserveDemoBudget({
+				db,
+				capTokens: 200,
+				estimateTokens: 150,
+				now: clock
+			});
+			const b = tryReserveDemoBudget({
+				db,
+				capTokens: 200,
+				estimateTokens: 150,
+				now: clock
+			});
+
+			expect(a.reserved).toBe(true);
+			expect(b.reserved).toBe(false);
+			expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(150);
+		});
+	});
+
+	describe('reconcileDemoTokens (adjust pre-charge to match actuals)', () => {
+		it('adds the positive delta when actual > estimate', () => {
+			tryReserveDemoBudget({ db, capTokens: 10000, estimateTokens: 5000, now: clock });
+			reconcileDemoTokens({ db, estimateTokens: 5000, actualTokens: 7000, now: clock });
+
+			expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(7000);
+		});
+
+		it('subtracts the negative delta when actual < estimate (refunds the overcharge)', () => {
+			tryReserveDemoBudget({ db, capTokens: 10000, estimateTokens: 5000, now: clock });
+			reconcileDemoTokens({ db, estimateTokens: 5000, actualTokens: 3000, now: clock });
+
+			expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(3000);
+		});
+
+		it('is a no-op when actual == estimate', () => {
+			tryReserveDemoBudget({ db, capTokens: 10000, estimateTokens: 5000, now: clock });
+			reconcileDemoTokens({ db, estimateTokens: 5000, actualTokens: 5000, now: clock });
+
+			expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(5000);
 		});
 	});
 });
