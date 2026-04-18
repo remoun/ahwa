@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import {
 	complete as defaultComplete,
+	resolveCouncilModelConfig,
 	resolveModelConfig,
 	type CompleteRequest,
 	type CompleteResult
@@ -61,9 +62,13 @@ export async function* runDeliberation(
 		RoundStructureSchema,
 		`council.${councilId}.roundStructure`
 	);
-	const modelConfig = council.modelConfig
+	const storedModelConfig = council.modelConfig
 		? parseJson(council.modelConfig, ModelConfigSchema, `council.${councilId}.modelConfig`)
 		: undefined;
+	// AHWA_COUNCIL_<ID>_PROVIDER + _MODEL env vars override the stored
+	// config — lets a deploy re-pin demo (or any other council) without
+	// editing the council JSON.
+	const modelConfig = resolveCouncilModelConfig(councilId, storedModelConfig);
 	const resolvedConfig = resolveModelConfig(modelConfig);
 
 	// Load personas, filtering out those with unmet feature requirements

@@ -110,6 +110,21 @@ applies when the council being run has no explicit `model_config`.
 
 \*At least one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, or `OLLAMA_BASE_URL` must be set.
 
+**Per-council overrides.** To pin a specific council to a different
+model than its `model_config` (or auto-detect) would land on, set
+`AHWA_COUNCIL_<ID>_PROVIDER` and `AHWA_COUNCIL_<ID>_MODEL`. Both must
+be set; the council ID is uppercased and `-` becomes `_`. Example —
+re-pin the demo council to Haiku 4.5 on a deploy that has both
+Anthropic and OpenRouter keys:
+
+```bash
+AHWA_COUNCIL_DEMO_PROVIDER=anthropic
+AHWA_COUNCIL_DEMO_MODEL=claude-haiku-4-5-20251001
+```
+
+Useful on `ahwa.app`-style deploys to keep demo cost low without
+editing the upstream council JSON.
+
 ### Public-demo mode (only set these for an ahwa.app-style instance)
 
 Most self-hosters do NOT want public-demo mode — it changes `/` from
