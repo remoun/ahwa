@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { DB } from './db';
-import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
 import { reconcileDemoTokens } from './demo-usage';
 
