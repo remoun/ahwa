@@ -27,7 +27,7 @@ function initDb(): DB {
 	// WAL so a long-running deliberation writing turns doesn't block the
 	// table-list page reading them in parallel — the default rollback
 	// journal serializes readers behind any in-flight write.
-	client.exec('PRAGMA journal_mode=WAL');
+	client.run('PRAGMA journal_mode=WAL');
 
 	const d = drizzle(client, { schema });
 
