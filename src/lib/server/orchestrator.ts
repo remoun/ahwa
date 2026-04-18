@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq } from 'drizzle-orm';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { nanoid } from 'nanoid';
 
 import type { SseEvent } from '../schemas/events';
 import { errorMessage } from '../util';
+import type { DB } from './db';
 import * as schema from './db/schema';
 import { filterPersonas } from './features';
 import {
@@ -15,7 +15,6 @@ import {
 	resolveModelConfig
 } from './llm';
 
-type DB = BunSQLiteDatabase<typeof schema>;
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
 
 export interface DeliberationRequest {

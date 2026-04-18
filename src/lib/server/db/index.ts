@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Database } from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { type BunSQLiteDatabase,drizzle } from 'drizzle-orm/bun-sqlite';
 import { mkdirSync } from 'fs';
 
 import { ensureMigrated } from './migrate-runner';
@@ -8,11 +8,15 @@ import { recoverOrphanedTables } from './recovery';
 import * as schema from './schema';
 import { seedFromDisk } from './seed';
 
+// Canonical DB type — every server module that takes a db param imports
+// from here. Single-source-of-truth so a schema change doesn't have to
+// ripple through ten copy-pasted `type DB = BunSQLiteDatabase<...>` lines.
+export type DB = BunSQLiteDatabase<typeof schema>;
+
 // Lazy because SvelteKit's bundler imports server modules during
 // `bun run build` to extract handlers. Doing the mkdir/open/migrate
 // dance at module top-level created an orphan ./data/ahwa.db at the
 // build cwd. getDb() defers all work until first runtime call.
-type DB = ReturnType<typeof drizzle<typeof schema>>;
 let _db: DB | null = null;
 
 function initDb(): DB {
@@ -21,7 +25,10 @@ function initDb(): DB {
 	const dbPath = `${dataDir}/ahwa.db`;
 
 	const client = new Database(dbPath, { create: true });
-	client.exec('PRAGMA journal_mode=WAL');
+	// WAL so a long-running deliberation writing turns doesn't block the
+	// table-list page reading them in parallel — the default rollback
+	// journal serializes readers behind any in-flight write.
+	client.run('PRAGMA journal_mode=WAL');
 
 	const d = drizzle(client, { schema });
 
@@ -36,6 +43,15 @@ function initDb(): DB {
 	return d;
 }
 
+/**
+ * Convention for callers:
+ * - **Request-time helpers** (orchestrator, getPartyFromRequest, demo
+ *   helpers) take `db: DB`. Their caller already has it from getDb().
+ * - **Module-load factories** (createIdentityHandle,
+ *   createDemoRouteHandler) take `getDb: () => DB`. Eagerly resolving
+ *   at construction would re-trigger the orphan-DB bug this lazy
+ *   accessor exists to prevent.
+ */
 export function getDb(): DB {
 	return (_db ??= initDb());
 }
