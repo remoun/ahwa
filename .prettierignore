@@ -7,3 +7,5 @@ playwright-report/
 test-results/
 bun.lock
 package-lock.json
+.claude/
+

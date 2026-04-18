@@ -68,7 +68,10 @@ export default [
 			'src/lib/server/db/migrations/',
 			'e2e/.data/',
 			'playwright-report/',
-			'test-results/'
+			'test-results/',
+			// Per-feature scratch worktrees Claude Code creates; their own
+			// eslint.config.js confuses tseslint's tsconfigRootDir resolution.
+			'.claude/'
 		]
 	}
 ];
