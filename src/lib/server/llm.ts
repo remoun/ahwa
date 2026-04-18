@@ -146,6 +146,46 @@ export function getAvailableProviders(): ProviderName[] {
 	return available;
 }
 
+const PROVIDER_NAMES: readonly ProviderName[] = ['anthropic', 'openai', 'openrouter', 'ollama'];
+
+/**
+ * Per-council model override via env. Lets a deploy re-pin a council
+ * to a different model than its JSON `model_config` says without
+ * editing the council file. Useful for ahwa.app-style deploys that
+ * want to swap the demo council to a cheaper model than auto-detect
+ * would land on, while leaving the upstream JSON unchanged.
+ *
+ * Format: AHWA_COUNCIL_<ID>_PROVIDER + AHWA_COUNCIL_<ID>_MODEL must
+ * BOTH be set. The ID is uppercased and `-` → `_` (so council
+ * `dsa-praxis` becomes AHWA_COUNCIL_DSA_PRAXIS_*). If only one of
+ * the two is set, the override is ignored — refusing to mix avoids
+ * accidentally combining a stored provider with an env model.
+ *
+ * Returns:
+ *   - the env-derived ModelConfig when both env vars are set
+ *   - the stored ModelConfig when env is unset/partial
+ *   - undefined when neither is set (downstream auto-detects)
+ */
+export function resolveCouncilModelConfig(
+	councilId: string,
+	stored: ModelConfig | undefined
+): ModelConfig | undefined {
+	const key = councilId.toUpperCase().replace(/-/g, '_');
+	const provider = process.env[`AHWA_COUNCIL_${key}_PROVIDER`];
+	const model = process.env[`AHWA_COUNCIL_${key}_MODEL`];
+
+	if (provider && model) {
+		if (!PROVIDER_NAMES.includes(provider as ProviderName)) {
+			throw new Error(
+				`AHWA_COUNCIL_${key}_PROVIDER="${provider}" is not a valid provider (expected one of ${PROVIDER_NAMES.join(', ')})`
+			);
+		}
+		return { provider: provider as ProviderName, model };
+	}
+
+	return stored;
+}
+
 /**
  * Resolve a ModelConfig from an optional council-level config.
  * If no config is provided, auto-detect the provider and use its default model.

@@ -6,6 +6,7 @@ import {
 	detectDefaultProvider,
 	detectPersonaName,
 	getAvailableProviders,
+	resolveCouncilModelConfig,
 	resolveModelConfig,
 	type ModelConfig
 } from '../src/lib/server/llm';
@@ -221,6 +222,98 @@ describe('defaultModelFor', () => {
 				else process.env[envKey] = saved;
 			}
 		}
+	});
+});
+
+describe('resolveCouncilModelConfig', () => {
+	const ENV_KEYS = [
+		'AHWA_COUNCIL_DEMO_PROVIDER',
+		'AHWA_COUNCIL_DEMO_MODEL',
+		'AHWA_COUNCIL_DSA_PRAXIS_PROVIDER',
+		'AHWA_COUNCIL_DSA_PRAXIS_MODEL'
+	];
+	const saved: Record<string, string | undefined> = {};
+
+	function clearEnv() {
+		for (const k of ENV_KEYS) {
+			saved[k] = process.env[k];
+			delete process.env[k];
+		}
+	}
+	function restoreEnv() {
+		for (const k of ENV_KEYS) {
+			if (saved[k] !== undefined) process.env[k] = saved[k];
+			else delete process.env[k];
+		}
+	}
+
+	it('returns the stored config when no env override is set', () => {
+		clearEnv();
+		const stored: ModelConfig = { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' };
+		expect(resolveCouncilModelConfig('demo', stored)).toEqual(stored);
+		restoreEnv();
+	});
+
+	it('returns undefined (auto-detect downstream) when neither stored nor env is set', () => {
+		clearEnv();
+		expect(resolveCouncilModelConfig('demo', undefined)).toBeUndefined();
+		restoreEnv();
+	});
+
+	it('honors AHWA_COUNCIL_<ID>_PROVIDER + _MODEL when both are set', () => {
+		clearEnv();
+		process.env.AHWA_COUNCIL_DEMO_PROVIDER = 'openrouter';
+		process.env.AHWA_COUNCIL_DEMO_MODEL = 'anthropic/claude-sonnet-4.6';
+
+		expect(resolveCouncilModelConfig('demo', undefined)).toEqual({
+			provider: 'openrouter',
+			model: 'anthropic/claude-sonnet-4.6'
+		});
+		// Override wins over the stored config too.
+		expect(
+			resolveCouncilModelConfig('demo', {
+				provider: 'anthropic',
+				model: 'claude-haiku-4-5-20251001'
+			})
+		).toEqual({ provider: 'openrouter', model: 'anthropic/claude-sonnet-4.6' });
+		restoreEnv();
+	});
+
+	it('refuses to mix env + stored when only one of PROVIDER/MODEL is set', () => {
+		clearEnv();
+		const stored: ModelConfig = { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' };
+
+		// Only PROVIDER → ignore env, use stored.
+		process.env.AHWA_COUNCIL_DEMO_PROVIDER = 'openrouter';
+		expect(resolveCouncilModelConfig('demo', stored)).toEqual(stored);
+		delete process.env.AHWA_COUNCIL_DEMO_PROVIDER;
+
+		// Only MODEL → same.
+		process.env.AHWA_COUNCIL_DEMO_MODEL = 'anthropic/claude-sonnet-4.6';
+		expect(resolveCouncilModelConfig('demo', stored)).toEqual(stored);
+
+		restoreEnv();
+	});
+
+	it('maps hyphens in council IDs to underscores in env keys', () => {
+		clearEnv();
+		process.env.AHWA_COUNCIL_DSA_PRAXIS_PROVIDER = 'anthropic';
+		process.env.AHWA_COUNCIL_DSA_PRAXIS_MODEL = 'claude-haiku-4-5-20251001';
+
+		expect(resolveCouncilModelConfig('dsa-praxis', undefined)).toEqual({
+			provider: 'anthropic',
+			model: 'claude-haiku-4-5-20251001'
+		});
+		restoreEnv();
+	});
+
+	it('rejects an invalid provider in the env override', () => {
+		clearEnv();
+		process.env.AHWA_COUNCIL_DEMO_PROVIDER = 'not-a-provider';
+		process.env.AHWA_COUNCIL_DEMO_MODEL = 'whatever';
+
+		expect(() => resolveCouncilModelConfig('demo', undefined)).toThrow(/provider/i);
+		restoreEnv();
 	});
 });
 
