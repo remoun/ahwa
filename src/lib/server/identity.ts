@@ -84,7 +84,9 @@ function getOrCreateParty(
 		return { id: existing.id, displayName: existing.displayName, externalId: existing.externalId };
 	}
 	const id = nanoid();
-	db.insert(schema.parties).values({ id, ...insert }).run();
+	db.insert(schema.parties)
+		.values({ id, ...insert })
+		.run();
 	return { id, ...insert };
 }
 
