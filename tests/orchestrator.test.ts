@@ -370,6 +370,37 @@ describe('orchestrator', () => {
 		expect(threw).toBe(true);
 	});
 
+	it('sets table status to failed when an early load error throws', async () => {
+		// Regression: errors raised before the orchestrator's main try
+		// (e.g. council load, model-config resolution, persona load)
+		// used to leave the row stuck in 'pending', so the UI showed
+		// "Deliberation in progress" forever. The whole generator body
+		// must be guarded so any throw transitions status to 'failed'.
+		createTable(db, 'tbl-early-fail', 'Early-fail test', 'nonexistent', 'party-1');
+
+		try {
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-early-fail',
+				dilemma: 'Early-fail test',
+				councilId: 'nonexistent',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+		} catch {
+			// expected
+		}
+
+		const table = db
+			.select()
+			.from(schema.tables)
+			.where(eq(schema.tables.id, 'tbl-early-fail'))
+			.get();
+		expect(table!.status).toBe('failed');
+		expect(table!.errorMessage).toMatch(/council not found/i);
+	});
+
 	it('filters out personas with unmet feature requirements', async () => {
 		// Add a persona that requires "memory" (unavailable in M1)
 		db.insert(schema.personas)

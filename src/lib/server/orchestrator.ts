@@ -48,74 +48,78 @@ export async function* runDeliberation(
 ): AsyncGenerator<SseEvent> {
 	const { tableId, dilemma, councilId, partyId, completeFn = defaultComplete, signal } = request;
 
-	// Load the council
-	const council = db.select().from(schema.councils).where(eq(schema.councils.id, councilId)).get();
-	if (!council) throw new Error(`Council not found: ${councilId}`);
-
-	const personaIds = parseJson(
-		council.personaIds!,
-		PersonaIdsSchema,
-		`council.${councilId}.personaIds`
-	);
-	const roundStructure = parseJson(
-		council.roundStructure!,
-		RoundStructureSchema,
-		`council.${councilId}.roundStructure`
-	);
-	const storedModelConfig = council.modelConfig
-		? parseJson(council.modelConfig, ModelConfigSchema, `council.${councilId}.modelConfig`)
-		: undefined;
-	// AHWA_COUNCIL_<ID>_PROVIDER + _MODEL env vars override the stored
-	// config — lets a deploy re-pin demo (or any other council) without
-	// editing the council JSON.
-	const modelConfig = resolveCouncilModelConfig(councilId, storedModelConfig);
-	const resolvedConfig = resolveModelConfig(modelConfig);
-
-	// Load personas, filtering out those with unmet feature requirements
-	const allPersonas = db.select().from(schema.personas).all();
-	const requestedPersonas: PersonaRow[] = personaIds
-		.map((id) => allPersonas.find((p) => p.id === id))
-		.filter((p): p is PersonaRow => p !== undefined);
-	const { eligible: personas, excluded } = filterPersonas(requestedPersonas);
-	if (excluded.length > 0) {
-		// Warn visibly when personas are dropped — invariant #10 says the UI
-		// should surface this. For M1 we log; M3 adds proper UI warnings.
-		console.warn(
-			`orchestrator: excluded ${excluded.length} persona(s) from council "${councilId}" due to unmet feature requirements: ${excluded.map((p) => p.id).join(', ')}`
-		);
-	}
-
-	// Load party IDs at this table for visible_to. Invariant #8:
-	// in single-party tables, visible_to = [all parties]. When M3 adds
-	// two-party mode, this query still returns the right set — visibility
-	// filtering per-party happens at the read layer, not here.
-	const allPartyIds = db
-		.select({ partyId: schema.tableParties.partyId })
-		.from(schema.tableParties)
-		.where(eq(schema.tableParties.tableId, tableId))
-		.all()
-		.map((r) => r.partyId);
-	// Fallback for callers that haven't linked the party yet (shouldn't happen in prod)
-	const visibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
-
-	// Guard: the orchestrator should only run against pending/running tables.
-	// The HTTP guard already ensures this, but callers (tests, future code)
-	// might skip it. Fail loud rather than silently clobbering a completed row.
+	// Verify the row exists before doing anything else. If it doesn't,
+	// there's nothing to mark 'failed' on a later throw — fail loud here
+	// instead so the caller sees a clean missing-row error.
 	const existing = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
 	if (!existing) throw new Error(`Table not found: ${tableId}`);
 	if (existing.status !== 'pending' && existing.status !== 'running') {
 		throw new Error(`Table is in terminal state: ${existing.status}`);
 	}
 
-	// Set status to 'running' if it wasn't already (guard may have done it).
-	if (existing.status === 'pending') {
-		db.update(schema.tables)
-			.set({ status: 'running', updatedAt: Date.now() })
-			.where(eq(schema.tables.id, tableId))
-			.run();
-	}
-
 	try {
+		// Load the council
+		const council = db
+			.select()
+			.from(schema.councils)
+			.where(eq(schema.councils.id, councilId))
+			.get();
+		if (!council) throw new Error(`Council not found: ${councilId}`);
+
+		const personaIds = parseJson(
+			council.personaIds!,
+			PersonaIdsSchema,
+			`council.${councilId}.personaIds`
+		);
+		const roundStructure = parseJson(
+			council.roundStructure!,
+			RoundStructureSchema,
+			`council.${councilId}.roundStructure`
+		);
+		const storedModelConfig = council.modelConfig
+			? parseJson(council.modelConfig, ModelConfigSchema, `council.${councilId}.modelConfig`)
+			: undefined;
+		// AHWA_COUNCIL_<ID>_PROVIDER + _MODEL env vars override the stored
+		// config — lets a deploy re-pin demo (or any other council) without
+		// editing the council JSON.
+		const modelConfig = resolveCouncilModelConfig(councilId, storedModelConfig);
+		const resolvedConfig = resolveModelConfig(modelConfig);
+
+		// Load personas, filtering out those with unmet feature requirements
+		const allPersonas = db.select().from(schema.personas).all();
+		const requestedPersonas: PersonaRow[] = personaIds
+			.map((id) => allPersonas.find((p) => p.id === id))
+			.filter((p): p is PersonaRow => p !== undefined);
+		const { eligible: personas, excluded } = filterPersonas(requestedPersonas);
+		if (excluded.length > 0) {
+			// Warn visibly when personas are dropped — invariant #10 says the UI
+			// should surface this. For M1 we log; M3 adds proper UI warnings.
+			console.warn(
+				`orchestrator: excluded ${excluded.length} persona(s) from council "${councilId}" due to unmet feature requirements: ${excluded.map((p) => p.id).join(', ')}`
+			);
+		}
+
+		// Load party IDs at this table for visible_to. Invariant #8:
+		// in single-party tables, visible_to = [all parties]. When M3 adds
+		// two-party mode, this query still returns the right set — visibility
+		// filtering per-party happens at the read layer, not here.
+		const allPartyIds = db
+			.select({ partyId: schema.tableParties.partyId })
+			.from(schema.tableParties)
+			.where(eq(schema.tableParties.tableId, tableId))
+			.all()
+			.map((r) => r.partyId);
+		// Fallback for callers that haven't linked the party yet (shouldn't happen in prod)
+		const visibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
+
+		// Set status to 'running' if it wasn't already (guard may have done it).
+		if (existing.status === 'pending') {
+			db.update(schema.tables)
+				.set({ status: 'running', updatedAt: Date.now() })
+				.where(eq(schema.tables.id, tableId))
+				.run();
+		}
+
 		yield { type: 'table_opened', tableId };
 
 		// Track all turns for cross-examination context
