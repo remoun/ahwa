@@ -23,12 +23,18 @@ export interface CompleteRequest {
 export interface CompleteResult {
 	textStream: AsyncIterable<string>;
 	/**
-	 * Resolves after the stream ends. `truncated: true` means the model
-	 * hit the output-token cap (maxOutputTokens or similar) and the text
-	 * was cut off mid-generation — the persisted turn should be flagged
-	 * so a later reader knows the response is incomplete.
+	 * Resolves after the stream ends.
+	 *
+	 * - `truncated: true` means the model hit the output-token cap
+	 *   (maxOutputTokens or similar) and the text was cut off mid-
+	 *   generation — the persisted turn should be flagged so a later
+	 *   reader knows the response is incomplete.
+	 * - `totalTokens` is prompt + completion tokens consumed by this
+	 *   single call, surfaced from the underlying SDK. Optional because
+	 *   not every mock provides it; real providers always do. The
+	 *   orchestrator sums this across calls for demo budget reconcile.
 	 */
-	finished: Promise<{ truncated: boolean }>;
+	finished: Promise<{ truncated: boolean; totalTokens?: number }>;
 }
 
 /**
@@ -158,12 +164,15 @@ function mockComplete(request: CompleteRequest): CompleteResult {
 	else if (prompt.includes('instigator') || prompt.includes('agency')) name = 'Instigator';
 	else if (prompt.includes('synthesiz')) name = 'Synthesizer';
 
+	const text = `[${name}] This is a mocked response for E2E testing.`;
 	return {
 		textStream: (async function* () {
 			yield `[${name}] `;
 			yield 'This is a mocked response for E2E testing.';
 		})(),
-		finished: Promise.resolve({ truncated: false })
+		// Synthetic token count: 4 chars/token is a rough rule of thumb.
+		// Lets the orchestrator sum a realistic-looking total in tests.
+		finished: Promise.resolve({ truncated: false, totalTokens: Math.ceil(text.length / 4) })
 	};
 }
 
@@ -208,10 +217,16 @@ export async function complete(request: CompleteRequest): Promise<CompleteResult
 				else if (part.type === 'error') throw part.error;
 			}
 		})(),
-		// result.finishReason is a PromiseLike from the Vercel AI SDK; wrap
-		// to satisfy our CompleteResult.finished: Promise<...> contract.
-		finished: Promise.resolve(result.finishReason).then((reason) => ({
-			truncated: reason === 'length'
+		// result.finishReason / totalUsage are PromiseLike from the Vercel
+		// AI SDK; wrap to satisfy our CompleteResult.finished: Promise<...>
+		// contract. totalTokens is summed across calls by the orchestrator
+		// for demo budget reconciliation.
+		finished: Promise.all([
+			Promise.resolve(result.finishReason),
+			Promise.resolve(result.totalUsage)
+		]).then(([reason, usage]) => ({
+			truncated: reason === 'length',
+			totalTokens: usage?.totalTokens
 		}))
 	};
 }

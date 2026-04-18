@@ -30,11 +30,14 @@ export async function mockComplete(opts: CompleteRequest): Promise<CompleteResul
 	else if (prompt.includes('instigator') || prompt.includes('agency')) name = 'Instigator';
 	else if (prompt.includes('synthesiz')) name = 'Synthesizer';
 
+	const text = `[${name}] I have considered this dilemma carefully.`;
 	return {
 		textStream: (async function* () {
 			yield `[${name}] `;
 			yield 'I have considered this dilemma carefully.';
 		})(),
-		finished: Promise.resolve({ truncated: false })
+		// Synthetic totalTokens (~4 chars/token) lets orchestrator tests
+		// assert non-zero usage was summed across calls.
+		finished: Promise.resolve({ truncated: false, totalTokens: Math.ceil(text.length / 4) })
 	};
 }

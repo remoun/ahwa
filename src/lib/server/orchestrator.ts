@@ -116,6 +116,17 @@ export async function* runDeliberation(
 		// Track all turns for cross-examination context
 		const turnsByRound: Map<number, Array<{ personaName: string; text: string }>> = new Map();
 
+		// Sum totalTokens reported by every completeFn call (rounds + synthesis).
+		// If any call returns undefined (mock without usage / provider that
+		// doesn't surface it), we report undefined in table_closed so the
+		// route handler skips reconcile rather than under-report.
+		let summedTotalTokens = 0;
+		let allCallsReportedUsage = true;
+		const accumulateUsage = (totalTokens?: number) => {
+			if (typeof totalTokens === 'number') summedTotalTokens += totalTokens;
+			else allCallsReportedUsage = false;
+		};
+
 		// Run each round. Personas within a round run in parallel; rounds
 		// themselves are serial because each round reads the complete
 		// transcript of prior rounds.
@@ -175,8 +186,9 @@ export async function* runDeliberation(
 					// response. Not a fatal error (we have partial content), but
 					// worth flagging so a reloader can see the text is incomplete
 					// and ops can decide whether to raise the cap.
-					const { truncated } = await result.finished;
+					const { truncated, totalTokens } = await result.finished;
 					truncatedFlags[idx] = truncated;
+					accumulateUsage(totalTokens);
 					if (truncated) {
 						console.warn(
 							`orchestrator: persona "${persona.name ?? persona.id}" was truncated at maxOutputTokens in round ${roundIdx + 1}`
@@ -249,7 +261,8 @@ export async function* runDeliberation(
 				synthesisText += chunk;
 				yield { type: 'synthesis_token', text: chunk };
 			}
-			const { truncated: synthTruncated } = await result.finished;
+			const { truncated: synthTruncated, totalTokens: synthTokens } = await result.finished;
+			accumulateUsage(synthTokens);
 			if (synthTruncated) {
 				console.warn('orchestrator: synthesis was truncated at maxOutputTokens');
 			}
@@ -281,7 +294,10 @@ export async function* runDeliberation(
 			.where(eq(schema.tables.id, tableId))
 			.run();
 
-		yield { type: 'table_closed' };
+		yield {
+			type: 'table_closed',
+			totalTokens: allCallsReportedUsage ? summedTotalTokens : undefined
+		};
 	} catch (err) {
 		// Mark table as failed so it doesn't stay stuck in 'running'.
 		// Persist the error message so users see the cause when they

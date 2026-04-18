@@ -40,7 +40,12 @@ const SynthesisToken = z.object({
 });
 
 const TableClosed = z.object({
-	type: z.literal('table_closed')
+	type: z.literal('table_closed'),
+	// Sum of totalTokens reported by every completeFn call in the
+	// deliberation (rounds + synthesis). Optional because mocks /
+	// providers without usage info return undefined per call; the
+	// orchestrator yields totalTokens only when ALL calls reported usage.
+	totalTokens: z.number().optional()
 });
 
 const ErrorEvent = z.object({
