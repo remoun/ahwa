@@ -5,6 +5,9 @@ export const PersonaSchema = z.object({
 	id: z.string(),
 	name: z.string(),
 	emoji: z.string(),
+	// User-facing one-liner ("what this persona is for") shown in pickers
+	// and council detail views. Distinct from system_prompt (LLM-facing).
+	description: z.string().optional(),
 	system_prompt: z.string(),
 	requires: z.array(z.string()).optional(),
 	notes: z.string().optional(),
@@ -71,6 +74,7 @@ export type CouncilBody = z.infer<typeof CouncilBodySchema>;
 export const PersonaBodySchema = z.object({
 	name: z.string().min(1),
 	emoji: z.string().min(1),
+	description: z.string().optional(),
 	systemPrompt: z.string().min(1),
 	requires: z.array(z.string()).optional()
 });

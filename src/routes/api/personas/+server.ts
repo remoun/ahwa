@@ -3,16 +3,8 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { listHandler, createHandler } from '$lib/server/crud';
 import { PersonaBodySchema, type PersonaBody } from '$lib/schemas/council';
+import { personaRow } from '$lib/server/persona-row';
 import type { RequestHandler } from './$types';
-
-function personaRow(body: PersonaBody) {
-	return {
-		name: body.name,
-		emoji: body.emoji,
-		systemPrompt: body.systemPrompt,
-		requires: body.requires ?? null
-	};
-}
 
 const config = {
 	db,

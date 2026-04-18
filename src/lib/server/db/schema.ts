@@ -65,6 +65,9 @@ export const personas = sqliteTable('personas', {
 	id: text('id').primaryKey(),
 	name: text('name'),
 	emoji: text('emoji'),
+	// User-facing one-liner shown in council pickers and detail views.
+	// Distinct from system_prompt (which is what the LLM sees).
+	description: text('description'),
 	systemPrompt: text('system_prompt'),
 	requires: text('requires', { mode: 'json' }).$type<string[]>(),
 	ownerParty: text('owner_party'),

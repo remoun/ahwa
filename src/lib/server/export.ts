@@ -13,8 +13,15 @@ interface TurnInfo {
 	text: string | null;
 }
 
+interface PersonaInfo {
+	name: string | null;
+	emoji?: string | null;
+	description?: string | null;
+}
+
 interface CouncilInfo {
 	name: string | null;
+	personas?: PersonaInfo[];
 }
 
 /**
@@ -41,6 +48,20 @@ export function generateMarkdown(
 		lines.push(`*Date: ${new Date(table.createdAt).toISOString().split('T')[0]}*`);
 	}
 	lines.push('');
+
+	// Council roster: gives downstream readers context on who said what
+	// without re-reading the council JSON. Skipped when no descriptions
+	// exist (older personas) or no personas were passed.
+	const personasWithDesc = (council.personas ?? []).filter((p) => p.description);
+	if (personasWithDesc.length > 0) {
+		lines.push('## Council');
+		lines.push('');
+		for (const p of personasWithDesc) {
+			const emoji = p.emoji ? `${p.emoji} ` : '';
+			lines.push(`- ${emoji}**${p.name ?? ''}** — ${p.description}`);
+		}
+		lines.push('');
+	}
 
 	// Group turns by round
 	const roundMap = new Map<number, TurnInfo[]>();

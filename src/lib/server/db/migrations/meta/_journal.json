@@ -36,6 +36,13 @@
       "when": 1776494087661,
       "tag": "0005_typical_shooting_star",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1776520119961,
+      "tag": "0006_cooing_red_ghost",
+      "breakpoints": true
     }
   ]
 }

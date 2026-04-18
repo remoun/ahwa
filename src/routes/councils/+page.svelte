@@ -138,6 +138,7 @@
 						name={persona.name ?? ''}
 						active={selectedPersonaIds.includes(persona.id)}
 						onclick={() => togglePersona(persona.id)}
+						title={persona.description ?? ''}
 					/>
 				{/each}
 			</div>
@@ -191,37 +192,40 @@
 					{/if}
 				</div>
 
-				<!-- Persona chips -->
-				<div class="mt-3 flex flex-wrap gap-1.5">
+				<!-- Persona list: chip + default-visible description tagline -->
+				<div class="mt-3 space-y-2">
 					{#each council.personas as persona (persona.id)}
-						<PersonaChip
-							emoji={persona.emoji ?? ''}
-							name={persona.name ?? ''}
-							active={expandedPersona === `${council.id}-${persona.id}`}
-							size="sm"
-							onclick={() => toggleExpandedPersona(`${council.id}-${persona.id}`)}
-							title="Click to see prompt"
-						/>
+						<div>
+							<PersonaChip
+								emoji={persona.emoji ?? ''}
+								name={persona.name ?? ''}
+								active={expandedPersona === `${council.id}-${persona.id}`}
+								size="sm"
+								onclick={() => toggleExpandedPersona(`${council.id}-${persona.id}`)}
+								title={persona.description
+									? `Click to see the LLM-facing prompt`
+									: `Click to see prompt`}
+							/>
+							{#if persona.description}
+								<p class="text-xs text-fg-muted mt-1 ml-1 leading-snug">
+									{persona.description}
+								</p>
+							{/if}
+							{#if expandedPersona === `${council.id}-${persona.id}`}
+								<div
+									class="mt-2 p-3 bg-surface-muted/50 border border-border rounded-lg animate-fade-in"
+								>
+									<div class="text-[10px] uppercase tracking-wide text-fg-subtle mb-1.5">
+										System prompt
+									</div>
+									<p class="text-xs text-accent/70 leading-relaxed whitespace-pre-wrap">
+										{persona.systemPrompt}
+									</p>
+								</div>
+							{/if}
+						</div>
 					{/each}
 				</div>
-
-				<!-- Expanded persona prompt -->
-				{#each council.personas as persona (persona.id)}
-					{#if expandedPersona === `${council.id}-${persona.id}`}
-						<div
-							class="mt-3 p-3 bg-surface-muted/50 border border-border rounded-lg animate-fade-in"
-						>
-							<div class="flex items-center gap-2 mb-2">
-								<span
-									class="w-7 h-7 rounded-full bg-surface-accent border border-border-strong flex items-center justify-center text-sm"
-									>{persona.emoji}</span
-								>
-								<span class="text-sm font-medium text-fg">{persona.name}</span>
-							</div>
-							<p class="text-xs text-accent/70 leading-relaxed">{persona.systemPrompt}</p>
-						</div>
-					{/if}
-				{/each}
 			</div>
 		{/each}
 	</div>

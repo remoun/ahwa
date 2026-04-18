@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect } from 'bun:test';
-import { expandCouncilPersonas, attachPersonaEmojis } from '../src/lib/server/councils';
+import { expandCouncilPersonas, attachPersonaMeta } from '../src/lib/server/councils';
 
 describe('expandCouncilPersonas', () => {
 	const allPersonas = [
@@ -35,7 +35,7 @@ describe('expandCouncilPersonas', () => {
 	});
 });
 
-describe('attachPersonaEmojis', () => {
+describe('attachPersonaMeta', () => {
 	const personas = [
 		{ name: 'The Elder', emoji: '🌿' },
 		{ name: 'The Mirror', emoji: '🪞' }
@@ -46,7 +46,7 @@ describe('attachPersonaEmojis', () => {
 			{ personaName: 'The Elder', text: 'hi' },
 			{ personaName: 'The Mirror', text: 'hello' }
 		];
-		const out = attachPersonaEmojis(turns, personas);
+		const out = attachPersonaMeta(turns, personas);
 		expect(out[0].emoji).toBe('🌿');
 		expect(out[1].emoji).toBe('🪞');
 	});
@@ -54,13 +54,13 @@ describe('attachPersonaEmojis', () => {
 	it('falls back to an empty string when the persona is unknown', () => {
 		// A persona may have been renamed or deleted since the turn was saved.
 		const turns = [{ personaName: 'Ghost', text: 'boo' }];
-		const out = attachPersonaEmojis(turns, personas);
+		const out = attachPersonaMeta(turns, personas);
 		expect(out[0].emoji).toBe('');
 	});
 
 	it('falls back to an empty string when personaName is null (synth turns)', () => {
 		const turns = [{ personaName: null, text: 'final synthesis' }];
-		const out = attachPersonaEmojis(turns, personas);
+		const out = attachPersonaMeta(turns, personas);
 		expect(out[0].emoji).toBe('');
 	});
 });

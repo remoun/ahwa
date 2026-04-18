@@ -2,7 +2,8 @@
 import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { getHandler, updateHandler, deleteHandler } from '$lib/server/crud';
-import { PersonaBodySchema, type PersonaBody } from '$lib/schemas/council';
+import { PersonaBodySchema } from '$lib/schemas/council';
+import { personaRow } from '$lib/server/persona-row';
 import type { RequestHandler } from './$types';
 
 const config = {
@@ -10,12 +11,7 @@ const config = {
 	table: schema.personas,
 	bodySchema: PersonaBodySchema,
 	toValues: () => ({}), // not used for get/update/delete
-	toUpdateValues: (body: PersonaBody) => ({
-		name: body.name,
-		emoji: body.emoji,
-		systemPrompt: body.systemPrompt,
-		requires: body.requires ?? null
-	}),
+	toUpdateValues: personaRow,
 	canDelete: (id: string) => {
 		// Check if any council references this persona
 		const councils = db.select().from(schema.councils).all();

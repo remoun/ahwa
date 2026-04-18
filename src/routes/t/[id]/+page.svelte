@@ -23,6 +23,7 @@
 		personaId: string;
 		personaName: string;
 		emoji: string;
+		description: string;
 		text: string;
 		complete: boolean;
 		round: number;
@@ -78,6 +79,7 @@
 					personaId: '',
 					personaName: t.personaName ?? '',
 					emoji: t.emoji ?? '',
+					description: t.description ?? '',
 					text: t.text ?? '',
 					complete: true,
 					round: t.round
@@ -160,6 +162,7 @@
 						personaId: event.personaId,
 						personaName: event.personaName,
 						emoji: event.emoji,
+						description: data.personaMeta?.[event.personaName] ?? '',
 						text: '',
 						complete: false,
 						round: currentRoundNum
@@ -371,6 +374,7 @@
 				<TurnCard
 					emoji={turn.emoji}
 					personaName={turn.personaName}
+					description={turn.description}
 					text={turn.text}
 					complete={turn.complete}
 					streaming={view === 'streaming'}

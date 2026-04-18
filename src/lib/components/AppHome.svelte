@@ -61,13 +61,19 @@
 						>
 							<div class="font-display text-base text-fg">{council.name}</div>
 							{#if council.personas.length > 0}
-								<div class="mt-1.5 flex items-center gap-0.5" aria-hidden="true">
+								<div class="mt-1.5 flex flex-wrap items-start gap-x-2 gap-y-1.5">
 									{#each council.personas as p (p.id)}
 										<span
-											class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-muted border border-border text-sm"
-											title={p.name ?? ''}
+											class="inline-flex items-center gap-1 text-xs text-fg-muted"
+											title={p.description ? `${p.name ?? ''} — ${p.description}` : (p.name ?? '')}
 										>
-											{p.emoji ?? '•'}
+											<span
+												class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-muted border border-border text-sm"
+												aria-hidden="true"
+											>
+												{p.emoji ?? '•'}
+											</span>
+											<span>{p.name ?? ''}</span>
 										</span>
 									{/each}
 								</div>

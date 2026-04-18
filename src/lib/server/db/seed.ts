@@ -4,6 +4,8 @@ import { join } from 'path';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
 import { parseJsonSafe } from '../parse';
+import { councilRow } from '../council-row';
+import { personaRow } from '../persona-row';
 import * as schema from './schema';
 
 type Db = BunSQLiteDatabase<typeof schema>;
@@ -33,50 +35,16 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 		// Upsert each persona from this council
 		for (const persona of parsed.personas) {
 			db.insert(schema.personas)
-				.values({
-					id: persona.id,
-					name: persona.name,
-					emoji: persona.emoji,
-					systemPrompt: persona.system_prompt,
-					requires: persona.requires ?? null,
-					ownerParty: null
-				})
-				.onConflictDoUpdate({
-					target: schema.personas.id,
-					set: {
-						name: persona.name,
-						emoji: persona.emoji,
-						systemPrompt: persona.system_prompt,
-						requires: persona.requires ?? null
-					}
-				})
+				.values({ id: persona.id, ...personaRow(persona), ownerParty: null })
+				.onConflictDoUpdate({ target: schema.personas.id, set: personaRow(persona) })
 				.run();
 		}
 
 		// Upsert the council
-		const personaIds = parsed.personas.map((p) => p.id);
+		const council = { ...parsed, personaIds: parsed.personas.map((p) => p.id) };
 		db.insert(schema.councils)
-			.values({
-				id: parsed.id,
-				name: parsed.name,
-				description: parsed.description ?? null,
-				personaIds,
-				synthesisPrompt: parsed.synthesis_prompt,
-				roundStructure: parsed.round_structure,
-				modelConfig: parsed.model_config ?? null,
-				ownerParty: null
-			})
-			.onConflictDoUpdate({
-				target: schema.councils.id,
-				set: {
-					name: parsed.name,
-					description: parsed.description ?? null,
-					personaIds,
-					synthesisPrompt: parsed.synthesis_prompt,
-					roundStructure: parsed.round_structure,
-					modelConfig: parsed.model_config ?? null
-				}
-			})
+			.values({ id: parsed.id, ...councilRow(council), ownerParty: null })
+			.onConflictDoUpdate({ target: schema.councils.id, set: councilRow(council) })
 			.run();
 	}
 
@@ -98,23 +66,8 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 		const parsed = result.data;
 
 		db.insert(schema.personas)
-			.values({
-				id: parsed.id,
-				name: parsed.name,
-				emoji: parsed.emoji,
-				systemPrompt: parsed.system_prompt,
-				requires: parsed.requires ?? null,
-				ownerParty: null
-			})
-			.onConflictDoUpdate({
-				target: schema.personas.id,
-				set: {
-					name: parsed.name,
-					emoji: parsed.emoji,
-					systemPrompt: parsed.system_prompt,
-					requires: parsed.requires ?? null
-				}
-			})
+			.values({ id: parsed.id, ...personaRow(parsed), ownerParty: null })
+			.onConflictDoUpdate({ target: schema.personas.id, set: personaRow(parsed) })
 			.run();
 	}
 }
