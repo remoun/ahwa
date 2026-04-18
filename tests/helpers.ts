@@ -2,24 +2,19 @@
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as schema from '../src/lib/server/db/schema';
+import { ensureMigrated } from '../src/lib/server/db/migrate-runner';
 import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
 
-const DDL = `
-	CREATE TABLE parties (id TEXT PRIMARY KEY, display_name TEXT, created_at INTEGER);
-	CREATE TABLE tables (id TEXT PRIMARY KEY, title TEXT, dilemma TEXT, council_id TEXT, status TEXT DEFAULT 'pending', synthesis TEXT, error_message TEXT, is_demo INTEGER DEFAULT 0, created_at INTEGER, updated_at INTEGER);
-	CREATE TABLE table_parties (table_id TEXT NOT NULL, party_id TEXT NOT NULL, role TEXT, PRIMARY KEY (table_id, party_id));
-	CREATE TABLE turns (id TEXT PRIMARY KEY, table_id TEXT NOT NULL, round INTEGER NOT NULL, party_id TEXT, persona_name TEXT, text TEXT, visible_to TEXT, truncated INTEGER DEFAULT 0, created_at INTEGER);
-	CREATE TABLE personas (id TEXT PRIMARY KEY, name TEXT, emoji TEXT, system_prompt TEXT, requires TEXT, owner_party TEXT, created_at INTEGER);
-	CREATE TABLE councils (id TEXT PRIMARY KEY, name TEXT, description TEXT, persona_ids TEXT, synthesis_prompt TEXT, round_structure TEXT, model_config TEXT, owner_party TEXT, created_at INTEGER);
-	CREATE TABLE memory (party_id TEXT PRIMARY KEY, content TEXT, updated_at INTEGER);
-`;
-
+/**
+ * In-memory DB seeded by running the same migrations as production.
+ * Keeps tests in lock-step with schema changes — no parallel DDL string
+ * to drift out of sync when columns are added.
+ */
 export function createTestDb() {
 	const client = new Database(':memory:');
-	for (const stmt of DDL.split(';').filter((s) => s.trim())) {
-		client.run(stmt);
-	}
-	return drizzle(client, { schema });
+	const db = drizzle(client, { schema });
+	ensureMigrated(db);
+	return db;
 }
 
 export type TestDb = ReturnType<typeof createTestDb>;

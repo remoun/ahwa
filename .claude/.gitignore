@@ -1,0 +1,6 @@
+# Per-machine settings (allowlist additions, env, etc.) — opt-in only,
+# not safe to share across teammates.
+settings.local.json
+
+# Per-feature scratch worktrees Claude Code creates for isolated agent runs.
+worktrees/
