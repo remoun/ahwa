@@ -280,6 +280,13 @@
 			takes less vertical real estate on mobile.
 		-->
 		<div bind:this={sentinel} aria-hidden="true" class="h-px"></div>
+		<!--
+			role="button" is applied conditionally alongside tabindex when
+			dilemmaStuck, so the element IS interactive when it has tabindex=0.
+			Svelte's static linter doesn't track the conditional role/tabindex
+			pairing and flags the figure as if it were always noninteractive.
+		-->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 		<figure
 			class="sticky top-14 z-10 bg-surface border border-border-strong rounded-xl shadow-md transition-all
 				{dilemmaStuck ? 'mb-10 px-4 py-2 cursor-pointer hover:border-accent' : 'mb-10 px-6 py-5'}"
@@ -297,14 +304,14 @@
 				: undefined}
 		>
 			{#if !dilemmaStuck}
-				<div class="flex items-baseline justify-between gap-3 mb-2">
-					<figcaption class="text-xs font-medium text-fg-subtle uppercase tracking-wider">
-						Dilemma
-					</figcaption>
+				<figcaption
+					class="flex items-baseline justify-between gap-3 mb-2 text-xs font-medium text-fg-subtle uppercase tracking-wider"
+				>
+					<span>Dilemma</span>
 					{#if data.council}
-						<span class="text-xs text-fg-subtle">{data.council.name}</span>
+						<span class="normal-case font-normal">{data.council.name}</span>
 					{/if}
-				</div>
+				</figcaption>
 			{/if}
 			<p class={dilemmaClass}>{data.table.dilemma}</p>
 		</figure>
