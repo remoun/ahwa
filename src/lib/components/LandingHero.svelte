@@ -6,8 +6,7 @@
 	let loading = $state(false);
 	let error = $state('');
 
-	async function tryDemo(event: Event) {
-		event.preventDefault();
+	async function tryDemo() {
 		const trimmed = dilemma.trim();
 		if (!trimmed) return;
 
@@ -52,7 +51,12 @@
 			A short, three-persona deliberation pinned to a small model. Auto-deletes within 24 hours;
 			anyone with the link can read it.
 		</p>
-		<form onsubmit={tryDemo}>
+		<form
+			onsubmit={(e) => {
+				e.preventDefault();
+				tryDemo();
+			}}
+		>
 			<label for="dilemma" class="sr-only">Your dilemma</label>
 			<textarea
 				id="dilemma"
