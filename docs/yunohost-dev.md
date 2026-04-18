@@ -174,8 +174,9 @@ gh run watch          # follow the live log
 Or via the Actions UI: `Actions → YunoHost → Run workflow`.
 
 Results upload as a `package-check-results` artifact (results.json
-+ summary.png). Quality level ≥ 6 is the bar for catalog
-acceptance.
+
+- summary.png). Quality level ≥ 6 is the bar for catalog
+  acceptance.
 
 #### Operational notes
 
@@ -190,8 +191,8 @@ acceptance.
   fine; if you ever invite contributors, add a workflow-level
   approval gate (`environments` → required reviewers).
 - **Stopping**: `sudo ~/actions-runner/svc.sh stop && sudo
-  ~/actions-runner/svc.sh uninstall && cd ~/actions-runner &&
-  ./config.sh remove --token <REMOVAL_TOKEN>`.
+~/actions-runner/svc.sh uninstall && cd ~/actions-runner &&
+./config.sh remove --token <REMOVAL_TOKEN>`.
 
 #### Why `workflow_dispatch` only?
 
