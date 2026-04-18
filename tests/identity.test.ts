@@ -3,7 +3,11 @@ import { describe, it, expect } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { createTestDb } from './helpers';
 import * as schema from '../src/lib/server/db/schema';
-import { getPartyFromRequest } from '../src/lib/server/identity';
+import {
+	createIdentityHandle,
+	getPartyFromRequest,
+	readIdentityEnv
+} from '../src/lib/server/identity';
 
 function makeRequest(headers: Record<string, string> = {}): Request {
 	return new Request('http://localhost/', { headers });
@@ -108,5 +112,66 @@ describe('identity.getPartyFromRequest', () => {
 		const party = getPartyFromRequest(makeRequest({ 'auth-user': 'alice' }), { db, env });
 
 		expect(party.externalId).toBe('alice');
+	});
+});
+
+describe('identity.readIdentityEnv', () => {
+	it('defaults trustIdentity to false (safer default; opt-in only)', () => {
+		expect(readIdentityEnv({}).trustIdentity).toBe(false);
+	});
+
+	it('parses AHWA_TRUST_IDENTITY=1 as true', () => {
+		expect(readIdentityEnv({ AHWA_TRUST_IDENTITY: '1' }).trustIdentity).toBe(true);
+	});
+
+	it('parses AHWA_TRUST_IDENTITY=true as true (case-insensitive)', () => {
+		expect(readIdentityEnv({ AHWA_TRUST_IDENTITY: 'true' }).trustIdentity).toBe(true);
+		expect(readIdentityEnv({ AHWA_TRUST_IDENTITY: 'TRUE' }).trustIdentity).toBe(true);
+	});
+
+	it('treats any other value as false (no accidental enabling)', () => {
+		expect(readIdentityEnv({ AHWA_TRUST_IDENTITY: '0' }).trustIdentity).toBe(false);
+		expect(readIdentityEnv({ AHWA_TRUST_IDENTITY: 'false' }).trustIdentity).toBe(false);
+		expect(readIdentityEnv({ AHWA_TRUST_IDENTITY: 'yes' }).trustIdentity).toBe(false);
+	});
+
+	it('defaults headerName to x-remote-user when AHWA_IDENTITY_HEADER is unset', () => {
+		expect(readIdentityEnv({}).headerName).toBe('x-remote-user');
+	});
+
+	it('honors a custom AHWA_IDENTITY_HEADER', () => {
+		expect(readIdentityEnv({ AHWA_IDENTITY_HEADER: 'Auth-User' }).headerName).toBe('Auth-User');
+	});
+});
+
+describe('identity.createIdentityHandle', () => {
+	it('attaches the resolved party to event.locals.party before resolving', async () => {
+		const db = createTestDb();
+		const env = { trustIdentity: true, headerName: 'x-remote-user' };
+		const handle = createIdentityHandle({ db, env });
+
+		const event = {
+			request: makeRequest({ 'x-remote-user': 'alice' }),
+			locals: {} as { party?: ReturnType<typeof getPartyFromRequest> }
+		};
+		let sawParty: typeof event.locals.party = undefined;
+		await handle({ event, resolve: () => {
+			sawParty = event.locals.party;
+			return new Response('ok');
+		}});
+
+		expect(sawParty?.externalId).toBe('alice');
+		expect(event.locals.party?.externalId).toBe('alice');
+	});
+
+	it('still resolves locals.party (to "me") when trust is off', async () => {
+		const db = createTestDb();
+		const env = { trustIdentity: false, headerName: 'x-remote-user' };
+		const handle = createIdentityHandle({ db, env });
+
+		const event = { request: makeRequest({ 'x-remote-user': 'alice' }), locals: {} as any };
+		await handle({ event, resolve: () => new Response('ok') });
+
+		expect(event.locals.party.displayName).toBe('me');
 	});
 });
