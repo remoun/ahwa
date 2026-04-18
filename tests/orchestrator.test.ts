@@ -256,13 +256,13 @@ describe('orchestrator', () => {
 			.values({
 				id: 'configured-council',
 				name: 'Configured',
-				personaIds: JSON.stringify(['elder']),
+				personaIds: ['elder'],
 				synthesisPrompt: 'Synthesize.',
-				roundStructure: JSON.stringify({
+				roundStructure: {
 					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
 					synthesize: false
-				}),
-				modelConfig: JSON.stringify({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' })
+				},
+				modelConfig: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' }
 			})
 			.run();
 
@@ -409,7 +409,7 @@ describe('orchestrator', () => {
 				name: 'Memory Persona',
 				emoji: '🧠',
 				systemPrompt: 'You need memory.',
-				requires: JSON.stringify(['memory'])
+				requires: ['memory']
 			})
 			.run();
 
@@ -418,12 +418,12 @@ describe('orchestrator', () => {
 			.values({
 				id: 'gated-council',
 				name: 'Gated',
-				personaIds: JSON.stringify(['elder', 'needs-memory']),
+				personaIds: ['elder', 'needs-memory'],
 				synthesisPrompt: 'Summarize.',
-				roundStructure: JSON.stringify({
+				roundStructure: {
 					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
 					synthesize: false
-				})
+				}
 			})
 			.run();
 
@@ -451,12 +451,12 @@ describe('orchestrator', () => {
 			.values({
 				id: 'no-synth',
 				name: 'No Synthesis',
-				personaIds: JSON.stringify(['elder']),
+				personaIds: ['elder'],
 				synthesisPrompt: 'Should not run.',
-				roundStructure: JSON.stringify({
+				roundStructure: {
 					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
 					synthesize: false
-				})
+				}
 			})
 			.run();
 

@@ -146,8 +146,7 @@ describe('e2e: full deliberation with real councils', () => {
 		// Verify visible_to is set on every turn (invariant #8)
 		for (const turn of turns) {
 			expect(turn.visibleTo).toBeTruthy();
-			const parsed = JSON.parse(turn.visibleTo!);
-			expect(Array.isArray(parsed)).toBe(true);
+			expect(Array.isArray(turn.visibleTo)).toBe(true);
 		}
 
 		// Verify table_parties link exists
@@ -163,7 +162,7 @@ describe('e2e: full deliberation with real councils', () => {
 			.where(eq(schema.personas.id, 'historian'))
 			.get();
 		expect(historian).toBeDefined();
-		expect(JSON.parse(historian!.requires!)).toEqual(['memory']);
+		expect(historian!.requires).toEqual(['memory']);
 	});
 });
 
@@ -284,12 +283,12 @@ describe('e2e: council CRUD with seed protection', () => {
 			.values({
 				id: 'custom-1',
 				name: 'My Custom Council',
-				personaIds: JSON.stringify(['elder', 'mirror']),
+				personaIds: ['elder', 'mirror'],
 				synthesisPrompt: 'Summarize.',
-				roundStructure: JSON.stringify({
+				roundStructure: {
 					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
 					synthesize: true
-				}),
+				},
 				ownerParty: 'user'
 			})
 			.run();
@@ -308,12 +307,12 @@ describe('e2e: council CRUD with seed protection', () => {
 			.values({
 				id: 'deletable',
 				name: 'Deletable',
-				personaIds: JSON.stringify(['elder']),
+				personaIds: ['elder'],
 				synthesisPrompt: 'n/a',
-				roundStructure: JSON.stringify({
+				roundStructure: {
 					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
 					synthesize: false
-				}),
+				},
 				ownerParty: 'user'
 			})
 			.run();
@@ -488,13 +487,13 @@ describe('e2e: model_config flows through deliberation', () => {
 			.values({
 				id: 'model-test',
 				name: 'Model Test Council',
-				personaIds: JSON.stringify(['elder']),
+				personaIds: ['elder'],
 				synthesisPrompt: 'Summarize.',
-				roundStructure: JSON.stringify({
+				roundStructure: {
 					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
 					synthesize: false
-				}),
-				modelConfig: JSON.stringify({ provider: 'openai', model: 'gpt-4o' }),
+				},
+				modelConfig: { provider: 'openai', model: 'gpt-4o' },
 				ownerParty: 'user'
 			})
 			.run();
@@ -602,12 +601,12 @@ describe('e2e: state guards and invalid transitions', () => {
 			.values({
 				id: 'ref-council',
 				name: 'Referenced Council',
-				personaIds: JSON.stringify(['elder']),
+				personaIds: ['elder'],
 				synthesisPrompt: 'n/a',
-				roundStructure: JSON.stringify({
+				roundStructure: {
 					rounds: [{ kind: 'opening', prompt_suffix: 'Go.' }],
 					synthesize: false
-				}),
+				},
 				ownerParty: 'user'
 			})
 			.run();
@@ -635,7 +634,7 @@ describe('e2e: state guards and invalid transitions', () => {
 	it('cannot delete a persona referenced by a council', () => {
 		const councils = db.select().from(schema.councils).all();
 		const defaultCouncil = councils.find((c) => c.id === 'default');
-		const personaIds: string[] = JSON.parse(defaultCouncil!.personaIds!);
+		const personaIds = defaultCouncil!.personaIds!;
 
 		// Elder is in the default council
 		expect(personaIds).toContain('elder');

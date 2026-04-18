@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	// Only this council's personas appear in this table's turns, so scope
 	// the persona lookup to those ids — no need to scan every custom
 	// persona in the DB.
-	const personaIds: string[] = council?.personaIds ? JSON.parse(council.personaIds) : [];
+	const personaIds = council?.personaIds ?? [];
 	const personas = personaIds.length
 		? db.select().from(schema.personas).where(inArray(schema.personas.id, personaIds)).all()
 		: [];
@@ -58,14 +58,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			emoji: emojiByName.get(t.personaName ?? '') ?? null,
 			text: t.text
 		})),
-		{
-			name: council?.name ?? null,
-			personas: orderedPersonas.map((p) => ({
-				name: p.name,
-				emoji: p.emoji,
-				description: p.description
-			}))
-		},
+		{ name: council?.name ?? null, personas: orderedPersonas },
 		table.synthesis
 	);
 

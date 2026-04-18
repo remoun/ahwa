@@ -22,7 +22,10 @@ describe('schema', () => {
 
 				for (const [, col] of Object.entries(columns) as any) {
 					const name = col.name;
-					const type = col.columnType === 'SQLiteText' ? 'TEXT' : 'INTEGER';
+					// SQLiteTextJson is mode:'json' columns — same TEXT storage,
+					// just auto-parse/stringify at the Drizzle layer.
+					const isText = col.columnType === 'SQLiteText' || col.columnType === 'SQLiteTextJson';
+					const type = isText ? 'TEXT' : 'INTEGER';
 					let def = `"${name}" ${type}`;
 					if (col.primary) def += ' PRIMARY KEY';
 					if (col.notNull) def += ' NOT NULL';

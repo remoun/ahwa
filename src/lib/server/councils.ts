@@ -7,22 +7,23 @@ interface PersonaLike {
 }
 
 interface CouncilLike {
-	personaIds?: string | null;
+	personaIds?: string[] | null;
 }
 
 /**
- * Resolve a council's `personaIds` JSON string into the matching persona
+ * Resolve a council's `personaIds` array into the matching persona
  * objects, preserving the order stored on the council and silently
  * dropping ids that no longer match a persona (stale references from
- * a deleted persona, for example).
+ * a deleted persona, for example). Drizzle JSON-mode columns deliver
+ * the array already parsed.
  */
 export function expandCouncilPersonas<C extends CouncilLike, P extends PersonaLike>(
 	council: C,
 	allPersonas: P[]
 ): C & { personas: P[] } {
 	const byId = new Map(allPersonas.map((p) => [p.id, p]));
-	const ids: string[] = council.personaIds ? JSON.parse(council.personaIds) : [];
-	const personas = ids.map((id) => byId.get(id)).filter((p): p is P => p !== undefined);
+	const ids = council.personaIds ?? [];
+	const personas = ids.map((id) => byId.get(id)).filter((p): p is P => !!p);
 	return { ...council, personas };
 }
 

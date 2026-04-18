@@ -16,9 +16,7 @@ const config = {
 		// Check if any council references this persona
 		const councils = db.select().from(schema.councils).all();
 		for (const council of councils) {
-			if (!council.personaIds) continue;
-			const ids: string[] = JSON.parse(council.personaIds);
-			if (ids.includes(id)) {
+			if (council.personaIds?.includes(id)) {
 				return `Persona is referenced by council "${council.name}"`;
 			}
 		}

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { jsonOrNull } from '../util';
 
 interface PersonaInputLike {
 	name: string;
@@ -18,7 +17,8 @@ interface PersonaInputLike {
  * and standalone persona files).
  *
  * Accepts either snake_case (council JSON) or camelCase (API body) on
- * `system_prompt` / `systemPrompt`.
+ * `system_prompt` / `systemPrompt`. `requires` is passed through —
+ * Drizzle's mode:'json' column handles the on-disk serialisation.
  */
 export function personaRow(input: PersonaInputLike) {
 	return {
@@ -26,6 +26,6 @@ export function personaRow(input: PersonaInputLike) {
 		emoji: input.emoji,
 		description: input.description ?? null,
 		systemPrompt: input.systemPrompt ?? input.system_prompt ?? '',
-		requires: jsonOrNull(input.requires)
+		requires: input.requires ?? null
 	};
 }
