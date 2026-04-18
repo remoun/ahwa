@@ -7,8 +7,20 @@ import { expandCouncilPersonas } from '$lib/server/councils';
 import * as schema from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
+/**
+ * Public-demo instances flip `/` from "your tables" to a landing page
+ * with the demo CTA. Self-hosted instances leave it as-is — they get
+ * the table-list as the home, which is what existing bookmarks expect.
+ */
+const PUBLIC_DEMO = process.env.AHWA_PUBLIC_DEMO === '1';
+
 export const load: PageServerLoad = () =>
 	loadOrFail('home', () => {
+		if (PUBLIC_DEMO) {
+			// Demo mode: skip the DB roundtrip — landing page needs no data.
+			return { mode: 'demo' as const };
+		}
+
 		const tables = db
 			.select()
 			.from(schema.tables)
@@ -34,6 +46,7 @@ export const load: PageServerLoad = () =>
 		const partyByTable = new Map(tableParties.map((tp) => [tp.tableId, tp.partyId]));
 
 		return {
+			mode: 'app' as const,
 			tables: tables.map((t) => {
 				const partyId = partyByTable.get(t.id) ?? '';
 				return {
