@@ -1,7 +1,7 @@
 {
 	"id": "demo",
 	"name": "Demo Council",
-	"description": "Three personas, one round. The cheap-and-fast council the public demo at ahwa.app uses — pinned to a small model so a runaway demo can't drain spend. Self-hosted users almost certainly want default.json instead.",
+	"description": "Three personas, one round. The fast council the public demo at ahwa.app uses. No model_config pin so it adapts to whatever provider the deploy has configured (preview previews → OpenRouter, ahwa.app → Anthropic Haiku via env). Self-hosted users almost certainly want default.json instead.",
 	"personas": [
 		{
 			"id": "demo-elder",
@@ -32,9 +32,5 @@
 		"synthesize": true
 	},
 	"synthesis_prompt": "You are a neutral synthesizer for a demo deliberation. In 3-4 short paragraphs, produce:\n\n1. The single area where the council converges.\n2. The live disagreement that matters most (if any).\n3. A clear, specific next step. Not mush.\n\nKeep it tight — this is a demo, the user is sampling the tool.",
-	"model_config": {
-		"provider": "anthropic",
-		"model": "claude-haiku-4-5-20251001"
-	},
 	"license": "AGPL-3.0-or-later"
 }

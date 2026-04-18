@@ -46,9 +46,16 @@ jobs:
           # previews have no real users and no valuable data, so secret
           # strength buys nothing that a constant doesn't. NEVER reuse
           # this value in production.
+          # AHWA_PUBLIC_DEMO=1 makes the preview behave like ahwa.app:
+          # `/` renders the landing page (once #29 lands), the
+          # `/api/demo/tables` endpoint serves anonymous traffic, and
+          # the TTL cleanup sweep runs hourly. The low daily cap keeps a
+          # runaway PR test from burning OpenRouter credit.
           secrets: |
             OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
             AHWA_SHARE_SECRET=preview-only-not-a-real-secret
+            AHWA_PUBLIC_DEMO=1
+            AHWA_DEMO_DAILY_TOKEN_CAP=50000
 
   # fly-pr-review-apps' deploy step returns once the machine is created
   # and DNS is verified — it does NOT wait for the app inside to bind a
