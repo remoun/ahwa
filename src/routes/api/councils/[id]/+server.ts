@@ -13,11 +13,7 @@ const config = {
 	toValues: () => ({}), // not used for get/update/delete
 	toUpdateValues: councilRow,
 	canDelete: (id: string) => {
-		const ref = getDb()
-			.select()
-			.from(schema.tables)
-			.where(eq(schema.tables.councilId, id))
-			.get();
+		const ref = getDb().select().from(schema.tables).where(eq(schema.tables.councilId, id)).get();
 		return ref ? 'Council is referenced by existing tables' : null;
 	}
 };
