@@ -12,14 +12,28 @@ test('UI drives a full deliberation against the real provider', async ({ page })
 	test.setTimeout(180_000);
 
 	await page.goto('/');
-	await expect(page.getByRole('heading', { name: /set a table/i })).toBeVisible();
+
+	// Detect which rendering "/" served and drive the matching flow.
+	// Public-demo instances (AHWA_PUBLIC_DEMO=1) get the landing page;
+	// self-hosted instances get the "Set a table" form. Both flows
+	// converge on /t/{id} with identical streaming + synthesis below.
+	const isDemo = await page
+		.getByRole('heading', { name: /try the demo/i })
+		.isVisible()
+		.catch(() => false);
 
 	const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
 	const dilemma = `UI smoke test ${stamp} — does the deliberation loop work end-to-end?`;
 
-	await page.getByPlaceholder(/describe the decision/i).fill(dilemma);
-	// Default council is preselected — just submit.
-	await page.getByRole('button', { name: /set a table$/i }).click();
+	if (isDemo) {
+		await page.getByPlaceholder(/dilemma you're sitting with/i).fill(dilemma);
+		await page.getByRole('button', { name: /convene the council/i }).click();
+	} else {
+		await expect(page.getByRole('heading', { name: /set a table/i })).toBeVisible();
+		await page.getByPlaceholder(/describe the decision/i).fill(dilemma);
+		// Default council is preselected — just submit.
+		await page.getByRole('button', { name: /set a table$/i }).click();
+	}
 
 	await expect(page).toHaveURL(/\/t\//);
 
