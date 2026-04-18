@@ -6,7 +6,7 @@
 	let loading = $state(false);
 	let error = $state('');
 
-	async function tryDemo(event: SubmitEvent) {
+	async function tryDemo(event: Event) {
 		event.preventDefault();
 		const trimmed = dilemma.trim();
 		if (!trimmed) return;
