@@ -20,7 +20,7 @@ export const GET: RequestHandler = async () => {
 };
 
 /** Create a new table */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	const body = await request.json();
 	const dilemma = body.dilemma as string;
 	const councilId = (body.councilId as string) || 'default';
@@ -35,11 +35,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: `Council not found: ${councilId}` }, { status: 400 });
 	}
 
-	// Create a party for this user (M1: one party per table)
-	const partyId = nanoid();
-	db.insert(schema.parties).values({ id: partyId, displayName: 'me' }).run();
+	// Initiator party is resolved once per request by hooks.server.ts.
+	// Same user across requests = same party row (invariant #1).
+	const partyId = locals.party.id;
 
-	// Create the table row
 	const tableId = nanoid();
 	db.insert(schema.tables)
 		.values({
@@ -50,7 +49,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		})
 		.run();
 
-	// Link party to table
 	db.insert(schema.tableParties).values({ tableId, partyId, role: 'initiator' }).run();
 
 	return json({ tableId, partyId, token: signShareToken(tableId, partyId) });
