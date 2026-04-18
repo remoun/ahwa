@@ -3,7 +3,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { getHandler, updateHandler, deleteHandler } from '$lib/server/crud';
-import { CouncilBodySchema, type CouncilBody } from '$lib/schemas/council';
+import { CouncilBodySchema } from '$lib/schemas/council';
+import { councilRow } from '$lib/server/council-row';
 import type { RequestHandler } from './$types';
 
 const config = {
@@ -11,14 +12,7 @@ const config = {
 	table: schema.councils,
 	bodySchema: CouncilBodySchema,
 	toValues: () => ({}), // not used for get/update/delete
-	toUpdateValues: (body: CouncilBody) => ({
-		name: body.name,
-		description: body.description ?? null,
-		personaIds: body.personaIds,
-		synthesisPrompt: body.synthesisPrompt,
-		roundStructure: body.roundStructure,
-		modelConfig: body.modelConfig ?? null
-	}),
+	toUpdateValues: councilRow,
 	canDelete: (id: string) => {
 		// Check if any table references this council
 		const ref = db.select().from(schema.tables).where(eq(schema.tables.councilId, id)).get();

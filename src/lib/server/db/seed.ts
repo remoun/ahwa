@@ -4,33 +4,11 @@ import { join } from 'path';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
 import { parseJsonSafe } from '../parse';
+import { councilRow } from '../council-row';
 import { personaRow } from '../persona-row';
 import * as schema from './schema';
 
 type Db = BunSQLiteDatabase<typeof schema>;
-
-// Council rows split the same way: shared mapping for both insert and
-// onConflictDoUpdate so adding a council field is one edit. Drizzle's
-// mode:'json' columns auto-serialise personaIds/roundStructure/modelConfig.
-type CouncilInsert = typeof schema.councils.$inferInsert;
-
-function councilRow(parsed: {
-	name: string;
-	description?: string;
-	personaIds: string[];
-	synthesis_prompt: string;
-	round_structure: CouncilInsert['roundStructure'];
-	model_config?: CouncilInsert['modelConfig'];
-}) {
-	return {
-		name: parsed.name,
-		description: parsed.description ?? null,
-		personaIds: parsed.personaIds,
-		synthesisPrompt: parsed.synthesis_prompt,
-		roundStructure: parsed.round_structure,
-		modelConfig: parsed.model_config ?? null
-	};
-}
 
 /**
  * Seed councils and personas from JSON files on disk.
