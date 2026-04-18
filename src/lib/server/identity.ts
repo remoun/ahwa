@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { and, eq, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
+
+type Db = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Identity resolution config. trustIdentity is opt-in (defaults off) so a
@@ -28,7 +31,7 @@ export function readIdentityEnv(env: Record<string, string | undefined>): Identi
 }
 
 export interface IdentityDeps {
-	db: { select: Function; insert: Function };
+	db: Db;
 	env: IdentityEnv;
 }
 
