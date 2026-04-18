@@ -6,15 +6,21 @@
 # "untar + bun install --production" — no `bun run build` on a 1GB-RAM
 # LXC container, which used to take ~2-3 min.
 #
-# Triggered automatically when release-please cuts a release. Also
-# exposed via workflow_dispatch so we can rebuild assets for an
-# already-published tag (e.g. if this workflow itself was buggy when
-# the release was first cut).
+# release-please creates the GitHub release as a DRAFT (configured in
+# release-please-config.json), which fires the `release: created` event
+# (drafts don't fire `published`). This workflow attaches the asset to
+# the draft, then publishes it. Why drafts: GitHub now refuses asset
+# uploads to published releases ("Cannot upload assets to an immutable
+# release") — so the asset has to land before publish.
+#
+# workflow_dispatch is the manual escape hatch (rebuild an asset on an
+# existing draft if this workflow itself was buggy when the release
+# was first cut).
 name: release-assets
 
 on:
   release:
-    types: [published]
+    types: [created]
   workflow_dispatch:
     inputs:
       tag:
@@ -52,9 +58,14 @@ jobs:
           ls -lh "$name"
           shasum -a 256 "$name"
 
-      - name: Attach to release
+      - name: Attach asset and publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
+          set -euo pipefail
           gh release upload "$TAG" "ahwa-build-${TAG}.tar.gz" --clobber
+          # Flip from draft to published. release-please created it as
+          # a draft so this workflow could attach the asset before
+          # GitHub's immutability lock kicked in.
+          gh release edit "$TAG" --draft=false
