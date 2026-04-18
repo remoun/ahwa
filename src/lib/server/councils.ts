@@ -44,7 +44,7 @@ interface PersonaMetaSource {
  * live SSE path (which sets emoji on `persona_turn_started` and looks
  * description up client-side from data.personaMeta).
  */
-export function attachPersonaEmojis<T extends TurnLike>(
+export function attachPersonaMeta<T extends TurnLike>(
 	turns: T[],
 	personas: PersonaMetaSource[]
 ): (T & { emoji: string; description: string })[] {
