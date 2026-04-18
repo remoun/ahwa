@@ -38,11 +38,39 @@
 
 <main class="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
 	<section class="mb-14">
-		<h1 class="font-display text-5xl sm:text-6xl text-fg leading-tight mb-4">Ahwa</h1>
-		<p class="font-display text-xl sm:text-2xl text-fg-muted leading-relaxed">
+		<h1 class="font-display text-3xl sm:text-4xl text-fg leading-tight mb-4">
 			Private AI deliberation rooms. Convene a small council of personas to think through a dilemma
 			that doesn't fit a one-shot answer.
+		</h1>
+		<p class="text-base sm:text-lg text-fg-muted leading-relaxed italic">
+			Like a few sharp friends arguing your dilemma out loud — none of them in a hurry to agree.
 		</p>
+	</section>
+
+	<section class="mb-16">
+		<ol class="grid sm:grid-cols-3 gap-4 sm:gap-6 list-none">
+			<li class="p-4 rounded-xl bg-surface border border-border-strong">
+				<div class="text-xs font-mono text-fg-subtle mb-1">01</div>
+				<h3 class="font-display text-lg text-fg mb-1">Set a table.</h3>
+				<p class="text-sm text-fg-muted leading-relaxed">
+					Type the dilemma in your own words. No prompt engineering.
+				</p>
+			</li>
+			<li class="p-4 rounded-xl bg-surface border border-border-strong">
+				<div class="text-xs font-mono text-fg-subtle mb-1">02</div>
+				<h3 class="font-display text-lg text-fg mb-1">The council speaks.</h3>
+				<p class="text-sm text-fg-muted leading-relaxed">
+					Personas take turns. You watch the thinking happen, token by token.
+				</p>
+			</li>
+			<li class="p-4 rounded-xl bg-surface border border-border-strong">
+				<div class="text-xs font-mono text-fg-subtle mb-1">03</div>
+				<h3 class="font-display text-lg text-fg mb-1">A synthesis, not a verdict.</h3>
+				<p class="text-sm text-fg-muted leading-relaxed">
+					What was said, woven together. The decision stays yours.
+				</p>
+			</li>
+		</ol>
 	</section>
 
 	<section class="mb-16 p-6 sm:p-8 bg-surface border border-border-strong rounded-2xl shadow-md">
@@ -92,6 +120,24 @@
 		>
 			Self-host guide →
 		</a>
+	</section>
+
+	<section class="mb-16">
+		<h2 class="font-display text-xl text-fg mb-3">What it isn't</h2>
+		<ul class="text-sm text-fg-muted space-y-2 leading-relaxed">
+			<li>
+				<span class="text-fg font-medium">Not a decision-maker.</span> The council won't tell you what
+				to do.
+			</li>
+			<li>
+				<span class="text-fg font-medium">Not balanced.</span> Opinionated councils tilt on purpose —
+				you bring the counterweight from the rest of your life.
+			</li>
+			<li>
+				<span class="text-fg font-medium">Not an advisor.</span> No expertise theater, no confidence performance,
+				no "as an AI…".
+			</li>
+		</ul>
 	</section>
 
 	<section class="text-sm text-fg-muted">
