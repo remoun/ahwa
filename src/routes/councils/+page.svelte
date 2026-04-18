@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import PersonaChip from '$lib/components/PersonaChip.svelte';
+
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

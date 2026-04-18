@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
+
 import type { SseEvent } from '../src/lib/schemas/events';
-import { createTestDb, type TestDb } from './helpers';
-import { tryReserveDemoBudget, getDemoUsageToday } from '../src/lib/server/demo-usage';
 import { withDemoReconcile } from '../src/lib/server/demo-reconcile';
+import { getDemoUsageToday, tryReserveDemoBudget } from '../src/lib/server/demo-usage';
+import { createTestDb, type TestDb } from './helpers';
 
 function source(events: SseEvent[]): AsyncGenerator<SseEvent> {
 	return (async function* () {

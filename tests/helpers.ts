@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import * as schema from '../src/lib/server/db/schema';
+
 import { ensureMigrated } from '../src/lib/server/db/migrate-runner';
+import * as schema from '../src/lib/server/db/schema';
 import {
-	detectPersonaName,
-	mockCompleteResult,
 	type CompleteRequest,
-	type CompleteResult
+	type CompleteResult,
+	detectPersonaName,
+	mockCompleteResult
 } from '../src/lib/server/llm';
 
 /**

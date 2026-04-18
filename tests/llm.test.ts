@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
+
 import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
 import {
 	defaultModelFor,
 	detectDefaultProvider,
 	detectPersonaName,
 	getAvailableProviders,
+	type ModelConfig,
 	resolveCouncilModelConfig,
-	resolveModelConfig,
-	type ModelConfig
+	resolveModelConfig
 } from '../src/lib/server/llm';
 
 describe('llm interface contract', () => {

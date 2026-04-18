@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { PersonaBodySchema } from '$lib/schemas/council';
+import { deleteHandler, getHandler, updateHandler } from '$lib/server/crud';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
-import { getHandler, updateHandler, deleteHandler } from '$lib/server/crud';
-import { PersonaBodySchema } from '$lib/schemas/council';
 import { personaRow } from '$lib/server/persona-row';
+
 import type { RequestHandler } from './$types';
 
 const config = {

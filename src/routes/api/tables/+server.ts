@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { json } from '@sveltejs/kit';
+import { desc, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { eq, desc } from 'drizzle-orm';
+
 import { getDb } from '$lib/server/db';
-import { signShareToken } from '$lib/server/share';
 import * as schema from '$lib/server/db/schema';
+import { signShareToken } from '$lib/server/share';
+
 import type { RequestHandler } from './$types';
 
 /** List non-demo tables, most recent first */

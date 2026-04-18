@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
+
 import * as schema from '../src/lib/server/db/schema';
 import { validateDeliberationRequest } from '../src/lib/server/guards';
 import { signShareToken } from '../src/lib/server/share';
-import { createTestDb, type TestDb } from './helpers';
 import { createParty, createTable } from './fixtures';
+import { createTestDb, type TestDb } from './helpers';
 
 describe('validateDeliberationRequest', () => {
 	let db: TestDb;

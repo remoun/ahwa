@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { getDb } from '$lib/server/db';
-import { loadOrFail } from '$lib/server/load';
 import { expandCouncilPersonas } from '$lib/server/councils';
+import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
+import { loadOrFail } from '$lib/server/load';
+
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = () =>

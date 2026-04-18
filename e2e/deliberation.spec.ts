@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { test, expect } from '@playwright/test';
-import { createTable, runDeliberation, waitForCompletion, expectMainText } from './helpers';
+import { expect, test } from '@playwright/test';
+
+import { createTable, expectMainText, runDeliberation, waitForCompletion } from './helpers';
 
 test.describe('deliberation flow', () => {
 	test('home page shows dilemma form and council picker', async ({ page }) => {

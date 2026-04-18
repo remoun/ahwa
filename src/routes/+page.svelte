@@ -2,6 +2,7 @@
 <script lang="ts">
 	import AppHome from '$lib/components/AppHome.svelte';
 	import LandingHero from '$lib/components/LandingHero.svelte';
+
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

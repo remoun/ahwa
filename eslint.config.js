@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import js from '@eslint/js';
-import ts from 'typescript-eslint';
-import svelte from 'eslint-plugin-svelte';
 import prettier from 'eslint-config-prettier';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import svelte from 'eslint-plugin-svelte';
+import ts from 'typescript-eslint';
 
 export default [
 	js.configs.recommended,
@@ -10,6 +11,13 @@ export default [
 	...svelte.configs['flat/recommended'],
 	prettier,
 	...svelte.configs['flat/prettier'],
+	{
+		plugins: { 'simple-import-sort': simpleImportSort },
+		rules: {
+			'simple-import-sort/imports': 'error',
+			'simple-import-sort/exports': 'error'
+		}
+	},
 	{
 		languageOptions: {
 			globals: {

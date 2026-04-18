@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'fs';
-import { PersonaSchema, CouncilSchema } from '../src/lib/schemas/council';
-import { SseEventSchema, type SseEvent } from '../src/lib/schemas/events';
+
+import { CouncilSchema, PersonaSchema } from '../src/lib/schemas/council';
+import { type SseEvent, SseEventSchema } from '../src/lib/schemas/events';
 
 describe('PersonaSchema', () => {
 	it('parses a valid persona', () => {

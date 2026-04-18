@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { DB } from './db';
 import { and, eq, isNull, type SQL } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+
+import type { DB } from './db';
 import * as schema from './db/schema';
 
 /**

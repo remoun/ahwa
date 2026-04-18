@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
+
 import * as schema from '../src/lib/server/db/schema';
-import { createTestDb, type TestDb } from './helpers';
 import {
+	DEMO_USD_PER_MILLION_TOKENS_DEFAULT,
 	getDemoUsageToday,
-	recordDemoTokens,
-	withinDemoBudget,
-	tryReserveDemoBudget,
 	reconcileDemoTokens,
-	DEMO_USD_PER_MILLION_TOKENS_DEFAULT
+	recordDemoTokens,
+	tryReserveDemoBudget,
+	withinDemoBudget
 } from '../src/lib/server/demo-usage';
+import { createTestDb, type TestDb } from './helpers';
 
 describe('demo-usage', () => {
 	let db: TestDb;

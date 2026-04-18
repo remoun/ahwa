@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { DB } from './db';
 import type { SseEvent } from '../schemas/events';
+import type { DB } from './db';
 import { reconcileDemoTokens } from './demo-usage';
 
 export interface ReconcileWrapperContext {

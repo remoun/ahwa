@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { DB } from './db';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+
+import type { SseEvent } from '../schemas/events';
+import { errorMessage } from '../util';
+import type { DB } from './db';
+import * as schema from './db/schema';
+import { filterPersonas } from './features';
 import {
 	complete as defaultComplete,
-	resolveCouncilModelConfig,
-	resolveModelConfig,
 	type CompleteRequest,
-	type CompleteResult
+	type CompleteResult,
+	resolveCouncilModelConfig,
+	resolveModelConfig
 } from './llm';
-import { filterPersonas } from './features';
-import { errorMessage } from '../util';
-import * as schema from './db/schema';
-import type { SseEvent } from '../schemas/events';
 
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
 

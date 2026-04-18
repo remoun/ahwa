@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect } from 'bun:test';
-import { filterPersonas, AVAILABLE_FEATURES } from '../src/lib/server/features';
+import { describe, expect, it } from 'bun:test';
+
+import { AVAILABLE_FEATURES, filterPersonas } from '../src/lib/server/features';
 
 describe('feature flags', () => {
 	const personas = [

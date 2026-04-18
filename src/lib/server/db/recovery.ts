@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { DB } from '.';
 import { eq } from 'drizzle-orm';
+
+import type { DB } from '.';
 import * as schema from './schema';
 
 /**

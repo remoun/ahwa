@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
-import * as schema from '../src/lib/server/db/schema';
+
 import { recoverOrphanedTables } from '../src/lib/server/db/recovery';
+import * as schema from '../src/lib/server/db/schema';
 import { createTestDb, type TestDb } from './helpers';
 
 describe('recoverOrphanedTables', () => {

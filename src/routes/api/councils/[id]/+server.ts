@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq } from 'drizzle-orm';
-import { getDb } from '$lib/server/db';
-import * as schema from '$lib/server/db/schema';
-import { getHandler, updateHandler, deleteHandler } from '$lib/server/crud';
+
 import { CouncilBodySchema } from '$lib/schemas/council';
 import { councilRow } from '$lib/server/council-row';
+import { deleteHandler, getHandler, updateHandler } from '$lib/server/crud';
+import { getDb } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
+
 import type { RequestHandler } from './$types';
 
 const config = {

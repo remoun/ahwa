@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { and, eq } from 'drizzle-orm';
+
 import type { DB } from './db';
-import { eq, and } from 'drizzle-orm';
 import * as schema from './db/schema';
 import { verifyShareToken } from './share';
 

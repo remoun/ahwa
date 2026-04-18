@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect } from 'bun:test';
 import { Database } from 'bun:sqlite';
+import { describe, expect, it } from 'bun:test';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { join } from 'path';
+
 import { ensureMigrated } from '../src/lib/server/db/migrate-runner';
 import * as schema from '../src/lib/server/db/schema';
-import { join } from 'path';
 
 const MIGRATIONS = join(process.cwd(), 'src/lib/server/db/migrations');
 
