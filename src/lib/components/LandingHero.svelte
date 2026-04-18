@@ -104,11 +104,11 @@
 			<li>The deliberation is stored in a SQLite file on this server until it auto-deletes</li>
 			<li>No analytics, no tracking pixels, no third-party scripts</li>
 			<li>
-					For private use, self-host — nothing leaves your machine except the LLM API call. Point
-					Ahwa at a local
-					<a class="underline hover:no-underline" href="https://ollama.com">Ollama</a> install and
-					even that stays on your hardware.
-				</li>
+				For private use, self-host — nothing leaves your machine except the LLM API call. Point Ahwa
+				at a local
+				<a class="underline hover:no-underline" href="https://ollama.com">Ollama</a> install and even
+				that stays on your hardware.
+			</li>
 		</ul>
 	</section>
 </main>
