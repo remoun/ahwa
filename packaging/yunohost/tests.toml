@@ -11,8 +11,9 @@ test_format = 1.0
     exclude = ["test_change_url"]   # change_url script not yet implemented
 
     # Visitors-public install: anyone can hit the app without logging in.
-    # Useful for the demo flow once Block A lands. Initially commented
-    # out — Ahwa's default is per-user via SSO.
+    # Useful for exercising the public-demo path in package_check, but
+    # the YNH default install is per-user via SSO. Uncomment if you
+    # want package_check to also cover a visitors-public install.
     # args.init_main_permission = "visitors"
 
     # Upgrade-from tests added once we have stable release tags to

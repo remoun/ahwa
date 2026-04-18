@@ -13,8 +13,9 @@ Environment=AHWA_DATA_DIR=__DATA_DIR__
 Environment=NODE_ENV=production
 
 # SSOwat forwards the authenticated user via this header. Identity
-# trust is opt-in everywhere except the YNH-shipped systemd unit,
-# where it is enabled by default (see invariant #5 / Block C).
+# trust is opt-in everywhere except this YNH-shipped systemd unit,
+# where it's enabled by default (see invariant #5 in CLAUDE.md and
+# src/lib/server/identity.ts).
 Environment=AHWA_TRUST_IDENTITY=1
 Environment=AHWA_IDENTITY_HEADER=Auth-User
 
