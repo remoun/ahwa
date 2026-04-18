@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import * as schema from './db/schema';
+import type { DB } from './db';
 import type { SseEvent } from '../schemas/events';
 import { reconcileDemoTokens } from './demo-usage';
 
-type Db = BunSQLiteDatabase<typeof schema>;
-
 export interface ReconcileWrapperContext {
-	db: Db;
+	db: DB;
 	isDemo: boolean;
 	estimateTokens: number;
 	now?: () => number;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { json } from '@sveltejs/kit';
 import { eq, and, asc } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
 
@@ -16,6 +16,7 @@ import type { RequestHandler } from './$types';
  * never mix with owned tables even on direct lookup.
  */
 export const GET: RequestHandler = async ({ params }) => {
+	const db = getDb();
 	const table = db
 		.select()
 		.from(schema.tables)

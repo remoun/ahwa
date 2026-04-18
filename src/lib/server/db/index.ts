@@ -1,31 +1,56 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Database } from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { mkdirSync } from 'fs';
+import { ensureMigrated } from './migrate-runner';
+import { recoverOrphanedTables } from './recovery';
 import * as schema from './schema';
 import { seedFromDisk } from './seed';
-import { recoverOrphanedTables } from './recovery';
-import { ensureMigrated } from './migrate-runner';
 
-const dataDir = process.env.AHWA_DATA_DIR ?? './data';
-mkdirSync(dataDir, { recursive: true });
-const dbPath = `${dataDir}/ahwa.db`;
+// Canonical DB type — every server module that takes a db param imports
+// from here. Single-source-of-truth so a schema change doesn't have to
+// ripple through ten copy-pasted `type DB = BunSQLiteDatabase<...>` lines.
+export type DB = BunSQLiteDatabase<typeof schema>;
 
-const client = new Database(dbPath, { create: true });
-client.exec('PRAGMA journal_mode=WAL');
+// Lazy because SvelteKit's bundler imports server modules during
+// `bun run build` to extract handlers. Doing the mkdir/open/migrate
+// dance at module top-level created an orphan ./data/ahwa.db at the
+// build cwd. getDb() defers all work until first runtime call.
+let _db: DB | null = null;
 
-export const db = drizzle(client, { schema });
+function initDb(): DB {
+	const dataDir = process.env.AHWA_DATA_DIR ?? './data';
+	mkdirSync(dataDir, { recursive: true });
+	const dbPath = `${dataDir}/ahwa.db`;
 
-// Bring schema up to date via drizzle-kit migrations.
-ensureMigrated(db);
+	const client = new Database(dbPath, { create: true });
+	// WAL so a long-running deliberation writing turns doesn't block the
+	// table-list page reading them in parallel — the default rollback
+	// journal serializes readers behind any in-flight write.
+	client.run('PRAGMA journal_mode=WAL');
 
-// Seed councils and personas from JSON files on startup
-seedFromDisk(db);
+	const d = drizzle(client, { schema });
 
-// Recover orphaned tables from a previous process (crashed mid-deliberation).
-// Any table still in 'running' state at startup is an orphan — the orchestrator
-// that was processing it no longer exists. Mark them failed.
-const recovered = recoverOrphanedTables(db);
-if (recovered > 0) {
-	console.warn(`recovery: marked ${recovered} orphaned 'running' table(s) as 'failed'`);
+	ensureMigrated(d);
+	seedFromDisk(d);
+
+	const recovered = recoverOrphanedTables(d);
+	if (recovered > 0) {
+		console.warn(`recovery: marked ${recovered} orphaned 'running' table(s) as 'failed'`);
+	}
+
+	return d;
+}
+
+/**
+ * Convention for callers:
+ * - **Request-time helpers** (orchestrator, getPartyFromRequest, demo
+ *   helpers) take `db: DB`. Their caller already has it from getDb().
+ * - **Module-load factories** (createIdentityHandle,
+ *   createDemoRouteHandler) take `getDb: () => DB`. Eagerly resolving
+ *   at construction would re-trigger the orphan-DB bug this lazy
+ *   accessor exists to prevent.
+ */
+export function getDb(): DB {
+	return (_db ??= initDb());
 }

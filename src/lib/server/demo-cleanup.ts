@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { DB } from './db';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import * as schema from './db/schema';
 
-type Db = BunSQLiteDatabase<typeof schema>;
-
 export interface CleanupInput {
-	db: Db;
+	db: DB;
 	ttlHours: number;
 	now?: () => number;
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { getHandler, updateHandler, deleteHandler } from '$lib/server/crud';
 import { CouncilBodySchema } from '$lib/schemas/council';
@@ -8,14 +8,12 @@ import { councilRow } from '$lib/server/council-row';
 import type { RequestHandler } from './$types';
 
 const config = {
-	db,
 	table: schema.councils,
 	bodySchema: CouncilBodySchema,
 	toValues: () => ({}), // not used for get/update/delete
 	toUpdateValues: councilRow,
 	canDelete: (id: string) => {
-		// Check if any table references this council
-		const ref = db.select().from(schema.tables).where(eq(schema.tables.councilId, id)).get();
+		const ref = getDb().select().from(schema.tables).where(eq(schema.tables.councilId, id)).get();
 		return ref ? 'Council is referenced by existing tables' : null;
 	}
 };

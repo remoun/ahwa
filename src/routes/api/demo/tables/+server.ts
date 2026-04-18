@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import { createDemoRouteHandler } from '$lib/server/demo-route';
 import { createRateLimiter } from '$lib/server/rate-limit';
 import type { RequestHandler } from './$types';
@@ -23,7 +23,7 @@ const rateLimiter = createRateLimiter({
 	refillPerSecond: parseFloat(process.env.AHWA_DEMO_RATE_PER_SECOND ?? '0.0167') // ~1/min
 });
 
-const handle = createDemoRouteHandler({ db, env, rateLimiter });
+const handle = createDemoRouteHandler({ getDb, env, rateLimiter });
 
 export const POST: RequestHandler = async ({ request }) => handle(request);
 

@@ -148,7 +148,7 @@ describe('identity.createIdentityHandle', () => {
 	it('attaches the resolved party to event.locals.party before resolving', async () => {
 		const db = createTestDb();
 		const env = { trustIdentity: true, headerName: 'x-remote-user' };
-		const handle = createIdentityHandle({ db, env });
+		const handle = createIdentityHandle({ getDb: () => db, env });
 
 		type Resolved = ReturnType<typeof getPartyFromRequest>;
 		const event = {
@@ -171,7 +171,7 @@ describe('identity.createIdentityHandle', () => {
 	it('still resolves locals.party (to "me") when trust is off', async () => {
 		const db = createTestDb();
 		const env = { trustIdentity: false, headerName: 'x-remote-user' };
-		const handle = createIdentityHandle({ db, env });
+		const handle = createIdentityHandle({ getDb: () => db, env });
 
 		const event = { request: makeRequest({ 'x-remote-user': 'alice' }), locals: {} as any };
 		await handle({ event, resolve: () => new Response('ok') });

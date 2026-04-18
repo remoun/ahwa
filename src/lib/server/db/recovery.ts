@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import type { DB } from '.';
 import { eq } from 'drizzle-orm';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import * as schema from './schema';
-
-type Db = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Mark any tables stuck in 'running' as 'failed' on startup.
@@ -15,7 +13,7 @@ type Db = BunSQLiteDatabase<typeof schema>;
  *
  * Returns the number of tables recovered (useful for logging).
  */
-export function recoverOrphanedTables(db: Db): number {
+export function recoverOrphanedTables(db: DB): number {
 	const result = db
 		.update(schema.tables)
 		.set({

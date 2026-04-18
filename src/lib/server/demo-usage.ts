@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { DB } from './db';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from './db/schema';
-
-type Db = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Default per-million-token cost estimate in USD. A blended rate that
@@ -30,7 +28,7 @@ function microUsdFor(tokens: number, usdPerMillion: number): number {
  * processes calling at once accumulate correctly.
  */
 function adjustDemoUsage(
-	db: Db,
+	db: DB,
 	tokensDelta: number,
 	costMicroDelta: number,
 	now: () => number
@@ -55,7 +53,7 @@ function adjustDemoUsage(
 }
 
 export interface RecordDemoTokensInput {
-	db: Db;
+	db: DB;
 	tokens: number;
 	now?: () => number;
 	usdPerMillion?: number;
@@ -73,7 +71,7 @@ export function recordDemoTokens(input: RecordDemoTokensInput): void {
 }
 
 export interface DemoUsageQueryInput {
-	db: Db;
+	db: DB;
 	now?: () => number;
 }
 
@@ -113,7 +111,7 @@ export function withinDemoBudget(input: BudgetCheckInput): boolean {
 }
 
 export interface ReserveBudgetInput {
-	db: Db;
+	db: DB;
 	capTokens: number;
 	estimateTokens: number;
 	now?: () => number;
@@ -160,7 +158,7 @@ export function tryReserveDemoBudget(input: ReserveBudgetInput): ReserveResult {
 }
 
 export interface ReconcileInput {
-	db: Db;
+	db: DB;
 	estimateTokens: number;
 	actualTokens: number;
 	now?: () => number;

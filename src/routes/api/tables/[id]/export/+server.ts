@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq, and, asc, inArray } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { generateMarkdown } from '$lib/server/export';
 import type { RequestHandler } from './$types';
@@ -12,6 +12,7 @@ import type { RequestHandler } from './$types';
  * Demo tables are excluded per invariant #11.
  */
 export const GET: RequestHandler = async ({ params }) => {
+	const db = getDb();
 	const table = db
 		.select()
 		.from(schema.tables)

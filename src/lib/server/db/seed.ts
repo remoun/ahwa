@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import type { DB } from '.';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
 import { parseJsonSafe } from '../parse';
 import { councilRow } from '../council-row';
 import { personaRow } from '../persona-row';
 import * as schema from './schema';
 
-type Db = BunSQLiteDatabase<typeof schema>;
-
 /**
  * Seed councils and personas from JSON files on disk.
  * Idempotent — uses INSERT OR REPLACE so it's safe to call on every startup.
  */
-export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'personas'): void {
+export function seedFromDisk(db: DB, councilsDir = 'councils', personasDir = 'personas'): void {
 	// Load council JSON files
 	let councilFiles: string[] = [];
 	try {
