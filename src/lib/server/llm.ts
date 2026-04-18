@@ -60,6 +60,26 @@ export interface CompleteResult {
 }
 
 /**
+ * Build a CompleteResult from a list of pre-decided text chunks. Used
+ * by both mock LLMs so the chunks the stream yields and the chunks the
+ * synthetic token count is derived from can never drift apart.
+ *
+ * Token estimate uses the rough rule of ~4 characters per token —
+ * good enough for tests asserting "non-zero usage was summed."
+ */
+export function mockCompleteResult(chunks: string[]): CompleteResult {
+	return {
+		textStream: (async function* () {
+			for (const chunk of chunks) yield chunk;
+		})(),
+		finished: Promise.resolve({
+			truncated: false,
+			totalTokens: Math.ceil(chunks.join('').length / 4)
+		})
+	};
+}
+
+/**
  * Default models per provider when only the provider is known.
  *
  * OpenRouter default is Claude Sonnet 4.6. Deliberation quality matters
@@ -178,16 +198,7 @@ function mockComplete(request: CompleteRequest): CompleteResult {
 	}
 
 	const name = detectPersonaName(request.system);
-	const text = `[${name}] This is a mocked response for E2E testing.`;
-	return {
-		textStream: (async function* () {
-			yield `[${name}] `;
-			yield 'This is a mocked response for E2E testing.';
-		})(),
-		// Synthetic token count: 4 chars/token is a rough rule of thumb.
-		// Lets the orchestrator sum a realistic-looking total in tests.
-		finished: Promise.resolve({ truncated: false, totalTokens: Math.ceil(text.length / 4) })
-	};
+	return mockCompleteResult([`[${name}] `, 'This is a mocked response for E2E testing.']);
 }
 
 /**

@@ -5,6 +5,7 @@ import * as schema from '../src/lib/server/db/schema';
 import { ensureMigrated } from '../src/lib/server/db/migrate-runner';
 import {
 	detectPersonaName,
+	mockCompleteResult,
 	type CompleteRequest,
 	type CompleteResult
 } from '../src/lib/server/llm';
@@ -26,14 +27,5 @@ export type TestDb = ReturnType<typeof createTestDb>;
 /** Deterministic mock LLM: identifies persona from system prompt, returns labeled response */
 export async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
 	const name = detectPersonaName(opts.system, 'Unknown');
-	const text = `[${name}] I have considered this dilemma carefully.`;
-	return {
-		textStream: (async function* () {
-			yield `[${name}] `;
-			yield 'I have considered this dilemma carefully.';
-		})(),
-		// Synthetic totalTokens (~4 chars/token) lets orchestrator tests
-		// assert non-zero usage was summed across calls.
-		finished: Promise.resolve({ truncated: false, totalTokens: Math.ceil(text.length / 4) })
-	};
+	return mockCompleteResult([`[${name}] `, 'I have considered this dilemma carefully.']);
 }
