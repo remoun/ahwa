@@ -35,3 +35,6 @@ vite.config.ts.timestamp-*
 
 # Compiled binary
 /ahwa
+
+# Claude Code project-level state (worktrees, scratch, per-project config)
+.claude/
