@@ -17,7 +17,8 @@ describe('llm interface contract', () => {
 		textStream: (async function* () {
 			yield 'Hello';
 			yield ' world';
-		})()
+		})(),
+		finished: Promise.resolve({ truncated: false })
 	});
 
 	it('returns a text stream from the provider', async () => {

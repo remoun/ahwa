@@ -10,7 +10,10 @@
 		"skipLibCheck": true,
 		"sourceMap": true,
 		"strict": true,
-		"moduleResolution": "bundler"
+		"moduleResolution": "bundler",
+		// SvelteKit's generated tsconfig defaults types to ["node"]; we run on
+		// Bun and use bun:test + bun:sqlite, so add the Bun types explicitly.
+		"types": ["node", "bun"]
 	}
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
 	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files

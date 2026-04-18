@@ -208,6 +208,10 @@ export async function complete(request: CompleteRequest): Promise<CompleteResult
 				else if (part.type === 'error') throw part.error;
 			}
 		})(),
-		finished: result.finishReason.then((reason) => ({ truncated: reason === 'length' }))
+		// result.finishReason is a PromiseLike from the Vercel AI SDK; wrap
+		// to satisfy our CompleteResult.finished: Promise<...> contract.
+		finished: Promise.resolve(result.finishReason).then((reason) => ({
+			truncated: reason === 'length'
+		}))
 	};
 }
