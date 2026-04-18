@@ -42,6 +42,15 @@ function initDb(): DB {
 	return d;
 }
 
+/**
+ * Convention for callers:
+ * - **Request-time helpers** (orchestrator, getPartyFromRequest, demo
+ *   helpers) take `db: DB`. Their caller already has it from getDb().
+ * - **Module-load factories** (createIdentityHandle,
+ *   createDemoRouteHandler) take `getDb: () => DB`. Eagerly resolving
+ *   at construction would re-trigger the orphan-DB bug this lazy
+ *   accessor exists to prevent.
+ */
 export function getDb(): DB {
 	return (_db ??= initDb());
 }
