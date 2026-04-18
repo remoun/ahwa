@@ -135,8 +135,8 @@
 				you bring the counterweight from the rest of your life.
 			</li>
 			<li>
-				<span class="text-fg font-medium">Not an advisor.</span> No expertise theater, no confidence
-				performance, no "as an AI…".
+				<span class="text-fg font-medium">Not an advisor.</span> No expertise theater, no confidence performance,
+				no "as an AI…".
 			</li>
 		</ul>
 	</section>
