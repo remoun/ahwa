@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: YunoHost
+
+on:
+  pull_request:
+    paths:
+      - 'packaging/yunohost/**'
+      - '.github/workflows/yunohost.yml'
+
+jobs:
+  # Layer 1: package_linter. Static analysis of manifest.toml and scripts/.
+  # Fails fast on syntax errors, structure mistakes, deprecated helpers.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Clone package_linter
+        run: git clone --depth 1 https://github.com/YunoHost/package_linter.git /tmp/package_linter
+
+      - name: Lint
+        run: |
+          if [ ! -f packaging/yunohost/manifest.toml ]; then
+            echo "::warning::No manifest.toml yet — skipping linter."
+            exit 0
+          fi
+          python3 /tmp/package_linter/package_linter.py packaging/yunohost
+
+  # Layer 3: package_check. Full integration test (install/remove/upgrade/
+  # backup/restore) inside an LXC container running real YunoHost. Slow but
+  # source of truth for catalog quality level.
+  #
+  # Disabled until packaging/yunohost/scripts/install exists. Re-enable by
+  # removing `if: false`.
+  package-check:
+    if: false
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run package_check
+        uses: YunoHost/apps/.github/actions/package_check@main
+        with:
+          app_dir: packaging/yunohost
