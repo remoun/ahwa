@@ -28,7 +28,7 @@ describe('rate-limit.createRateLimiter (token bucket)', () => {
 		expect(limiter.tryConsume('1.2.3.4')).toBe(false);
 	});
 
-	it('isolates buckets per key (one IP exhausting doesn\'t affect another)', () => {
+	it("isolates buckets per key (one IP exhausting doesn't affect another)", () => {
 		const clock = makeClock();
 		const limiter = createRateLimiter({ capacity: 2, refillPerSecond: 1, now: clock.now });
 
@@ -61,7 +61,7 @@ describe('rate-limit.createRateLimiter (token bucket)', () => {
 		expect(limiter.tryConsume('k')).toBe(false);
 	});
 
-	it('refill is bounded by capacity (idle key doesn\'t accumulate forever)', () => {
+	it("refill is bounded by capacity (idle key doesn't accumulate forever)", () => {
 		const clock = makeClock();
 		const limiter = createRateLimiter({ capacity: 3, refillPerSecond: 1, now: clock.now });
 
