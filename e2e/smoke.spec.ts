@@ -54,8 +54,10 @@ test('UI drives a full deliberation against the real provider', async ({ page })
 	}
 	expect(lengths.size).toBeGreaterThan(5);
 
-	// Completion proof: synthesis renders.
-	await expect(page.getByRole('heading', { name: /^synthesis$/i })).toBeVisible({
+	// Completion proof: synthesis renders. Scope to the section heading
+	// (id=synthesis-heading) — the model can emit its own "Synthesis"
+	// markdown heading inside the body, which would trip strict mode.
+	await expect(page.locator('#synthesis-heading')).toBeVisible({
 		timeout: 150_000
 	});
 
