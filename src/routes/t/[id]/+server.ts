@@ -3,8 +3,15 @@ import { db } from '$lib/server/db';
 import { validateDeliberationRequest } from '$lib/server/guards';
 import { runDeliberation } from '$lib/server/orchestrator';
 import { toSseStream } from '$lib/server/sse';
+import { withDemoReconcile } from '$lib/server/demo-reconcile';
 import { errorMessage } from '$lib/util';
 import type { RequestHandler } from './$types';
+
+// Same env defaults as src/routes/api/demo/tables/+server.ts. The
+// estimate read here MUST match the one used at pre-charge time, or
+// the math breaks. Both files read the same env var name.
+const DEMO_ESTIMATE_TOKENS = parseInt(process.env.AHWA_DEMO_ESTIMATE_TOKENS ?? '5000', 10);
+const DEMO_USD_PER_MILLION = parseFloat(process.env.AHWA_DEMO_USD_PER_MILLION_TOKENS ?? '0.75');
 
 export const GET: RequestHandler = async ({ params, url, request }) => {
 	try {
@@ -21,13 +28,21 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 		}
 
 		const { table } = guard;
+		const deliberation = runDeliberation(db, {
+			tableId,
+			dilemma: table.dilemma!,
+			councilId: table.councilId!,
+			partyId: partyId!,
+			signal: request.signal
+		});
+		// Reconcile (actual - estimate) into today's demo bookkeeping
+		// once the table closes. Pass-through for non-demo tables.
 		const stream = toSseStream(
-			runDeliberation(db, {
-				tableId,
-				dilemma: table.dilemma!,
-				councilId: table.councilId!,
-				partyId: partyId!,
-				signal: request.signal
+			withDemoReconcile(deliberation, {
+				db,
+				isDemo: table.isDemo === 1,
+				estimateTokens: DEMO_ESTIMATE_TOKENS,
+				usdPerMillion: DEMO_USD_PER_MILLION
 			})
 		);
 

@@ -149,6 +149,107 @@ describe('orchestrator', () => {
 		expect(after!.status).toBe('completed');
 	});
 
+	it('sums totalTokens across all completeFn calls and reports on table_closed', async () => {
+		// Critical for demo budget reconcile: if this math is wrong, the
+		// pre-charge / actuals diff is computed against a bad number and
+		// the daily cap drifts on every demo.
+		createTable(db, 'tbl-tokens', 'Token sum test', 'test-council', 'party-1');
+
+		const PER_CALL = 250;
+		const callTokens: number[] = [];
+		const trackingComplete = async () => {
+			callTokens.push(PER_CALL);
+			return {
+				textStream: (async function* () {
+					yield 'fixed';
+				})(),
+				finished: Promise.resolve({ truncated: false, totalTokens: PER_CALL })
+			};
+		};
+
+		const events: SseEvent[] = [];
+		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-tokens',
+			dilemma: 'Token sum test',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: trackingComplete
+		})) {
+			events.push(event);
+		}
+
+		// 2 personas × 2 rounds + 1 synthesis = 5 calls
+		expect(callTokens).toHaveLength(5);
+		const closed = events.find((e) => e.type === 'table_closed') as Extract<
+			SseEvent,
+			{ type: 'table_closed' }
+		>;
+		expect(closed.totalTokens).toBe(PER_CALL * callTokens.length);
+	});
+
+	it('reports totalTokens=undefined when ANY completeFn omits usage', async () => {
+		// Mixed-provider council (one mock without usage among reporting ones)
+		// must downgrade to undefined rather than under-count silently.
+		createTable(db, 'tbl-mixed', 'Mixed test', 'test-council', 'party-1');
+
+		let i = 0;
+		const mixedComplete = async () => ({
+			textStream: (async function* () {
+				yield 'x';
+			})(),
+			finished: Promise.resolve(
+				i++ === 0 ? { truncated: false, totalTokens: 100 } : { truncated: false }
+			)
+		});
+
+		const events: SseEvent[] = [];
+		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-mixed',
+			dilemma: 'Mixed test',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: mixedComplete
+		})) {
+			events.push(event);
+		}
+
+		const closed = events.find((e) => e.type === 'table_closed') as Extract<
+			SseEvent,
+			{ type: 'table_closed' }
+		>;
+		expect(closed.totalTokens).toBeUndefined();
+	});
+
+	it('reports totalTokens=0 when every call returned 0 (cached / synthetic provider)', async () => {
+		// Sum is 0, NOT undefined — reconcile then refunds the entire
+		// pre-charge, which is correct for a "cached zero-cost" deliberation.
+		createTable(db, 'tbl-zero', 'Zero test', 'test-council', 'party-1');
+
+		const zeroComplete = async () => ({
+			textStream: (async function* () {
+				yield 'cached';
+			})(),
+			finished: Promise.resolve({ truncated: false, totalTokens: 0 })
+		});
+
+		const events: SseEvent[] = [];
+		for await (const event of runDeliberation(db, {
+			tableId: 'tbl-zero',
+			dilemma: 'Zero test',
+			councilId: 'test-council',
+			partyId: 'party-1',
+			completeFn: zeroComplete
+		})) {
+			events.push(event);
+		}
+
+		const closed = events.find((e) => e.type === 'table_closed') as Extract<
+			SseEvent,
+			{ type: 'table_closed' }
+		>;
+		expect(closed.totalTokens).toBe(0);
+	});
+
 	it('passes council model_config to completeFn', async () => {
 		// Create a council with explicit model_config
 		db.insert(schema.councils)
