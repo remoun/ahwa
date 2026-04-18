@@ -24,6 +24,9 @@ function initDb(): DB {
 	const dbPath = `${dataDir}/ahwa.db`;
 
 	const client = new Database(dbPath, { create: true });
+	// WAL so a long-running deliberation writing turns doesn't block the
+	// table-list page reading them in parallel — the default rollback
+	// journal serializes readers behind any in-flight write.
 	client.exec('PRAGMA journal_mode=WAL');
 
 	const d = drizzle(client, { schema });
