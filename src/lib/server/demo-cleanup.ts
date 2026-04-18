@@ -37,10 +37,13 @@ export function cleanupExpiredDemoTables({ db, ttlHours, now }: CleanupInput): n
 
 	const tableIds = expired.map((t) => t.id);
 
-	// Collect the demo parties tied to these tables BEFORE deleting the
-	// link rows — we want to clean up the parties too (they're ephemeral
-	// per A1: a fresh anonymous party per demo).
-	const partyIds = db
+	// Collect parties linked to expired demo tables — candidates for
+	// cleanup. Today every demo creates a fresh anonymous party (see A1)
+	// so these are always exclusive to the demo, but the schema doesn't
+	// enforce that. M3's two-party flow could legitimately link an owned
+	// party to a demo table; we must NOT delete a party that's also tied
+	// to a non-demo or surviving table.
+	const candidatePartyIds = db
 		.select({ partyId: schema.tableParties.partyId })
 		.from(schema.tableParties)
 		.where(inArray(schema.tableParties.tableId, tableIds))
@@ -50,8 +53,22 @@ export function cleanupExpiredDemoTables({ db, ttlHours, now }: CleanupInput): n
 	db.delete(schema.turns).where(inArray(schema.turns.tableId, tableIds)).run();
 	db.delete(schema.tableParties).where(inArray(schema.tableParties.tableId, tableIds)).run();
 	db.delete(schema.tables).where(inArray(schema.tables.id, tableIds)).run();
-	if (partyIds.length > 0) {
-		db.delete(schema.parties).where(inArray(schema.parties.id, partyIds)).run();
+
+	if (candidatePartyIds.length > 0) {
+		// Only delete parties that no longer have ANY remaining table_parties
+		// row (the deletes above already removed the demo-table links). A
+		// shared party with a surviving non-demo link is filtered out here.
+		const stillReferenced = db
+			.selectDistinct({ partyId: schema.tableParties.partyId })
+			.from(schema.tableParties)
+			.where(inArray(schema.tableParties.partyId, candidatePartyIds))
+			.all()
+			.map((r) => r.partyId);
+
+		const safeToDelete = candidatePartyIds.filter((id) => !stillReferenced.includes(id));
+		if (safeToDelete.length > 0) {
+			db.delete(schema.parties).where(inArray(schema.parties.id, safeToDelete)).run();
+		}
 	}
 
 	return expired.length;

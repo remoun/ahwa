@@ -107,4 +107,53 @@ describe('demo-cleanup.cleanupExpiredDemoTables', () => {
 		expect(remaining).toHaveLength(1);
 		expect(remaining[0].id).toBe(c.tableId);
 	});
+
+	it('preserves a party that is also linked to a non-demo table (M3 safety)', () => {
+		// Today every demo creates its own party (see A1), but the schema
+		// doesn't enforce it. M3's two-party flow could legitimately link
+		// an owned party to a demo table; the cleanup must not orphan
+		// the owned table by deleting that party.
+		const { tableId: demoTableId, partyId: sharedPartyId } = createDemoTable({
+			db,
+			dilemma: 'old demo'
+		});
+		setTableCreatedAt(db, demoTableId, now() - 25 * HOUR);
+
+		// Same party also linked to a non-demo table.
+		db.insert(schema.tables)
+			.values({
+				id: 'owned-1',
+				dilemma: 'persistent',
+				councilId: 'demo',
+				status: 'completed',
+				isDemo: 0,
+				createdAt: now() - 5 * HOUR
+			})
+			.run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'owned-1', partyId: sharedPartyId, role: 'initiator' })
+			.run();
+
+		cleanupExpiredDemoTables({ db, ttlHours: 24, now });
+
+		// Demo table is gone; owned table and shared party survive.
+		expect(
+			db
+				.select()
+				.from(schema.tables)
+				.all()
+				.map((t) => t.id)
+		).toEqual(['owned-1']);
+		expect(
+			db.select().from(schema.parties).where(eq(schema.parties.id, sharedPartyId)).all()
+		).toHaveLength(1);
+		// The owned table's link is intact.
+		expect(
+			db
+				.select()
+				.from(schema.tableParties)
+				.where(eq(schema.tableParties.partyId, sharedPartyId))
+				.all()
+		).toHaveLength(1);
+	});
 });

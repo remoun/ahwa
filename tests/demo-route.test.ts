@@ -95,6 +95,20 @@ describe('demo-route.createDemoRouteHandler', () => {
 		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(0);
 	});
 
+	it('still consumes a rate-limit token on a 400 (anti-abuse pin)', async () => {
+		// Bad-input probes shouldn't get free retries — burning the bucket
+		// slot is intentional. Pinned so a future "refund on validation
+		// error" change is an explicit decision, not an accident.
+		const handler = makeHandler();
+
+		// Exhaust the bucket with bad probes from one IP
+		for (let i = 0; i < 5; i++) {
+			expect((await handler(makePost({ dilemma: '' }, '9.9.9.9'))).status).toBe(400);
+		}
+		// Sixth request from same IP, even with valid input, gets rate-limited
+		expect((await handler(makePost({ dilemma: 'real' }, '9.9.9.9'))).status).toBe(429);
+	});
+
 	it('400 when JSON body is malformed (and refunds nothing — no pre-charge yet)', async () => {
 		const handler = makeHandler();
 		const malformed = new Request('http://localhost/api/demo/tables', {

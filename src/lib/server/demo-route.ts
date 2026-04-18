@@ -49,14 +49,22 @@ export function createDemoRouteHandler(deps: DemoRouteDeps) {
 		}
 
 		// 3. Pre-charge an estimate atomically. Refused if it would push
-		// today over the cap.
-		const reserve = tryReserveDemoBudget({
-			db,
-			capTokens: env.capTokens,
-			estimateTokens: env.estimateTokens,
-			now,
-			usdPerMillion: env.usdPerMillion
-		});
+		// today over the cap. Wrapped: a DB failure here would otherwise
+		// propagate as an uncaught 500 with no operator log AND with the
+		// rate-limit token already burned (line 38).
+		let reserve;
+		try {
+			reserve = tryReserveDemoBudget({
+				db,
+				capTokens: env.capTokens,
+				estimateTokens: env.estimateTokens,
+				now,
+				usdPerMillion: env.usdPerMillion
+			});
+		} catch (err) {
+			console.error('demo: tryReserveDemoBudget failed', err);
+			return json({ error: 'Demo service unavailable. Please try again later.' }, 503);
+		}
 		if (!reserve.reserved) {
 			return json(
 				{
@@ -67,9 +75,10 @@ export function createDemoRouteHandler(deps: DemoRouteDeps) {
 			);
 		}
 
-		// 4. Create the table. If the dilemma is invalid (empty / too long)
-		// or the demo council isn't installed, refund the pre-charge and
-		// surface a 400.
+		// 4. Create the table. The catch handles two distinct cases:
+		// - Validation: empty/too-long dilemma, missing demo council — 400
+		// - Infra: SQLITE_BUSY, schema mismatch, etc. — log + 500
+		// Both refund the pre-charge so the cap doesn't silently bleed.
 		try {
 			const result = createDemoTable({ db, dilemma: body.dilemma ?? '' });
 			return json(result, 201);
@@ -81,9 +90,26 @@ export function createDemoRouteHandler(deps: DemoRouteDeps) {
 				now,
 				usdPerMillion: env.usdPerMillion
 			});
-			return json({ error: (err as Error).message }, 400);
+			const message = (err as Error).message;
+			// Validation errors come from createDemoTable's own throws — the
+			// messages it raises are user-facing. Anything else is infra
+			// surfacing through; log it for ops and return a generic 500.
+			if (isValidationError(message)) {
+				return json({ error: message }, 400);
+			}
+			console.error('demo: createDemoTable failed', err);
+			return json({ error: 'Demo creation failed. Please try again.' }, 500);
 		}
 	};
+}
+
+/**
+ * Match the error messages createDemoTable raises for invalid inputs
+ * (see src/lib/server/demo.ts). Anything that doesn't match is treated
+ * as an infrastructure failure and surfaced to ops via console.error.
+ */
+function isValidationError(message: string): boolean {
+	return /dilemma is required|dilemma too long|demo council .* is not installed/i.test(message);
 }
 
 function json(body: unknown, status: number): Response {

@@ -162,6 +162,16 @@ describe('demo-usage', () => {
 			).toBe(false);
 		});
 
+		it('disables the demo entirely when capTokens=0 (regression pin)', () => {
+			// Operators set AHWA_DEMO_DAILY_TOKEN_CAP=0 to disable the demo
+			// without removing the route. With estimate>0, this MUST refuse —
+			// a future refactor of the > to >= would silently allow unlimited.
+			expect(
+				tryReserveDemoBudget({ db, capTokens: 0, estimateTokens: 5000, now: clock }).reserved
+			).toBe(false);
+			expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(0);
+		});
+
 		it('serializes back-to-back reservations (cap-1 estimate twice → one wins)', () => {
 			// Cap 200, estimate 150 — two parallel demos can't both fit.
 			const a = tryReserveDemoBudget({
