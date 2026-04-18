@@ -30,24 +30,28 @@ interface TurnLike {
 	personaName: string | null;
 }
 
-interface PersonaEmojiSource {
+interface PersonaMetaSource {
 	name?: string | null;
 	emoji?: string | null;
+	description?: string | null;
 }
 
 /**
- * Attach each turn's persona emoji by `personaName` lookup. Turns only
- * persist `persona_name`, not the persona id or emoji, so historical
- * renders from the DB need this enrichment to show the same avatars the
- * live SSE path sets via `persona_turn_started`.
+ * Attach each turn's persona emoji + description by `personaName` lookup.
+ * Turns only persist `persona_name`, not the persona id, emoji, or
+ * description, so historical renders need this enrichment to match the
+ * live SSE path (which sets emoji on `persona_turn_started` and looks
+ * description up client-side from data.personaMeta).
  */
 export function attachPersonaEmojis<T extends TurnLike>(
 	turns: T[],
-	personas: PersonaEmojiSource[]
-): (T & { emoji: string })[] {
-	const byName = new Map(personas.map((p) => [p.name, p.emoji ?? '']));
-	return turns.map((t) => ({
-		...t,
-		emoji: (t.personaName && byName.get(t.personaName)) || ''
-	}));
+	personas: PersonaMetaSource[]
+): (T & { emoji: string; description: string })[] {
+	const byName = new Map(
+		personas.map((p) => [p.name, { emoji: p.emoji ?? '', description: p.description ?? '' }])
+	);
+	return turns.map((t) => {
+		const meta = (t.personaName && byName.get(t.personaName)) || { emoji: '', description: '' };
+		return { ...t, emoji: meta.emoji, description: meta.description };
+	});
 }

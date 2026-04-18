@@ -7,6 +7,7 @@
 			"id": "_smoke-voice",
 			"name": "The Smoke Voice",
 			"emoji": "💨",
+			"description": "Internal smoke-test diagnostic voice. Replies with a short acknowledgement to verify the streaming pipeline works end-to-end.",
 			"system_prompt": "You are a diagnostic voice for a smoke test. Reply with a short sentence (5-15 words) acknowledging the dilemma. Do not offer advice; the purpose is to verify the streaming pipeline, not to deliberate."
 		}
 	],

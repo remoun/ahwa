@@ -39,5 +39,13 @@ export const load: PageServerLoad = ({ params, url }) =>
 			: [];
 		const turns = attachPersonaEmojis(rawTurns, personas);
 
-		return { tableId, partyId, token, table, turns, council };
+		// name -> description map for the SSE-driven turns. Live turns
+		// don't go through attachPersonaEmojis, so the page needs this
+		// to populate the avatar tooltip without a per-event DB hit.
+		const personaMeta: Record<string, string> = {};
+		for (const p of personas) {
+			if (p.name && p.description) personaMeta[p.name] = p.description;
+		}
+
+		return { tableId, partyId, token, table, turns, council, personaMeta };
 	});

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { generateMarkdown } from '$lib/server/export';
@@ -37,8 +37,17 @@ export const GET: RequestHandler = async ({ params }) => {
 		? db.select().from(schema.councils).where(eq(schema.councils.id, table.councilId)).get()
 		: null;
 
-	// Look up persona emojis for richer markdown
-	const personas = db.select().from(schema.personas).all();
+	// Only this council's personas appear in this table's turns, so scope
+	// the persona lookup to those ids — no need to scan every custom
+	// persona in the DB.
+	const personaIds: string[] = council?.personaIds ? JSON.parse(council.personaIds) : [];
+	const personas = personaIds.length
+		? db.select().from(schema.personas).where(inArray(schema.personas.id, personaIds)).all()
+		: [];
+	const byId = new Map(personas.map((p) => [p.id, p]));
+	// Preserve the council's persona order for the roster — drizzle's WHERE
+	// IN doesn't guarantee it.
+	const orderedPersonas = personaIds.map((id) => byId.get(id)).filter((p) => !!p);
 	const emojiByName = new Map(personas.map((p) => [p.name, p.emoji]));
 
 	const md = generateMarkdown(
@@ -49,7 +58,14 @@ export const GET: RequestHandler = async ({ params }) => {
 			emoji: emojiByName.get(t.personaName ?? '') ?? null,
 			text: t.text
 		})),
-		{ name: council?.name ?? null },
+		{
+			name: council?.name ?? null,
+			personas: orderedPersonas.map((p) => ({
+				name: p.name,
+				emoji: p.emoji,
+				description: p.description
+			}))
+		},
 		table.synthesis
 	);
 
