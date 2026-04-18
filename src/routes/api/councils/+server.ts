@@ -3,8 +3,20 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { listHandler, createHandler } from '$lib/server/crud';
 import { CouncilBodySchema, type CouncilBody } from '$lib/schemas/council';
-import { jsonOrNull } from '$lib/util';
 import type { RequestHandler } from './$types';
+
+// Shared row mapping for create + update — adding a council field stays
+// a one-place change.
+function councilRow(body: CouncilBody) {
+	return {
+		name: body.name,
+		description: body.description ?? null,
+		personaIds: body.personaIds,
+		synthesisPrompt: body.synthesisPrompt,
+		roundStructure: body.roundStructure,
+		modelConfig: body.modelConfig ?? null
+	};
+}
 
 const config = {
 	db,
@@ -12,22 +24,10 @@ const config = {
 	bodySchema: CouncilBodySchema,
 	toValues: (body: CouncilBody, id: string) => ({
 		id,
-		name: body.name,
-		description: body.description ?? null,
-		personaIds: JSON.stringify(body.personaIds),
-		synthesisPrompt: body.synthesisPrompt,
-		roundStructure: JSON.stringify(body.roundStructure),
-		modelConfig: jsonOrNull(body.modelConfig),
+		...councilRow(body),
 		ownerParty: 'user' // M1: single user, custom councils owned by 'user'
 	}),
-	toUpdateValues: (body: CouncilBody) => ({
-		name: body.name,
-		description: body.description ?? null,
-		personaIds: JSON.stringify(body.personaIds),
-		synthesisPrompt: body.synthesisPrompt,
-		roundStructure: JSON.stringify(body.roundStructure),
-		modelConfig: jsonOrNull(body.modelConfig)
-	})
+	toUpdateValues: councilRow
 };
 
 export const GET: RequestHandler = listHandler(config);

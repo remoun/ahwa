@@ -6,8 +6,8 @@ describe('feature flags', () => {
 	const personas = [
 		{ id: 'elder', requires: null },
 		{ id: 'mirror', requires: null },
-		{ id: 'historian', requires: JSON.stringify(['memory']) },
-		{ id: 'multi', requires: JSON.stringify(['memory', 'two_party']) }
+		{ id: 'historian', requires: ['memory'] },
+		{ id: 'multi', requires: ['memory', 'two_party'] }
 	];
 
 	it('M1 ships with no features available', () => {

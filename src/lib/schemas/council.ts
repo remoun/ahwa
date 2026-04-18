@@ -23,6 +23,8 @@ export const RoundStructureSchema = z.object({
 	synthesize: z.boolean()
 });
 
+export type RoundStructure = z.infer<typeof RoundStructureSchema>;
+
 export const ModelConfigSchema = z.object({
 	provider: z.enum(['anthropic', 'openai', 'openrouter', 'ollama']),
 	model: z.string()

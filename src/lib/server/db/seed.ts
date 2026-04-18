@@ -4,7 +4,6 @@ import { join } from 'path';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
 import { parseJsonSafe } from '../parse';
-import { jsonOrNull } from '../../util';
 import * as schema from './schema';
 
 type Db = BunSQLiteDatabase<typeof schema>;
@@ -39,7 +38,7 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 					name: persona.name,
 					emoji: persona.emoji,
 					systemPrompt: persona.system_prompt,
-					requires: jsonOrNull(persona.requires),
+					requires: persona.requires ?? null,
 					ownerParty: null
 				})
 				.onConflictDoUpdate({
@@ -48,7 +47,7 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 						name: persona.name,
 						emoji: persona.emoji,
 						systemPrompt: persona.system_prompt,
-						requires: jsonOrNull(persona.requires)
+						requires: persona.requires ?? null
 					}
 				})
 				.run();
@@ -56,16 +55,15 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 
 		// Upsert the council
 		const personaIds = parsed.personas.map((p) => p.id);
-		const modelConfig = jsonOrNull(parsed.model_config);
 		db.insert(schema.councils)
 			.values({
 				id: parsed.id,
 				name: parsed.name,
 				description: parsed.description ?? null,
-				personaIds: JSON.stringify(personaIds),
+				personaIds,
 				synthesisPrompt: parsed.synthesis_prompt,
-				roundStructure: JSON.stringify(parsed.round_structure),
-				modelConfig,
+				roundStructure: parsed.round_structure,
+				modelConfig: parsed.model_config ?? null,
 				ownerParty: null
 			})
 			.onConflictDoUpdate({
@@ -73,10 +71,10 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 				set: {
 					name: parsed.name,
 					description: parsed.description ?? null,
-					personaIds: JSON.stringify(personaIds),
+					personaIds,
 					synthesisPrompt: parsed.synthesis_prompt,
-					roundStructure: JSON.stringify(parsed.round_structure),
-					modelConfig
+					roundStructure: parsed.round_structure,
+					modelConfig: parsed.model_config ?? null
 				}
 			})
 			.run();
@@ -105,7 +103,7 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 				name: parsed.name,
 				emoji: parsed.emoji,
 				systemPrompt: parsed.system_prompt,
-				requires: jsonOrNull(parsed.requires),
+				requires: parsed.requires ?? null,
 				ownerParty: null
 			})
 			.onConflictDoUpdate({
@@ -114,7 +112,7 @@ export function seedFromDisk(db: Db, councilsDir = 'councils', personasDir = 'pe
 					name: parsed.name,
 					emoji: parsed.emoji,
 					systemPrompt: parsed.system_prompt,
-					requires: jsonOrNull(parsed.requires)
+					requires: parsed.requires ?? null
 				}
 			})
 			.run();

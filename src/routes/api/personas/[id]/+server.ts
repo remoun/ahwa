@@ -3,7 +3,6 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { getHandler, updateHandler, deleteHandler } from '$lib/server/crud';
 import { PersonaBodySchema, type PersonaBody } from '$lib/schemas/council';
-import { jsonOrNull } from '$lib/util';
 import type { RequestHandler } from './$types';
 
 const config = {
@@ -15,15 +14,13 @@ const config = {
 		name: body.name,
 		emoji: body.emoji,
 		systemPrompt: body.systemPrompt,
-		requires: jsonOrNull(body.requires)
+		requires: body.requires ?? null
 	}),
 	canDelete: (id: string) => {
 		// Check if any council references this persona
 		const councils = db.select().from(schema.councils).all();
 		for (const council of councils) {
-			if (!council.personaIds) continue;
-			const ids: string[] = JSON.parse(council.personaIds);
-			if (ids.includes(id)) {
+			if (council.personaIds?.includes(id)) {
 				return `Persona is referenced by council "${council.name}"`;
 			}
 		}

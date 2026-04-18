@@ -11,9 +11,9 @@ function seedDemoCouncil(db: TestDb) {
 		.values({
 			id: 'demo',
 			name: 'Demo',
-			personaIds: '[]',
+			personaIds: [],
 			synthesisPrompt: '',
-			roundStructure: '{}'
+			roundStructure: { rounds: [], synthesize: false }
 		})
 		.run();
 }

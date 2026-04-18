@@ -36,7 +36,7 @@ describe('seedFromDisk', () => {
 		seedFromDisk(db);
 		const rows = db.select().from(schema.personas).where(eq(schema.personas.id, 'historian')).all();
 		expect(rows.length).toBe(1);
-		expect(JSON.parse(rows[0].requires!)).toEqual(['memory']);
+		expect(rows[0].requires).toEqual(['memory']);
 	});
 
 	it('is idempotent on re-run', () => {
@@ -53,7 +53,7 @@ describe('seedFromDisk', () => {
 		seedFromDisk(db);
 		const row = db.select().from(schema.councils).where(eq(schema.councils.id, 'default')).get();
 		expect(row).toBeDefined();
-		const ids = JSON.parse(row!.personaIds!);
+		const ids = row!.personaIds!;
 		expect(ids).toContain('elder');
 		expect(ids).toContain('mirror');
 		expect(ids.length).toBe(6);
