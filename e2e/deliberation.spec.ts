@@ -92,9 +92,10 @@ test.describe('council management', () => {
 
 		await page.getByRole('button').filter({ hasText: 'The Elder' }).first().click();
 
-		await expect(
-			page.getByText(/60-year-old self|long life|patience for slow goods/i)
-		).toBeVisible();
+		// Scope to the expanded "System prompt" panel — the description
+		// tagline (visible by default) shares vocabulary with the prompt
+		// itself, so an unscoped locator now matches both.
+		await expect(page.getByText('System prompt').first()).toBeVisible();
 	});
 
 	test('creating a custom council then deleting it', async ({ page }) => {
