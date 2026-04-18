@@ -30,6 +30,13 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
 
+      - name: Read pinned Bun version
+        id: bun
+        # .bun-version is the canonical pin shared by Dockerfile + the
+        # YunoHost install script. Bumping the file in one PR updates
+        # every deployment path.
+        run: echo "version=$(cat .bun-version)" >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -37,3 +44,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUN_VERSION=${{ steps.bun.outputs.version }}

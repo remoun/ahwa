@@ -1,7 +1,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Multi-stage build: build with Bun, run with Bun on a minimal base.
+#
+# Bun version comes from the repo's .bun-version (single source of
+# truth, also consumed by the YunoHost install script). Build with:
+#
+#   docker build --build-arg BUN_VERSION=$(cat .bun-version) \
+#     -f packaging/docker/Dockerfile .
+#
+# .github/workflows/docker.yml passes the arg automatically.
+ARG BUN_VERSION=1.3.12
 
-FROM oven/bun:1.3.12 AS build
+FROM oven/bun:${BUN_VERSION} AS build
 WORKDIR /app
 
 # Install deps
@@ -17,7 +26,7 @@ RUN bun run build
 
 # Production stage — copy the whole /app directory, which includes
 # build/, node_modules/, councils/, personas/, package.json, etc.
-FROM oven/bun:1.3.12-slim
+FROM oven/bun:${BUN_VERSION}-slim
 
 WORKDIR /app
 COPY --from=build /app ./
