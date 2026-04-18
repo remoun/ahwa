@@ -12,7 +12,7 @@ describe('expandCouncilPersonas', () => {
 	it('resolves personaIds JSON into persona objects in order', () => {
 		const council = {
 			id: 'c1',
-			personaIds: JSON.stringify(['mirror', 'elder'])
+			personaIds: ['mirror', 'elder']
 		};
 		const out = expandCouncilPersonas(council, allPersonas);
 		expect(out.personas.map((p) => p.id)).toEqual(['mirror', 'elder']);
@@ -22,7 +22,7 @@ describe('expandCouncilPersonas', () => {
 	it('drops ids that do not match any persona (stale reference)', () => {
 		const council = {
 			id: 'c2',
-			personaIds: JSON.stringify(['elder', 'ghost', 'engineer'])
+			personaIds: ['elder', 'ghost', 'engineer']
 		};
 		const out = expandCouncilPersonas(council, allPersonas);
 		expect(out.personas.map((p) => p.id)).toEqual(['elder', 'engineer']);

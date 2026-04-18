@@ -3,8 +3,16 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { listHandler, createHandler } from '$lib/server/crud';
 import { PersonaBodySchema, type PersonaBody } from '$lib/schemas/council';
-import { jsonOrNull } from '$lib/util';
 import type { RequestHandler } from './$types';
+
+function personaRow(body: PersonaBody) {
+	return {
+		name: body.name,
+		emoji: body.emoji,
+		systemPrompt: body.systemPrompt,
+		requires: body.requires ?? null
+	};
+}
 
 const config = {
 	db,
@@ -12,18 +20,10 @@ const config = {
 	bodySchema: PersonaBodySchema,
 	toValues: (body: PersonaBody, id: string) => ({
 		id,
-		name: body.name,
-		emoji: body.emoji,
-		systemPrompt: body.systemPrompt,
-		requires: jsonOrNull(body.requires),
+		...personaRow(body),
 		ownerParty: 'user' // M1: single user
 	}),
-	toUpdateValues: (body: PersonaBody) => ({
-		name: body.name,
-		emoji: body.emoji,
-		systemPrompt: body.systemPrompt,
-		requires: jsonOrNull(body.requires)
-	})
+	toUpdateValues: personaRow
 };
 
 export const GET: RequestHandler = listHandler(config);

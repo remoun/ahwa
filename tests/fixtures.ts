@@ -18,15 +18,15 @@ export function seedMiniCouncil(db: TestDb) {
 		.values({
 			id: 'test-council',
 			name: 'Test Council',
-			personaIds: JSON.stringify(['elder', 'mirror']),
+			personaIds: ['elder', 'mirror'],
 			synthesisPrompt: 'Synthesize the deliberation.',
-			roundStructure: JSON.stringify({
+			roundStructure: {
 				rounds: [
 					{ kind: 'opening', prompt_suffix: 'Give your opening take.' },
 					{ kind: 'cross_examination', prompt_suffix: 'Push back.' }
 				],
 				synthesize: true
-			})
+			}
 		})
 		.run();
 

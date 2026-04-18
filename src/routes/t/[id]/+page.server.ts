@@ -33,7 +33,7 @@ export const load: PageServerLoad = ({ params, url }) =>
 		// historical renders show the same avatars the live SSE path does.
 		// Scope the persona select to this table's council — no point
 		// reading every custom persona in the DB just to look up five.
-		const personaIds: string[] = council?.personaIds ? JSON.parse(council.personaIds) : [];
+		const personaIds: string[] = council?.personaIds ?? [];
 		const personas = personaIds.length
 			? db.select().from(schema.personas).where(inArray(schema.personas.id, personaIds)).all()
 			: [];

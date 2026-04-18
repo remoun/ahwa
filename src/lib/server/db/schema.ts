@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { integer, sqliteTable, text, primaryKey } from 'drizzle-orm/sqlite-core';
 import { nanoid } from 'nanoid';
+import type { ModelConfig, RoundStructure } from '../../schemas/council';
 
 export const parties = sqliteTable('parties', {
 	id: text('id')
@@ -50,7 +51,9 @@ export const turns = sqliteTable('turns', {
 	partyId: text('party_id'),
 	personaName: text('persona_name'),
 	text: text('text'),
-	visibleTo: text('visible_to'), // JSON array of party_ids
+	// JSON array of party_ids — Drizzle auto-parses on read and stringifies
+	// on write via mode:'json'.
+	visibleTo: text('visible_to', { mode: 'json' }).$type<string[]>(),
 	// 1 if the LLM hit maxOutputTokens and the text was cut off — the
 	// persisted text is incomplete. Ops can see this on reload without
 	// re-running the deliberation.
@@ -63,7 +66,7 @@ export const personas = sqliteTable('personas', {
 	name: text('name'),
 	emoji: text('emoji'),
 	systemPrompt: text('system_prompt'),
-	requires: text('requires'), // JSON array of required features
+	requires: text('requires', { mode: 'json' }).$type<string[]>(),
 	ownerParty: text('owner_party'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });
@@ -72,10 +75,10 @@ export const councils = sqliteTable('councils', {
 	id: text('id').primaryKey(),
 	name: text('name'),
 	description: text('description'),
-	personaIds: text('persona_ids'), // JSON array
+	personaIds: text('persona_ids', { mode: 'json' }).$type<string[]>(),
 	synthesisPrompt: text('synthesis_prompt'),
-	roundStructure: text('round_structure'), // JSON
-	modelConfig: text('model_config'), // JSON: { provider, model }
+	roundStructure: text('round_structure', { mode: 'json' }).$type<RoundStructure>(),
+	modelConfig: text('model_config', { mode: 'json' }).$type<ModelConfig>(),
 	ownerParty: text('owner_party'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });

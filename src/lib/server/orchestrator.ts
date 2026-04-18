@@ -2,7 +2,6 @@
 import { eq } from 'drizzle-orm';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { nanoid } from 'nanoid';
-import { z } from 'zod';
 import {
 	complete as defaultComplete,
 	resolveCouncilModelConfig,
@@ -11,13 +10,9 @@ import {
 	type CompleteResult
 } from './llm';
 import { filterPersonas } from './features';
-import { parseJson } from './parse';
 import { errorMessage } from '../util';
-import { RoundStructureSchema, ModelConfigSchema } from '../schemas/council';
 import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
-
-const PersonaIdsSchema = z.array(z.string());
 
 type Db = BunSQLiteDatabase<typeof schema>;
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
@@ -66,19 +61,16 @@ export async function* runDeliberation(
 			.get();
 		if (!council) throw new Error(`Council not found: ${councilId}`);
 
-		const personaIds = parseJson(
-			council.personaIds!,
-			PersonaIdsSchema,
-			`council.${councilId}.personaIds`
-		);
-		const roundStructure = parseJson(
-			council.roundStructure!,
-			RoundStructureSchema,
-			`council.${councilId}.roundStructure`
-		);
-		const storedModelConfig = council.modelConfig
-			? parseJson(council.modelConfig, ModelConfigSchema, `council.${councilId}.modelConfig`)
-			: undefined;
+		// JSON-mode columns: Drizzle gives us parsed values directly. The
+		// shape is enforced at write time via Zod (CouncilBodySchema +
+		// council seed JSON validation), so trust the read.
+		if (!council.personaIds) throw new Error(`council.${councilId}: missing personaIds`);
+		if (!council.roundStructure) {
+			throw new Error(`council.${councilId}: missing roundStructure`);
+		}
+		const personaIds = council.personaIds;
+		const roundStructure = council.roundStructure;
+		const storedModelConfig = council.modelConfig ?? undefined;
 		// AHWA_COUNCIL_<ID>_PROVIDER + _MODEL env vars override the stored
 		// config — lets a deploy re-pin demo (or any other council) without
 		// editing the council JSON.
@@ -227,7 +219,7 @@ export async function* runDeliberation(
 						partyId,
 						personaName: persona.name,
 						text: fullTexts[i],
-						visibleTo: JSON.stringify(visibleTo),
+						visibleTo,
 						truncated: truncatedFlags[i] ? 1 : 0
 					})
 					.run();
@@ -285,7 +277,7 @@ export async function* runDeliberation(
 					partyId: 'synthesizer',
 					personaName: 'Synthesizer',
 					text: synthesisText,
-					visibleTo: JSON.stringify(visibleTo),
+					visibleTo,
 					truncated: synthTruncated ? 1 : 0
 				})
 				.run();

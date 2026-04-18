@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { z } from 'zod';
-import { parseJsonSafe } from './parse';
 
 /**
  * Feature flag registry. Personas can declare `requires: ["memory"]` etc.
@@ -11,11 +9,10 @@ import { parseJsonSafe } from './parse';
 /** Features available in the current build */
 export const AVAILABLE_FEATURES: string[] = [];
 
-const RequiresSchema = z.array(z.string());
-
 interface PersonaWithRequires {
 	id: string;
-	requires: string | null;
+	// Drizzle JSON-mode column gives us string[] | null directly; no parse step.
+	requires: string[] | null;
 }
 
 /**
@@ -30,19 +27,11 @@ export function filterPersonas<T extends PersonaWithRequires>(
 	const excluded: T[] = [];
 
 	for (const persona of personas) {
-		if (!persona.requires) {
+		if (!persona.requires || persona.requires.length === 0) {
 			eligible.push(persona);
 			continue;
 		}
-		const parsed = parseJsonSafe(persona.requires, RequiresSchema);
-		if (!parsed.ok) {
-			// Malformed requires — log and treat as eligible rather than crash
-			console.warn(`features: persona ${persona.id} has malformed requires: ${parsed.error}`);
-			eligible.push(persona);
-			continue;
-		}
-		const required = parsed.data;
-		if (required.every((f) => availableFeatures.includes(f))) {
+		if (persona.requires.every((f) => availableFeatures.includes(f))) {
 			eligible.push(persona);
 		} else {
 			excluded.push(persona);

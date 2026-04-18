@@ -17,12 +17,12 @@ function seedDemoCouncil(db: TestDb) {
 		.values({
 			id: 'demo',
 			name: 'Demo',
-			personaIds: JSON.stringify(['demo-a', 'demo-b']),
+			personaIds: ['demo-a', 'demo-b'],
 			synthesisPrompt: 'Synthesize.',
-			roundStructure: JSON.stringify({
+			roundStructure: {
 				rounds: [{ kind: 'opening', prompt_suffix: 'Speak.' }],
 				synthesize: true
-			})
+			}
 		})
 		.run();
 }

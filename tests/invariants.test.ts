@@ -34,7 +34,7 @@ describe('invariant #8: visible_to filtering', () => {
 					partyId: 'alice',
 					personaName: 'Elder',
 					text: 'Alice sees this',
-					visibleTo: JSON.stringify(['alice'])
+					visibleTo: ['alice']
 				},
 				{
 					id: 't2',
@@ -43,7 +43,7 @@ describe('invariant #8: visible_to filtering', () => {
 					partyId: 'bob',
 					personaName: 'Elder',
 					text: 'Bob sees this',
-					visibleTo: JSON.stringify(['bob'])
+					visibleTo: ['bob']
 				},
 				{
 					id: 't3',
@@ -52,7 +52,7 @@ describe('invariant #8: visible_to filtering', () => {
 					partyId: 'alice',
 					personaName: 'Mirror',
 					text: 'Both see this',
-					visibleTo: JSON.stringify(['alice', 'bob'])
+					visibleTo: ['alice', 'bob']
 				}
 			])
 			.run();
@@ -126,8 +126,7 @@ describe('invariant #10: feature-flag persona filtering', () => {
 		const allPersonas = db.select().from(schema.personas).all();
 		const eligible = allPersonas.filter((p) => {
 			if (!p.requires) return true;
-			const required: string[] = JSON.parse(p.requires);
-			return required.every((f) => availableFeatures.includes(f));
+			return p.requires.every((f) => availableFeatures.includes(f));
 		});
 
 		// Historian requires "memory" which is unavailable — must be filtered out
@@ -143,8 +142,7 @@ describe('invariant #10: feature-flag persona filtering', () => {
 		const allPersonas = db.select().from(schema.personas).all();
 		const eligible = allPersonas.filter((p) => {
 			if (!p.requires) return true;
-			const required: string[] = JSON.parse(p.requires);
-			return required.every((f) => availableFeatures.includes(f));
+			return p.requires.every((f) => availableFeatures.includes(f));
 		});
 
 		// With memory available, historian should be included
