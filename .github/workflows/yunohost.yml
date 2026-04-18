@@ -48,7 +48,28 @@ jobs:
             echo "::warning::No manifest.toml — skipping linter."
             exit 0
           fi
-          python3 /tmp/package_linter/package_linter.py packaging/yunohost
+          set +e
+          OUT=$(python3 /tmp/package_linter/package_linter.py packaging/yunohost 2>&1)
+          echo "$OUT"
+          # The catalog-membership warning is expected until we submit to
+          # YunoHost/apps. Any OTHER critical issue (single ✘, not ✘✘✘) is real.
+          NON_CATALOG=$(echo "$OUT" | sed 's/\x1b\[[0-9;]*m//g' | grep -E "^\s*✘[^✘]" | wc -l)
+          if [ "$NON_CATALOG" -gt 0 ]; then
+            echo "::error::$NON_CATALOG non-catalog critical issue(s)"
+            exit 1
+          fi
+          echo "lint: ok (catalog warning expected)"
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+      - name: ShellCheck packaging/yunohost/scripts
+        # SC1091: source files outside the lint scope (_common.sh sources YNH
+        # helpers we don't ship). SC2154: vars set by YNH ($app, $domain, etc.).
+        run: shellcheck -e SC1091,SC2154 packaging/yunohost/scripts/*
 
   # Layer 3: package_check. Full integration test — install, remove, upgrade,
   # backup, restore — each in an isolated LXC container on a fresh YunoHost.

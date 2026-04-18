@@ -30,13 +30,13 @@ chown -R "$app:$app" "$install_dir/.bun"
 #=================================================
 ynh_script_progression "Building Ahwa..."
 
-pushd "$install_dir/src"
+pushd "$install_dir/src" >/dev/null || ynh_die --message="cannot enter $install_dir/src"
 # Install ALL deps (vite/svelte/tailwind are devDeps but needed to build).
 ynh_exec_as_app "$(bun_bin "$install_dir")" install --frozen-lockfile
 ynh_exec_as_app "$(bun_bin "$install_dir")" run build
 # Prune to production deps after build to shrink the install footprint.
 ynh_exec_as_app "$(bun_bin "$install_dir")" install --production --frozen-lockfile
-popd
+popd >/dev/null || true
 
 #=================================================
 # DATA DIR

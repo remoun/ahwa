@@ -10,17 +10,17 @@ ynh_script_progression "Stopping Ahwa..."
 ynh_systemctl --service="$app" --action="stop" --log_path="systemd"
 
 ynh_script_progression "Pulling latest source..."
-pushd "$install_dir/src"
+pushd "$install_dir/src" >/dev/null || ynh_die --message="cannot enter $install_dir/src"
 ynh_exec_as_app git fetch --depth 1 origin main
 ynh_exec_as_app git reset --hard origin/main
-popd
+popd >/dev/null || true
 
 ynh_script_progression "Rebuilding..."
-pushd "$install_dir/src"
+pushd "$install_dir/src" >/dev/null || ynh_die --message="cannot enter $install_dir/src"
 ynh_exec_as_app "$(bun_bin "$install_dir")" install --frozen-lockfile
 ynh_exec_as_app "$(bun_bin "$install_dir")" run build
 ynh_exec_as_app "$(bun_bin "$install_dir")" install --production --frozen-lockfile
-popd
+popd >/dev/null || true
 
 ynh_script_progression "Re-rendering systemd + nginx (in case templates changed)..."
 ynh_config_add_systemd

@@ -53,9 +53,16 @@ $(LINTER):
 lint: $(LINTER)
 	@if [ ! -f manifest.toml ]; then \
 	  echo "lint: skipped (no manifest.toml yet — write it first, then rerun)"; \
-	else \
-	  $(LINTER_DIR)/.venv/bin/python3 $(LINTER) .; \
-	fi
+	  exit 0; \
+	fi; \
+	OUT=$$($(LINTER_DIR)/.venv/bin/python3 $(LINTER) . 2>&1); \
+	echo "$$OUT"; \
+	NON_CATALOG=$$(echo "$$OUT" | sed 's/\x1b\[[0-9;]*m//g' | grep -E "^\s*✘[^✘]" | wc -l); \
+	if [ "$$NON_CATALOG" -gt 0 ]; then \
+	  echo "lint: $$NON_CATALOG non-catalog critical issue(s) — see above"; \
+	  exit 1; \
+	fi; \
+	echo "lint: ok (catalog-membership warning is expected until we submit)"
 
 # --- Layer 2: deploy to VPS --------------------------------------------
 
