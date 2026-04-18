@@ -194,7 +194,8 @@ describe('orchestrator', () => {
 		const emptyComplete = async () => ({
 			textStream: (async function* () {
 				// yields nothing
-			})()
+			})(),
+			finished: Promise.resolve({ truncated: false })
 		});
 
 		const events: SseEvent[] = [];

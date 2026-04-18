@@ -63,7 +63,7 @@ export function validateDeliberationRequest(
 		.update(schema.tables)
 		.set({ status: 'running', updatedAt: Date.now() })
 		.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'pending')))
-		.run();
+		.run() as unknown as { changes: number };
 
 	if (result.changes === 0) {
 		// Re-read to get current status for the error message

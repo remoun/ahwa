@@ -25,7 +25,7 @@ export function recoverOrphanedTables(db: Db): number {
 			updatedAt: Date.now()
 		})
 		.where(eq(schema.tables.status, 'running'))
-		.run();
+		.run() as unknown as { changes: number };
 
 	return result.changes;
 }
