@@ -2,10 +2,13 @@
 name: CI
 
 on:
-  # PRs only. Branch protection requires these checks to pass before a
-  # PR can merge to main, so re-running on the main push would duplicate
-  # the same checks that just passed.
   pull_request:
+  # Also run on main pushes so the README CI badge (which is pinned to
+  # ?branch=main) reflects the actual health of main. Branch protection
+  # already gates merges, so this is a duplicate of the PR run — the
+  # ~1m of duplicated CI time is the cost of an honest badge.
+  push:
+    branches: [main]
 
 jobs:
   test:
