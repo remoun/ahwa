@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# DRAFT — not yet tested against a live YNH instance.
+# Verified against YNH 12.1.39 via package_check (LXC bookworm/stable).
 
 source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
@@ -17,11 +17,9 @@ chown -R "$app:$app" "$install_dir"
 install_bun "$install_dir"
 chown -R "$app:$app" "$install_dir/.bun"
 
-pushd "$install_dir/src" >/dev/null || ynh_die --message="cannot enter $install_dir/src"
-ynh_exec_as_app "$(bun_bin "$install_dir")" install --frozen-lockfile
-ynh_exec_as_app "$(bun_bin "$install_dir")" run build
-ynh_exec_as_app "$(bun_bin "$install_dir")" install --production --frozen-lockfile
-popd >/dev/null || true
+bun_app "$install_dir" install --frozen-lockfile
+bun_app "$install_dir" run build
+bun_app "$install_dir" install --production --frozen-lockfile
 
 ynh_script_progression "Restoring data..."
 ynh_restore "$data_dir"

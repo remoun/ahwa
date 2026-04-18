@@ -1,8 +1,9 @@
 #!/bin/bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# DRAFT — not yet tested against a live YNH instance. Iterate via
-# `make deploy` from the parent directory once the VPS is reachable.
+# Verified against YNH 12.1.39 on a live VPS install + via package_check
+# in CI (LXC bookworm/stable). Iterate locally via `make deploy` from
+# the parent directory; see docs/yunohost-dev.md.
 
 source _common.sh
 source /usr/share/yunohost/helpers
@@ -30,13 +31,11 @@ chown -R "$app:$app" "$install_dir/.bun"
 #=================================================
 ynh_script_progression "Building Ahwa..."
 
-pushd "$install_dir/src" >/dev/null || ynh_die --message="cannot enter $install_dir/src"
 # Install ALL deps (vite/svelte/tailwind are devDeps but needed to build).
-ynh_exec_as_app "$(bun_bin "$install_dir")" install --frozen-lockfile
-ynh_exec_as_app "$(bun_bin "$install_dir")" run build
+bun_app "$install_dir" install --frozen-lockfile
+bun_app "$install_dir" run build
 # Prune to production deps after build to shrink the install footprint.
-ynh_exec_as_app "$(bun_bin "$install_dir")" install --production --frozen-lockfile
-popd >/dev/null || true
+bun_app "$install_dir" install --production --frozen-lockfile
 
 #=================================================
 # DATA DIR

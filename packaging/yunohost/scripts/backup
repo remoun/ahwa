@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# DRAFT — not yet tested against a live YNH instance.
+# Verified against YNH 12.1.39 via package_check (LXC bookworm/stable).
 
 source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
