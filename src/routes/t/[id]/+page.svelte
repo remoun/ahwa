@@ -281,11 +281,12 @@
 		-->
 		<div bind:this={sentinel} aria-hidden="true" class="h-px"></div>
 		<!--
-			svelte-ignore a11y_no_noninteractive_tabindex — role="button" is
-			applied conditionally when dilemmaStuck. Svelte's static linter
-			doesn't track the conditional role and flags the conditional
-			tabindex as if the element were always noninteractive.
+			role="button" is applied conditionally alongside tabindex when
+			dilemmaStuck, so the element IS interactive when it has tabindex=0.
+			Svelte's static linter doesn't track the conditional role/tabindex
+			pairing and flags the figure as if it were always noninteractive.
 		-->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 		<figure
 			class="sticky top-14 z-10 bg-surface border border-border-strong rounded-xl shadow-md transition-all
 				{dilemmaStuck ? 'mb-10 px-4 py-2 cursor-pointer hover:border-accent' : 'mb-10 px-6 py-5'}"
