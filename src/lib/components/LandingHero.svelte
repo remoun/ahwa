@@ -84,7 +84,7 @@
 		</p>
 		<a
 			class="inline-block text-sm font-medium text-accent hover:underline"
-			href="https://github.com/remoun/ahwa#self-hosting"
+			href="https://github.com/remoun/ahwa#install-via-docker"
 		>
 			Self-host guide →
 		</a>
