@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, type SQL } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
 
@@ -59,34 +59,33 @@ export function getPartyFromRequest(request: Request, deps: IdentityDeps): Resol
 	return getOrCreateMeParty(db);
 }
 
-function getOrCreateExternalParty(db: IdentityDeps['db'], externalId: string): ResolvedParty {
-	const existing = db
-		.select()
-		.from(schema.parties)
-		.where(eq(schema.parties.externalId, externalId))
-		.get();
-	if (existing) return toResolved(existing);
-
-	const id = nanoid();
-	db.insert(schema.parties).values({ id, displayName: externalId, externalId }).run();
-	return { id, displayName: externalId, externalId };
+function getOrCreateExternalParty(db: Db, externalId: string): ResolvedParty {
+	return getOrCreateParty(db, eq(schema.parties.externalId, externalId), {
+		displayName: externalId,
+		externalId
+	});
 }
 
-function getOrCreateMeParty(db: IdentityDeps['db']): ResolvedParty {
-	const existing = db
-		.select()
-		.from(schema.parties)
-		.where(and(eq(schema.parties.displayName, 'me'), isNull(schema.parties.externalId)))
-		.get();
-	if (existing) return toResolved(existing);
-
-	const id = nanoid();
-	db.insert(schema.parties).values({ id, displayName: 'me', externalId: null }).run();
-	return { id, displayName: 'me', externalId: null };
+function getOrCreateMeParty(db: Db): ResolvedParty {
+	return getOrCreateParty(
+		db,
+		and(eq(schema.parties.displayName, 'me'), isNull(schema.parties.externalId))!,
+		{ displayName: 'me', externalId: null }
+	);
 }
 
-function toResolved(row: { id: string; displayName: string | null; externalId: string | null }) {
-	return { id: row.id, displayName: row.displayName, externalId: row.externalId };
+function getOrCreateParty(
+	db: Db,
+	match: SQL,
+	insert: { displayName: string; externalId: string | null }
+): ResolvedParty {
+	const existing = db.select().from(schema.parties).where(match).get();
+	if (existing) {
+		return { id: existing.id, displayName: existing.displayName, externalId: existing.externalId };
+	}
+	const id = nanoid();
+	db.insert(schema.parties).values({ id, ...insert }).run();
+	return { id, ...insert };
 }
 
 /**
