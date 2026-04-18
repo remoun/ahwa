@@ -29,6 +29,13 @@
       "when": 1776491667361,
       "tag": "0004_flippant_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1776494087661,
+      "tag": "0005_typical_shooting_star",
+      "breakpoints": true
     }
   ]
 }

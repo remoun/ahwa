@@ -85,3 +85,19 @@ export const memory = sqliteTable('memory', {
 	content: text('content'),
 	updatedAt: integer('updated_at').$defaultFn(() => Date.now())
 });
+
+/**
+ * Per-day demo-mode token + cost accounting. Primary key is the UTC
+ * date (YYYY-MM-DD) so a single row accumulates across all demo
+ * activity that day, and the bookkeeping resets at midnight UTC by
+ * inserting a fresh row on the first demo of the new day.
+ *
+ * costMicroUsd is a soft estimate (per-million-token average) for
+ * observability; the cap that's actually enforced is on tokens.
+ */
+export const demoUsage = sqliteTable('demo_usage', {
+	dateUtc: text('date_utc').primaryKey(),
+	tokens: integer('tokens').notNull().default(0),
+	costMicroUsd: integer('cost_micro_usd').notNull().default(0),
+	updatedAt: integer('updated_at').$defaultFn(() => Date.now())
+});

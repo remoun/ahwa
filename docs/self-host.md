@@ -109,3 +109,35 @@ applies when the council being run has no explicit `model_config`.
 | `AHWA_SYNTHESIS_MODEL`  | No       | Use a different model for the synthesis turn only (the load-bearing output users act on). If unset, synthesis uses the same model as the persona turns. Example: `anthropic/claude-opus-4.7` on OpenRouter to spend a bit more on synthesis while keeping personas cheaper. |
 
 \*At least one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, or `OLLAMA_BASE_URL` must be set.
+
+### Public-demo mode (only set these for an ahwa.app-style instance)
+
+Most self-hosters do NOT want public-demo mode — it changes `/` from
+"your tables" to a landing page with a public demo CTA, opens
+`/api/demo/tables` to anonymous traffic, and runs a TTL sweep that
+deletes demo tables. Per invariant #11, demo tables are excluded from
+your owned-table queries; they live alongside your data on the same
+SQLite file but are kept separate.
+
+| Variable                           | Default   | Description                                                                                                                 |
+| ---------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `AHWA_PUBLIC_DEMO`                 | unset     | Set to `1` to render `/` as the public-demo landing page. Leave unset for normal self-host behavior.                        |
+| `AHWA_DEMO_DAILY_TOKEN_CAP`        | `500000`  | Hard cap on demo tokens per UTC day. New demos refused (503) once today's pre-charged + reconciled total would exceed this. |
+| `AHWA_DEMO_ESTIMATE_TOKENS`        | `5000`    | Per-demo pre-charge against the cap. Reconciled to actual tokens after the deliberation finishes.                           |
+| `AHWA_DEMO_USD_PER_MILLION_TOKENS` | `0.75`    | $/M tokens used to compute the soft `cost_micro_usd` log alongside the enforced token cap. Adjust to match your demo model. |
+| `AHWA_DEMO_RATE_BURST`             | `5`       | Per-IP rate-limit burst capacity (token-bucket).                                                                            |
+| `AHWA_DEMO_RATE_PER_SECOND`        | `0.0167`  | Per-IP rate-limit refill rate (~1/min).                                                                                     |
+| `AHWA_DEMO_TTL_HOURS`              | `24`      | Demo tables older than this are deleted on each cleanup sweep.                                                              |
+| `AHWA_DEMO_SWEEP_MS`               | `3600000` | Cleanup sweep interval (default: hourly). Set lower in tests if needed.                                                     |
+
+**About the cap math.** Pre-charge is atomic (single SQLite
+transaction) so two parallel demos can't both pass the cap check;
+reconcile fires after the deliberation closes, refunding the
+estimate when actual tokens come in lower (and adding when they
+come in higher). On stream errors / aborts the full pre-charge is
+refunded — failed demos don't drain the cap.
+
+**Demo council.** Demos are pinned to `councils/demo.json` (three
+personas, single round, Claude Haiku 4.5). Caller-supplied council
+IDs are ignored on `/api/demo/tables`. To use a cheaper or different
+model, edit the council's `model_config` field.

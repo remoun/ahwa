@@ -251,6 +251,21 @@
 </svelte:head>
 
 <main class="max-w-3xl mx-auto p-4 sm:p-8">
+	{#if data.table?.isDemo === 1}
+		<!--
+			Demo chrome: invariant #11 says demo tables are second-class —
+			users should never confuse them with owned tables. The amber
+			banner + auto-delete copy makes the disposability explicit.
+		-->
+		<div
+			role="status"
+			class="mb-6 px-4 py-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+		>
+			<strong class="font-semibold">Demo table.</strong> This deliberation auto-deletes within 24
+			hours and is visible to anyone with the link. Self-host Ahwa for
+			<a class="underline" href="https://github.com/remoun/ahwa">private, persistent tables</a>.
+		</div>
+	{/if}
 	<div class="flex items-center justify-between mb-6">
 		<a href="/" class="text-fg-subtle hover:text-fg text-sm transition-colors">← Back to tables</a>
 		{#if view === 'completed'}

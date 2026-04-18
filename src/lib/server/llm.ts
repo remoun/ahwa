@@ -20,15 +20,63 @@ export interface CompleteRequest {
 	modelConfig?: ModelConfig;
 }
 
+/**
+ * Map a persona's system prompt to a short display label, used by both
+ * mock LLMs (this file's mockComplete and tests/helpers.ts mockComplete)
+ * to label their synthetic responses.
+ *
+ * Matchers are intentionally loose — they fire on any persona whose
+ * system prompt contains the keyword, so renaming a persona doesn't
+ * break the mock as long as the role's flavor word remains. Falls
+ * back to the supplied fallback (default "Persona") for prompts that
+ * don't match any known role.
+ */
+export function detectPersonaName(systemPrompt: string, fallback = 'Persona'): string {
+	const prompt = systemPrompt.toLowerCase();
+	if (prompt.includes('elder')) return 'Elder';
+	if (prompt.includes('mirror')) return 'Mirror';
+	if (prompt.includes('engineer') || prompt.includes('systems')) return 'Engineer';
+	if (prompt.includes('weaver') || prompt.includes('relational')) return 'Weaver';
+	if (prompt.includes('instigator') || prompt.includes('agency')) return 'Instigator';
+	if (prompt.includes('synthesiz')) return 'Synthesizer';
+	return fallback;
+}
+
 export interface CompleteResult {
 	textStream: AsyncIterable<string>;
 	/**
-	 * Resolves after the stream ends. `truncated: true` means the model
-	 * hit the output-token cap (maxOutputTokens or similar) and the text
-	 * was cut off mid-generation — the persisted turn should be flagged
-	 * so a later reader knows the response is incomplete.
+	 * Resolves after the stream ends.
+	 *
+	 * - `truncated: true` means the model hit the output-token cap
+	 *   (maxOutputTokens or similar) and the text was cut off mid-
+	 *   generation — the persisted turn should be flagged so a later
+	 *   reader knows the response is incomplete.
+	 * - `totalTokens` is prompt + completion tokens consumed by this
+	 *   single call, surfaced from the underlying SDK. Optional because
+	 *   not every mock provides it; real providers always do. The
+	 *   orchestrator sums this across calls for demo budget reconcile.
 	 */
-	finished: Promise<{ truncated: boolean }>;
+	finished: Promise<{ truncated: boolean; totalTokens?: number }>;
+}
+
+/**
+ * Build a CompleteResult from a list of pre-decided text chunks. Used
+ * by both mock LLMs so the chunks the stream yields and the chunks the
+ * synthetic token count is derived from can never drift apart.
+ *
+ * Token estimate uses the rough rule of ~4 characters per token —
+ * good enough for tests asserting "non-zero usage was summed."
+ */
+export function mockCompleteResult(chunks: string[]): CompleteResult {
+	return {
+		textStream: (async function* () {
+			for (const chunk of chunks) yield chunk;
+		})(),
+		finished: Promise.resolve({
+			truncated: false,
+			totalTokens: Math.ceil(chunks.join('').length / 4)
+		})
+	};
 }
 
 /**
@@ -149,22 +197,8 @@ function mockComplete(request: CompleteRequest): CompleteResult {
 		throw new Error('Mock LLM failure injected via [MOCK_FAIL] marker');
 	}
 
-	const prompt = request.system.toLowerCase();
-	let name = 'Persona';
-	if (prompt.includes('elder')) name = 'Elder';
-	else if (prompt.includes('mirror')) name = 'Mirror';
-	else if (prompt.includes('engineer') || prompt.includes('systems')) name = 'Engineer';
-	else if (prompt.includes('weaver') || prompt.includes('relational')) name = 'Weaver';
-	else if (prompt.includes('instigator') || prompt.includes('agency')) name = 'Instigator';
-	else if (prompt.includes('synthesiz')) name = 'Synthesizer';
-
-	return {
-		textStream: (async function* () {
-			yield `[${name}] `;
-			yield 'This is a mocked response for E2E testing.';
-		})(),
-		finished: Promise.resolve({ truncated: false })
-	};
+	const name = detectPersonaName(request.system);
+	return mockCompleteResult([`[${name}] `, 'This is a mocked response for E2E testing.']);
 }
 
 /**
@@ -208,10 +242,16 @@ export async function complete(request: CompleteRequest): Promise<CompleteResult
 				else if (part.type === 'error') throw part.error;
 			}
 		})(),
-		// result.finishReason is a PromiseLike from the Vercel AI SDK; wrap
-		// to satisfy our CompleteResult.finished: Promise<...> contract.
-		finished: Promise.resolve(result.finishReason).then((reason) => ({
-			truncated: reason === 'length'
+		// result.finishReason / totalUsage are PromiseLike from the Vercel
+		// AI SDK; wrap to satisfy our CompleteResult.finished: Promise<...>
+		// contract. totalTokens is summed across calls by the orchestrator
+		// for demo budget reconciliation.
+		finished: Promise.all([
+			Promise.resolve(result.finishReason),
+			Promise.resolve(result.totalUsage)
+		]).then(([reason, usage]) => ({
+			truncated: reason === 'length',
+			totalTokens: usage?.totalTokens
 		}))
 	};
 }
