@@ -155,10 +155,13 @@ describe('identity.createIdentityHandle', () => {
 			locals: {} as { party?: ReturnType<typeof getPartyFromRequest> }
 		};
 		let sawParty: typeof event.locals.party = undefined;
-		await handle({ event, resolve: () => {
-			sawParty = event.locals.party;
-			return new Response('ok');
-		}});
+		await handle({
+			event,
+			resolve: () => {
+				sawParty = event.locals.party;
+				return new Response('ok');
+			}
+		});
 
 		expect(sawParty?.externalId).toBe('alice');
 		expect(event.locals.party?.externalId).toBe('alice');
