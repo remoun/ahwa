@@ -5,7 +5,6 @@ import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
 import { signShareToken } from './share';
 
-
 /**
  * Hard cap on demo dilemma length. Demos are pinned to a cheap model
  * (see councils/demo.json), share an IP rate limit, and burn against a

@@ -4,7 +4,6 @@ import { createDemoTable } from './demo';
 import { reconcileDemoTokens, tryReserveDemoBudget } from './demo-usage';
 import type { RateLimiter } from './rate-limit';
 
-
 export interface DemoRouteEnv {
 	capTokens: number;
 	estimateTokens: number;

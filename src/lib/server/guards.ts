@@ -4,7 +4,6 @@ import { eq, and } from 'drizzle-orm';
 import * as schema from './db/schema';
 import { verifyShareToken } from './share';
 
-
 export interface GuardError {
 	ok: false;
 	status: number;

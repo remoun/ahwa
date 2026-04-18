@@ -3,7 +3,6 @@ import type { DB } from './db';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import * as schema from './db/schema';
 
-
 export interface CleanupInput {
 	db: DB;
 	ttlHours: number;

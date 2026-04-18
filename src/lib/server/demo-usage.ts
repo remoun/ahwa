@@ -3,7 +3,6 @@ import type { DB } from './db';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from './db/schema';
 
-
 /**
  * Default per-million-token cost estimate in USD. A blended rate that
  * roughly matches Claude Haiku 4.5 ($0.25/M input + $1.25/M output) at

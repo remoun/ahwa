@@ -4,7 +4,6 @@ import { and, eq, isNull, type SQL } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
 
-
 /**
  * Identity resolution config. trustIdentity is opt-in (defaults off) so a
  * misconfigured reverse proxy can't make spoofed user headers honored. The

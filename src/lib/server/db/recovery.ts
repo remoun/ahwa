@@ -3,7 +3,6 @@ import type { DB } from '.';
 import { eq } from 'drizzle-orm';
 import * as schema from './schema';
 
-
 /**
  * Mark any tables stuck in 'running' as 'failed' on startup.
  *

@@ -3,7 +3,6 @@ import type { DB } from './db';
 import type { SseEvent } from '../schemas/events';
 import { reconcileDemoTokens } from './demo-usage';
 
-
 export interface ReconcileWrapperContext {
 	db: DB;
 	isDemo: boolean;
