@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { getDb } from '$lib/server/db';
+import { withDemoReconcile } from '$lib/server/demo-reconcile';
 import { validateDeliberationRequest } from '$lib/server/guards';
 import { runDeliberation } from '$lib/server/orchestrator';
 import { toSseStream } from '$lib/server/sse';
-import { withDemoReconcile } from '$lib/server/demo-reconcile';
 import { errorMessage } from '$lib/util';
+
 import type { RequestHandler } from './$types';
 
 // Same env defaults as src/routes/api/demo/tables/+server.ts. The

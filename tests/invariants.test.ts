@@ -4,8 +4,9 @@
  * M3 (two-party, memory) and M4 (sync) cheap to add later.
  * CLAUDE.md: "These are the invariant-protecting tests; they matter most."
  */
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { eq, like } from 'drizzle-orm';
+
 import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
 import { createTestDb, type TestDb } from './helpers';

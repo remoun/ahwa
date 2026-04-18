@@ -4,7 +4,7 @@
 // Run via `bun run test:e2e:smoke` with BASE_URL pointing at the target.
 // The regular e2e suite uses a mock LLM and stays sub-second; this spec
 // hits the real provider and takes ~60-90s per run — keep it narrow.
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test('UI drives a full deliberation against the real provider', async ({ page }) => {
 	// The deliberation itself can take ~60-90s against the real LLM.

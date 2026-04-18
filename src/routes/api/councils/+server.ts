@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import * as schema from '$lib/server/db/schema';
-import { listHandler, createHandler } from '$lib/server/crud';
-import { CouncilBodySchema, type CouncilBody } from '$lib/schemas/council';
+import { type CouncilBody, CouncilBodySchema } from '$lib/schemas/council';
 import { councilRow } from '$lib/server/council-row';
+import { createHandler, listHandler } from '$lib/server/crud';
+import * as schema from '$lib/server/db/schema';
+
 import type { RequestHandler } from './$types';
 
 const config = {

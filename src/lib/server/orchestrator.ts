@@ -2,17 +2,18 @@
 import { eq } from 'drizzle-orm';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { nanoid } from 'nanoid';
-import {
-	complete as defaultComplete,
-	resolveCouncilModelConfig,
-	resolveModelConfig,
-	type CompleteRequest,
-	type CompleteResult
-} from './llm';
-import { filterPersonas } from './features';
+
+import type { SseEvent } from '../schemas/events';
 import { errorMessage } from '../util';
 import * as schema from './db/schema';
-import type { SseEvent } from '../schemas/events';
+import { filterPersonas } from './features';
+import {
+	complete as defaultComplete,
+	type CompleteRequest,
+	type CompleteResult,
+	resolveCouncilModelConfig,
+	resolveModelConfig
+} from './llm';
 
 type DB = BunSQLiteDatabase<typeof schema>;
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+
 import { CouncilSchema, PersonaSchema } from '../../schemas/council';
-import { parseJsonSafe } from '../parse';
 import { councilRow } from '../council-row';
+import { parseJsonSafe } from '../parse';
 import { personaRow } from '../persona-row';
 import * as schema from './schema';
 

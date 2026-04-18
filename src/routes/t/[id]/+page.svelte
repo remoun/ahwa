@@ -1,10 +1,12 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import TurnCard from '$lib/components/TurnCard.svelte';
+
 	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
-	import { consumeSseStream } from '$lib/sse-client';
+	import TurnCard from '$lib/components/TurnCard.svelte';
 	import type { SseEvent } from '$lib/schemas/events';
+	import { consumeSseStream } from '$lib/sse-client';
+
 	import type { PageData } from './$types';
 
 	/** Display labels per round kind; unknown kinds fall back to title-case. */

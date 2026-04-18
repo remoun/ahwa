@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { z } from 'zod';
+
 import { parseJson, parseJsonSafe } from '../src/lib/server/parse';
 
 const Schema = z.object({ name: z.string(), count: z.number() });

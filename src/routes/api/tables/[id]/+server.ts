@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { json } from '@sveltejs/kit';
-import { eq, and, asc } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
+
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
+
 import type { RequestHandler } from './$types';
 
 /**

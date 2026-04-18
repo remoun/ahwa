@@ -4,14 +4,15 @@
  * sequence → verify DB state. Covers the orchestrator, API layer behavior,
  * export, and CRUD invariants. Mocked LLM per CLAUDE.md.
  */
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
+
+import type { SseEvent } from '../src/lib/schemas/events';
 import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
-import { runDeliberation } from '../src/lib/server/orchestrator';
 import { generateMarkdown } from '../src/lib/server/export';
 import { filterPersonas } from '../src/lib/server/features';
-import type { SseEvent } from '../src/lib/schemas/events';
+import { runDeliberation } from '../src/lib/server/orchestrator';
 import { createTestDb, mockComplete, type TestDb } from './helpers';
 
 describe('e2e: full deliberation with real councils', () => {

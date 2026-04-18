@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect } from 'bun:test';
-import { expandCouncilPersonas, attachPersonaMeta } from '../src/lib/server/councils';
+import { describe, expect, it } from 'bun:test';
+
+import { attachPersonaMeta, expandCouncilPersonas } from '../src/lib/server/councils';
 
 describe('expandCouncilPersonas', () => {
 	const allPersonas = [

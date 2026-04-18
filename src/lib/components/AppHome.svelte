@@ -1,8 +1,9 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import TableCard from './TableCard.svelte';
+
 	import type { PageData } from '../../routes/$types';
+	import TableCard from './TableCard.svelte';
 
 	// Self-hosted home: dilemma form + your tables. Rendered by
 	// src/routes/+page.svelte when AHWA_PUBLIC_DEMO is unset (the

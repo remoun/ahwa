@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
+
+import type { SseEvent } from '../src/lib/schemas/events';
 import * as schema from '../src/lib/server/db/schema';
 import { runDeliberation } from '../src/lib/server/orchestrator';
-import type { SseEvent } from '../src/lib/schemas/events';
+import { createTable, seedMiniCouncil } from './fixtures';
 import { createTestDb, mockComplete, type TestDb } from './helpers';
-import { seedMiniCouncil, createTable } from './fixtures';
 
 describe('orchestrator', () => {
 	let db: TestDb;

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
-import { createTestDb } from './helpers';
+
 import * as schema from '../src/lib/server/db/schema';
 import {
 	createIdentityHandle,
 	getPartyFromRequest,
 	readIdentityEnv
 } from '../src/lib/server/identity';
+import { createTestDb } from './helpers';
 
 function makeRequest(headers: Record<string, string> = {}): Request {
 	return new Request('http://localhost/', { headers });

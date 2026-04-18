@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
+
 import * as schema from '../src/lib/server/db/schema';
-import { createTestDb, type TestDb } from './helpers';
-import { createRateLimiter } from '../src/lib/server/rate-limit';
-import { getDemoUsageToday } from '../src/lib/server/demo-usage';
 import { createDemoRouteHandler } from '../src/lib/server/demo-route';
+import { getDemoUsageToday } from '../src/lib/server/demo-usage';
+import { createRateLimiter } from '../src/lib/server/rate-limit';
+import { createTestDb, type TestDb } from './helpers';
 
 function seedDemoCouncil(db: TestDb) {
 	db.insert(schema.councils)

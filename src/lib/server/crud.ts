@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
 import type { SQLiteTableWithColumns } from 'drizzle-orm/sqlite-core';
+import { nanoid } from 'nanoid';
 import type { ZodType } from 'zod';
+
 import { getDb } from './db';
 
 export interface CrudConfig {

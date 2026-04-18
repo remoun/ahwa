@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { streamText } from 'ai';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider-v2';
 
 export type ProviderName = 'anthropic' | 'openai' | 'openrouter' | 'ollama';
