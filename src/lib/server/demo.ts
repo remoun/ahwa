@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { DB } from './db';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
 import { signShareToken } from './share';
 
-type DB = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Hard cap on demo dilemma length. Demos are pinned to a cheap model

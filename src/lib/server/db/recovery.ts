@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import type { DB } from '.';
 import { eq } from 'drizzle-orm';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import * as schema from './schema';
 
-type DB = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Mark any tables stuck in 'running' as 'failed' on startup.

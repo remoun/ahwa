@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { DB } from './db';
 import { and, eq, isNull, type SQL } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
 
-type DB = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Identity resolution config. trustIdentity is opt-in (defaults off) so a

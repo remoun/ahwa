@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { DB } from './db';
 import * as schema from './db/schema';
 import { createDemoTable } from './demo';
 import { reconcileDemoTokens, tryReserveDemoBudget } from './demo-usage';
 import type { RateLimiter } from './rate-limit';
 
-type DB = BunSQLiteDatabase<typeof schema>;
 
 export interface DemoRouteEnv {
 	capTokens: number;

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import type { DB } from './db';
 import { eq, and } from 'drizzle-orm';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import * as schema from './db/schema';
 import { verifyShareToken } from './share';
 
-type DB = BunSQLiteDatabase<typeof schema>;
 
 export interface GuardError {
 	ok: false;
