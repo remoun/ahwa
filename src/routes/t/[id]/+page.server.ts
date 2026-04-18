@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq, asc, inArray } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import { loadOrFail } from '$lib/server/load';
 import { attachPersonaMeta } from '$lib/server/councils';
 import * as schema from '$lib/server/db/schema';
@@ -12,6 +12,7 @@ export const load: PageServerLoad = ({ params, url }) =>
 		const partyId = url.searchParams.get('party') ?? '';
 		const token = url.searchParams.get('token') ?? '';
 
+		const db = getDb();
 		const table = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
 
 		if (!table) {

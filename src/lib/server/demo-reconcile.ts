@@ -4,10 +4,10 @@ import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
 import { reconcileDemoTokens } from './demo-usage';
 
-type Db = BunSQLiteDatabase<typeof schema>;
+type DB = BunSQLiteDatabase<typeof schema>;
 
 export interface ReconcileWrapperContext {
-	db: Db;
+	db: DB;
 	isDemo: boolean;
 	estimateTokens: number;
 	now?: () => number;

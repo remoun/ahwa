@@ -3,10 +3,10 @@ import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import * as schema from './db/schema';
 
-type Db = BunSQLiteDatabase<typeof schema>;
+type DB = BunSQLiteDatabase<typeof schema>;
 
 export interface CleanupInput {
-	db: Db;
+	db: DB;
 	ttlHours: number;
 	now?: () => number;
 }

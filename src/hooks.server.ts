@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import { cleanupExpiredDemoTables } from '$lib/server/demo-cleanup';
 import { createIdentityHandle, readIdentityEnv } from '$lib/server/identity';
 
@@ -7,7 +7,7 @@ import { createIdentityHandle, readIdentityEnv } from '$lib/server/identity';
 // the result of readIdentityEnv is a tiny config object.
 const identityEnv = readIdentityEnv(process.env);
 
-export const handle = createIdentityHandle({ db, env: identityEnv });
+export const handle = createIdentityHandle({ getDb, env: identityEnv });
 
 // ---------------------------------------------------------------------
 // Demo TTL sweep — runs once per process at startup.
@@ -25,7 +25,7 @@ setInterval(() => {
 	if (cleanupInFlight) return;
 	cleanupInFlight = true;
 	try {
-		const removed = cleanupExpiredDemoTables({ db, ttlHours: TTL_HOURS });
+		const removed = cleanupExpiredDemoTables({ db: getDb(), ttlHours: TTL_HOURS });
 		if (removed > 0) console.log(`demo: cleaned up ${removed} expired table(s)`);
 	} catch (err) {
 		console.error('demo: cleanup failed', err);

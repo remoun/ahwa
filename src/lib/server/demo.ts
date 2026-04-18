@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
 import { signShareToken } from './share';
 
-type Db = BunSQLiteDatabase<typeof schema>;
+type DB = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Hard cap on demo dilemma length. Demos are pinned to a cheap model
@@ -20,7 +20,7 @@ export const MAX_DEMO_DILEMMA_LEN = 1000;
 export const DEMO_COUNCIL_ID = 'demo';
 
 export interface CreateDemoTableInput {
-	db: Db;
+	db: DB;
 	dilemma: string;
 }
 

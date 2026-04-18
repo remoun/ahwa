@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import { validateDeliberationRequest } from '$lib/server/guards';
 import { runDeliberation } from '$lib/server/orchestrator';
 import { toSseStream } from '$lib/server/sse';
@@ -19,6 +19,7 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
 		const partyId = url.searchParams.get('party');
 		const token = url.searchParams.get('token');
 
+		const db = getDb();
 		const guard = validateDeliberationRequest(db, tableId, partyId, token);
 		if (!guard.ok) {
 			return new Response(JSON.stringify({ error: guard.message }), {

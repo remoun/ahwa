@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { listHandler, createHandler } from '$lib/server/crud';
 import { CouncilBodySchema, type CouncilBody } from '$lib/schemas/council';
@@ -7,7 +6,6 @@ import { councilRow } from '$lib/server/council-row';
 import type { RequestHandler } from './$types';
 
 const config = {
-	db,
 	table: schema.councils,
 	bodySchema: CouncilBodySchema,
 	toValues: (body: CouncilBody, id: string) => ({

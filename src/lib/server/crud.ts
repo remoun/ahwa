@@ -2,15 +2,11 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { SQLiteTableWithColumns } from 'drizzle-orm/sqlite-core';
 import type { ZodType } from 'zod';
-import * as allSchema from './db/schema';
-
-type Db = BunSQLiteDatabase<typeof allSchema>;
+import { getDb } from './db';
 
 export interface CrudConfig {
-	db: Db;
 	/** The Drizzle table definition */
 	table: SQLiteTableWithColumns<any>;
 	/** Zod schema for validating create/update request bodies */
@@ -26,7 +22,7 @@ export interface CrudConfig {
 /** Create a list handler (GET) */
 export function listHandler(config: CrudConfig) {
 	return async () => {
-		const rows = config.db.select().from(config.table).all();
+		const rows = getDb().select().from(config.table).all();
 		return json(rows);
 	};
 }
@@ -34,7 +30,7 @@ export function listHandler(config: CrudConfig) {
 /** Create a get-by-id handler (GET /:id) */
 export function getHandler(config: CrudConfig) {
 	return async ({ params }: { params: { id: string } }) => {
-		const row = config.db
+		const row = getDb()
 			.select()
 			.from(config.table)
 			.where(eq((config.table as any).id, params.id))
@@ -61,7 +57,7 @@ export function createHandler(config: CrudConfig) {
 		const id = nanoid();
 		const values = config.toValues(result.data, id);
 
-		config.db.insert(config.table).values(values).run();
+		getDb().insert(config.table).values(values).run();
 
 		return json({ id, ...values }, { status: 201 });
 	};
@@ -70,7 +66,7 @@ export function createHandler(config: CrudConfig) {
 /** Create an update handler (PUT /:id) */
 export function updateHandler(config: CrudConfig) {
 	return async ({ params, request }: { params: { id: string }; request: Request }) => {
-		const existing = config.db
+		const existing = getDb()
 			.select()
 			.from(config.table)
 			.where(eq((config.table as any).id, params.id))
@@ -93,7 +89,7 @@ export function updateHandler(config: CrudConfig) {
 		}
 
 		const values = config.toUpdateValues(result.data);
-		config.db
+		getDb()
 			.update(config.table)
 			.set(values)
 			.where(eq((config.table as any).id, params.id))
@@ -106,7 +102,7 @@ export function updateHandler(config: CrudConfig) {
 /** Create a delete handler (DELETE /:id) */
 export function deleteHandler(config: CrudConfig) {
 	return async ({ params }: { params: { id: string } }) => {
-		const existing = config.db
+		const existing = getDb()
 			.select()
 			.from(config.table)
 			.where(eq((config.table as any).id, params.id))
@@ -129,7 +125,7 @@ export function deleteHandler(config: CrudConfig) {
 			}
 		}
 
-		config.db
+		getDb()
 			.delete(config.table)
 			.where(eq((config.table as any).id, params.id))
 			.run();

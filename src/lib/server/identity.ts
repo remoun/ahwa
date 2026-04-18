@@ -4,7 +4,7 @@ import { and, eq, isNull, type SQL } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import * as schema from './db/schema';
 
-type Db = BunSQLiteDatabase<typeof schema>;
+type DB = BunSQLiteDatabase<typeof schema>;
 
 /**
  * Identity resolution config. trustIdentity is opt-in (defaults off) so a
@@ -31,7 +31,7 @@ export function readIdentityEnv(env: Record<string, string | undefined>): Identi
 }
 
 export interface IdentityDeps {
-	db: Db;
+	db: DB;
 	env: IdentityEnv;
 }
 
@@ -59,14 +59,14 @@ export function getPartyFromRequest(request: Request, deps: IdentityDeps): Resol
 	return getOrCreateMeParty(db);
 }
 
-function getOrCreateExternalParty(db: Db, externalId: string): ResolvedParty {
+function getOrCreateExternalParty(db: DB, externalId: string): ResolvedParty {
 	return getOrCreateParty(db, eq(schema.parties.externalId, externalId), {
 		displayName: externalId,
 		externalId
 	});
 }
 
-function getOrCreateMeParty(db: Db): ResolvedParty {
+function getOrCreateMeParty(db: DB): ResolvedParty {
 	return getOrCreateParty(
 		db,
 		and(eq(schema.parties.displayName, 'me'), isNull(schema.parties.externalId))!,
@@ -75,7 +75,7 @@ function getOrCreateMeParty(db: Db): ResolvedParty {
 }
 
 function getOrCreateParty(
-	db: Db,
+	db: DB,
 	match: SQL,
 	insert: { displayName: string; externalId: string | null }
 ): ResolvedParty {
@@ -98,7 +98,7 @@ function getOrCreateParty(
  * Factored as a factory so it's testable with a mock DB; the production
  * hook in src/hooks.server.ts wires it to the singleton DB + process.env.
  */
-export function createIdentityHandle(deps: IdentityDeps) {
+export function createIdentityHandle(opts: { getDb: () => DB; env: IdentityEnv }) {
 	return async ({
 		event,
 		resolve
@@ -106,7 +106,7 @@ export function createIdentityHandle(deps: IdentityDeps) {
 		event: { request: Request; locals: { party?: ResolvedParty } };
 		resolve: (event: unknown) => Response | Promise<Response>;
 	}): Promise<Response> => {
-		event.locals.party = getPartyFromRequest(event.request, deps);
+		event.locals.party = getPartyFromRequest(event.request, { db: opts.getDb(), env: opts.env });
 		return resolve(event);
 	};
 }

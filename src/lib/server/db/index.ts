@@ -2,30 +2,39 @@
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { mkdirSync } from 'fs';
+import { ensureMigrated } from './migrate-runner';
+import { recoverOrphanedTables } from './recovery';
 import * as schema from './schema';
 import { seedFromDisk } from './seed';
-import { recoverOrphanedTables } from './recovery';
-import { ensureMigrated } from './migrate-runner';
 
-const dataDir = process.env.AHWA_DATA_DIR ?? './data';
-mkdirSync(dataDir, { recursive: true });
-const dbPath = `${dataDir}/ahwa.db`;
+// Lazy because SvelteKit's bundler imports server modules during
+// `bun run build` to extract handlers. Doing the mkdir/open/migrate
+// dance at module top-level created an orphan ./data/ahwa.db at the
+// build cwd. getDb() defers all work until first runtime call.
+type DB = ReturnType<typeof drizzle<typeof schema>>;
+let _db: DB | null = null;
 
-const client = new Database(dbPath, { create: true });
-client.exec('PRAGMA journal_mode=WAL');
+function initDb(): DB {
+	const dataDir = process.env.AHWA_DATA_DIR ?? './data';
+	mkdirSync(dataDir, { recursive: true });
+	const dbPath = `${dataDir}/ahwa.db`;
 
-export const db = drizzle(client, { schema });
+	const client = new Database(dbPath, { create: true });
+	client.exec('PRAGMA journal_mode=WAL');
 
-// Bring schema up to date via drizzle-kit migrations.
-ensureMigrated(db);
+	const d = drizzle(client, { schema });
 
-// Seed councils and personas from JSON files on startup
-seedFromDisk(db);
+	ensureMigrated(d);
+	seedFromDisk(d);
 
-// Recover orphaned tables from a previous process (crashed mid-deliberation).
-// Any table still in 'running' state at startup is an orphan — the orchestrator
-// that was processing it no longer exists. Mark them failed.
-const recovered = recoverOrphanedTables(db);
-if (recovered > 0) {
-	console.warn(`recovery: marked ${recovered} orphaned 'running' table(s) as 'failed'`);
+	const recovered = recoverOrphanedTables(d);
+	if (recovered > 0) {
+		console.warn(`recovery: marked ${recovered} orphaned 'running' table(s) as 'failed'`);
+	}
+
+	return d;
+}
+
+export function getDb(): DB {
+	return (_db ??= initDb());
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { eq, desc } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { getDb } from '$lib/server/db';
 import { loadOrFail } from '$lib/server/load';
 import { signShareToken } from '$lib/server/share';
 import { expandCouncilPersonas } from '$lib/server/councils';
@@ -21,6 +21,7 @@ export const load: PageServerLoad = () =>
 			return { mode: 'demo' as const };
 		}
 
+		const db = getDb();
 		const tables = db
 			.select()
 			.from(schema.tables)

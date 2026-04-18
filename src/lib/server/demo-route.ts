@@ -5,7 +5,7 @@ import { createDemoTable } from './demo';
 import { reconcileDemoTokens, tryReserveDemoBudget } from './demo-usage';
 import type { RateLimiter } from './rate-limit';
 
-type Db = BunSQLiteDatabase<typeof schema>;
+type DB = BunSQLiteDatabase<typeof schema>;
 
 export interface DemoRouteEnv {
 	capTokens: number;
@@ -14,7 +14,7 @@ export interface DemoRouteEnv {
 }
 
 export interface DemoRouteDeps {
-	db: Db;
+	getDb: () => DB;
 	env: DemoRouteEnv;
 	rateLimiter: RateLimiter;
 	now?: () => number;
@@ -30,9 +30,10 @@ export interface DemoRouteDeps {
  * so we don't insert a row we'd then have to delete on cap-overflow.
  */
 export function createDemoRouteHandler(deps: DemoRouteDeps) {
-	const { db, env, rateLimiter, now } = deps;
+	const { env, rateLimiter, now } = deps;
 
 	return async function handle(request: Request): Promise<Response> {
+		const db = deps.getDb();
 		// 1. Rate limit by IP (X-Forwarded-For first hop, "unknown" if absent)
 		const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
 		if (!rateLimiter.tryConsume(ip)) {

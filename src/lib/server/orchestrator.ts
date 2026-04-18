@@ -14,7 +14,7 @@ import { errorMessage } from '../util';
 import * as schema from './db/schema';
 import type { SseEvent } from '../schemas/events';
 
-type Db = BunSQLiteDatabase<typeof schema>;
+type DB = BunSQLiteDatabase<typeof schema>;
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
 
 export interface DeliberationRequest {
@@ -38,7 +38,7 @@ interface RoundDef {
  * The caller (SSE endpoint) iterates and serializes each event.
  */
 export async function* runDeliberation(
-	db: Db,
+	db: DB,
 	request: DeliberationRequest
 ): AsyncGenerator<SseEvent> {
 	const { tableId, dilemma, councilId, partyId, completeFn = defaultComplete, signal } = request;

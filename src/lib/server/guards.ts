@@ -4,7 +4,7 @@ import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import * as schema from './db/schema';
 import { verifyShareToken } from './share';
 
-type Db = BunSQLiteDatabase<typeof schema>;
+type DB = BunSQLiteDatabase<typeof schema>;
 
 export interface GuardError {
 	ok: false;
@@ -26,7 +26,7 @@ export interface GuardSuccess {
  * hit a pending table simultaneously, exactly one wins.
  */
 export function validateDeliberationRequest(
-	db: Db,
+	db: DB,
 	tableId: string,
 	partyId: string | null,
 	token: string | null = null

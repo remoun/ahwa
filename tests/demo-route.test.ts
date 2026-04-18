@@ -39,7 +39,7 @@ describe('demo-route.createDemoRouteHandler', () => {
 	function makeHandler(overrides: Partial<{ capTokens: number; estimateTokens: number }> = {}) {
 		const rateLimiter = createRateLimiter({ capacity: 5, refillPerSecond: 1, now: clock });
 		return createDemoRouteHandler({
-			db,
+			getDb: () => db,
 			env: { ...env, ...overrides },
 			rateLimiter,
 			now: clock
