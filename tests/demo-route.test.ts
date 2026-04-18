@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import * as schema from '../src/lib/server/db/schema';
 import { createTestDb, type TestDb } from './helpers';
 import { createRateLimiter } from '../src/lib/server/rate-limit';
-import { recordDemoTokens, getDemoUsageToday } from '../src/lib/server/demo-usage';
+import { getDemoUsageToday } from '../src/lib/server/demo-usage';
 import { createDemoRouteHandler } from '../src/lib/server/demo-route';
 
 function seedDemoCouncil(db: TestDb) {
