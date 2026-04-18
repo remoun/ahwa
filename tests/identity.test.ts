@@ -150,11 +150,12 @@ describe('identity.createIdentityHandle', () => {
 		const env = { trustIdentity: true, headerName: 'x-remote-user' };
 		const handle = createIdentityHandle({ db, env });
 
+		type Resolved = ReturnType<typeof getPartyFromRequest>;
 		const event = {
 			request: makeRequest({ 'x-remote-user': 'alice' }),
-			locals: {} as { party?: ReturnType<typeof getPartyFromRequest> }
+			locals: {} as { party?: Resolved }
 		};
-		let sawParty: typeof event.locals.party = undefined;
+		let sawParty: Resolved | undefined;
 		await handle({
 			event,
 			resolve: () => {
