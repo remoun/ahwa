@@ -17,10 +17,7 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # bun run lint chains js + bash + yunohost linters. Only lint:js runs
-      # here — lint:bash and lint:yunohost have their own jobs in
-      # .github/workflows/yunohost.yml with the tools they need.
-      - run: bun run lint:js
+      - run: bun run lint
 
       - run: bun test
 

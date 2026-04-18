@@ -3,7 +3,7 @@ name: Setup Bun
 description: >
   Installs the Bun version pinned in .bun-version at the repo root.
   Single source of truth shared with packaging/docker/Dockerfile (via
-  --build-arg) and packaging/yunohost/scripts/_common.sh (via cat).
+  --build-arg) and the YunoHost packaging at remoun/ahwa_ynh.
   Bumping .bun-version updates every deployment path.
 
 runs:

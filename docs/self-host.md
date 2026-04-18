@@ -29,6 +29,19 @@ docker compose up -d
 
 Ahwa is now running at `http://localhost:3000`.
 
+## YunoHost
+
+Install via the dedicated packaging repo:
+
+```bash
+sudo yunohost app install https://github.com/remoun/ahwa_ynh
+```
+
+SSO is wired through SSOwat — log in via the YunoHost portal and
+the resulting party gets your YNH user as its identity. See
+[ahwa_ynh](https://github.com/remoun/ahwa_ynh) for the package
+sources, dev loop, and CI.
+
 ## From source
 
 ```bash
@@ -74,11 +87,11 @@ Ahwa is stopped, or use SQLite's `.backup` command for a hot backup.
 
 Set `AHWA_DATA_DIR` to control where the database lives:
 
-| Environment         | Default                       |
-| ------------------- | ----------------------------- |
-| Dev (`bun run dev`) | `./data`                      |
-| Docker              | `/data` (mounted as a volume) |
-| YunoHost            | Set by install script         |
+| Environment         | Default                                                                    |
+| ------------------- | -------------------------------------------------------------------------- |
+| Dev (`bun run dev`) | `./data`                                                                   |
+| Docker              | `/data` (mounted as a volume)                                              |
+| YunoHost            | Set by install script (see [ahwa_ynh](https://github.com/remoun/ahwa_ynh)) |
 
 ## Environment variables
 

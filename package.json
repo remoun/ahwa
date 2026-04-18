@@ -42,10 +42,7 @@
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:smoke": "playwright test --config=playwright.smoke.config.ts",
-		"lint": "bun run lint:js && bun run lint:bash && bun run lint:yunohost",
-		"lint:js": "eslint . && prettier --check .",
-		"lint:bash": "shellcheck -e SC1091,SC2154 packaging/yunohost/scripts/*",
-		"lint:yunohost": "make -C packaging/yunohost lint",
+		"lint": "eslint . && prettier --check .",
 		"format": "prettier --write ."
 	},
 	"type": "module",
