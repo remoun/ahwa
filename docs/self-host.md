@@ -87,10 +87,10 @@ Ahwa is stopped, or use SQLite's `.backup` command for a hot backup.
 
 Set `AHWA_DATA_DIR` to control where the database lives:
 
-| Environment         | Default                       |
-| ------------------- | ----------------------------- |
-| Dev (`bun run dev`) | `./data`                      |
-| Docker              | `/data` (mounted as a volume) |
+| Environment         | Default                                                                    |
+| ------------------- | -------------------------------------------------------------------------- |
+| Dev (`bun run dev`) | `./data`                                                                   |
+| Docker              | `/data` (mounted as a volume)                                              |
 | YunoHost            | Set by install script (see [ahwa_ynh](https://github.com/remoun/ahwa_ynh)) |
 
 ## Environment variables
