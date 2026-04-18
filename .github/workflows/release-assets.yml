@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Builds a "ready-to-run" tarball (build/ + package.json + bun.lock +
+# .bun-version) and attaches it to the GitHub release as an asset. The
+# YunoHost package pins to this asset's URL, so installs become
+# "untar + bun install --production" — no `bun run build` on a 1GB-RAM
+# LXC container, which used to take ~2-3 min.
+#
+# Triggered automatically when release-please cuts a release. Also
+# exposed via workflow_dispatch so we can rebuild assets for an
+# already-published tag (e.g. if this workflow itself was buggy when
+# the release was first cut).
+name: release-assets
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build assets for (e.g. v0.1.1)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-attach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - uses: ./.github/actions/setup-bun
+
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Pack the runnable tarball
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          name="ahwa-build-${TAG}.tar.gz"
+          # The tarball contains everything an installer needs to:
+          #   1. bun install --production --frozen-lockfile
+          #   2. systemd-run build/index.js
+          # No source tree, no devDeps, no .git. Lockfile + bun-version
+          # ensure the prod install is reproducible.
+          tar -czf "$name" build/ package.json bun.lock .bun-version
+          ls -lh "$name"
+          shasum -a 256 "$name"
+
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          gh release upload "$TAG" "ahwa-build-${TAG}.tar.gz" --clobber
