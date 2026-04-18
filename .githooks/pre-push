@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Block pushes that fail `bun run lint`. Catches prettier/eslint regressions
+# before they hit CI and turn a PR red. Bypass with `git push --no-verify`.
+set -euo pipefail
+exec </dev/tty 2>/dev/null || true
+echo "→ pre-push: bun run lint"
+if ! bun run lint; then
+  echo "✘ lint failed — fix or push with --no-verify to skip" >&2
+  exit 1
+fi
