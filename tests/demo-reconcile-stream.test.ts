@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it, expect, beforeEach } from 'bun:test';
-import * as schema from '../src/lib/server/db/schema';
 import type { SseEvent } from '../src/lib/schemas/events';
 import { createTestDb, type TestDb } from './helpers';
 import { tryReserveDemoBudget, getDemoUsageToday } from '../src/lib/server/demo-usage';
