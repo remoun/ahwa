@@ -38,11 +38,10 @@
 
 <main class="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
 	<section class="mb-14">
-		<h1 class="font-display text-5xl sm:text-6xl text-fg leading-tight mb-4">Ahwa</h1>
-		<p class="font-display text-xl sm:text-2xl text-fg-muted leading-relaxed mb-4">
+		<h1 class="font-display text-3xl sm:text-4xl text-fg leading-tight mb-4">
 			Private AI deliberation rooms. Convene a small council of personas to think through a dilemma
 			that doesn't fit a one-shot answer.
-		</p>
+		</h1>
 		<p class="text-base sm:text-lg text-fg-muted leading-relaxed italic">
 			Like a few sharp friends arguing your dilemma out loud — none of them in a hurry to agree.
 		</p>
