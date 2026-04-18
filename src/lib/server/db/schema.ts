@@ -7,6 +7,10 @@ export const parties = sqliteTable('parties', {
 		.primaryKey()
 		.$defaultFn(() => nanoid()),
 	displayName: text('display_name'),
+	// External identity ID (e.g. SSOwat user). Nullable for the legacy
+	// "me" party and any party created without an SSO identity. Unique so
+	// repeat requests for the same external user resolve to the same row.
+	externalId: text('external_id').unique(),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });
 
