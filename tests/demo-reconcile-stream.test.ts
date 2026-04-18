@@ -111,4 +111,106 @@ describe('demo-reconcile.withDemoReconcile', () => {
 		);
 		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(8000);
 	});
+
+	it('refunds the full pre-charge when source throws BEFORE table_closed', async () => {
+		tryReserveDemoBudget({ db, capTokens: 100000, estimateTokens: 5000, now: clock });
+		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(5000);
+
+		const failingSource = (async function* (): AsyncGenerator<SseEvent> {
+			yield { type: 'table_opened', tableId: 'fail' };
+			throw new Error('LLM provider down');
+		})();
+
+		await expect(
+			drain(
+				withDemoReconcile(failingSource, {
+					db,
+					isDemo: true,
+					estimateTokens: 5000,
+					now: clock
+				})
+			)
+		).rejects.toThrow(/LLM provider down/);
+
+		// Full estimate refunded — daily cap is not silently drained.
+		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(0);
+	});
+
+	it('refunds when source ends early without yielding table_closed', async () => {
+		tryReserveDemoBudget({ db, capTokens: 100000, estimateTokens: 5000, now: clock });
+
+		const truncated = (async function* (): AsyncGenerator<SseEvent> {
+			yield { type: 'table_opened', tableId: 't' };
+			yield { type: 'round_started', round: 1, kind: 'opening' };
+			// returns without table_closed (orchestrator abort path)
+		})();
+
+		await drain(
+			withDemoReconcile(truncated, { db, isDemo: true, estimateTokens: 5000, now: clock })
+		);
+
+		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(0);
+	});
+
+	it('does NOT refund on close-without-totalTokens (keeps pre-charge as conservative estimate)', async () => {
+		tryReserveDemoBudget({ db, capTokens: 100000, estimateTokens: 5000, now: clock });
+
+		await drain(
+			withDemoReconcile(source([{ type: 'table_closed' }]), {
+				db,
+				isDemo: true,
+				estimateTokens: 5000,
+				now: clock
+			})
+		);
+
+		// We saw a close but no usage info. Conservative: keep estimate
+		// rather than refund (which would silently under-count if the
+		// provider really did consume tokens).
+		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(5000);
+	});
+
+	it('reconciles BEFORE yielding table_closed (consumer disconnect after close still records)', async () => {
+		tryReserveDemoBudget({ db, capTokens: 100000, estimateTokens: 5000, now: clock });
+
+		const stream = withDemoReconcile(source([{ type: 'table_closed', totalTokens: 7000 }]), {
+			db,
+			isDemo: true,
+			estimateTokens: 5000,
+			now: clock
+		});
+
+		// Pull the table_closed event and then disconnect — emulates an
+		// SSE consumer that closes the connection on the close event.
+		const first = await stream.next();
+		expect(first.value).toMatchObject({ type: 'table_closed', totalTokens: 7000 });
+		await stream.return(undefined);
+
+		// Bookkeeping landed before the yield, so it survives early
+		// disconnect.
+		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(7000);
+	});
+
+	it('does not refund when isDemo=false even on early termination', async () => {
+		tryReserveDemoBudget({ db, capTokens: 100000, estimateTokens: 5000, now: clock });
+
+		const failingSource = (async function* (): AsyncGenerator<SseEvent> {
+			yield { type: 'table_opened', tableId: 'owned' };
+			throw new Error('crash');
+		})();
+
+		await expect(
+			drain(
+				withDemoReconcile(failingSource, {
+					db,
+					isDemo: false,
+					estimateTokens: 5000,
+					now: clock
+				})
+			)
+		).rejects.toThrow(/crash/);
+
+		// Owned table — demo bookkeeping untouched.
+		expect(getDemoUsageToday({ db, now: clock }).tokens).toBe(5000);
+	});
 });
