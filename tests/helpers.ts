@@ -5,7 +5,7 @@ import * as schema from '../src/lib/server/db/schema';
 import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
 
 const DDL = `
-	CREATE TABLE parties (id TEXT PRIMARY KEY, display_name TEXT, created_at INTEGER);
+	CREATE TABLE parties (id TEXT PRIMARY KEY, display_name TEXT, external_id TEXT UNIQUE, created_at INTEGER);
 	CREATE TABLE tables (id TEXT PRIMARY KEY, title TEXT, dilemma TEXT, council_id TEXT, status TEXT DEFAULT 'pending', synthesis TEXT, error_message TEXT, is_demo INTEGER DEFAULT 0, created_at INTEGER, updated_at INTEGER);
 	CREATE TABLE table_parties (table_id TEXT NOT NULL, party_id TEXT NOT NULL, role TEXT, PRIMARY KEY (table_id, party_id));
 	CREATE TABLE turns (id TEXT PRIMARY KEY, table_id TEXT NOT NULL, round INTEGER NOT NULL, party_id TEXT, persona_name TEXT, text TEXT, visible_to TEXT, truncated INTEGER DEFAULT 0, created_at INTEGER);
