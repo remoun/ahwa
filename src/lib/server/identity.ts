@@ -80,9 +80,8 @@ function getOrCreateParty(
 	insert: { displayName: string; externalId: string | null }
 ): ResolvedParty {
 	const existing = db.select().from(schema.parties).where(match).get();
-	if (existing) {
-		return { id: existing.id, displayName: existing.displayName, externalId: existing.externalId };
-	}
+	if (existing) return existing;
+
 	const id = nanoid();
 	db.insert(schema.parties)
 		.values({ id, ...insert })
