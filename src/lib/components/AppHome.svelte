@@ -65,9 +65,7 @@
 									{#each council.personas as p (p.id)}
 										<span
 											class="inline-flex items-center gap-1 text-xs text-fg-muted"
-											title={p.description
-												? `${p.name ?? ''} — ${p.description}`
-												: (p.name ?? '')}
+											title={p.description ? `${p.name ?? ''} — ${p.description}` : (p.name ?? '')}
 										>
 											<span
 												class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-muted border border-border text-sm"
