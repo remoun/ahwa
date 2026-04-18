@@ -169,7 +169,11 @@ markdown export. The full unit + Playwright suite runs in CI on every push
 markdown export, multi-provider routing (Anthropic/OpenAI/OpenRouter/Ollama),
 Docker packaging, GitHub Actions CI.
 
-**What's next (M2):** public demo at ahwa.app, YunoHost package.
+**M2 (shipped):** public demo at [ahwa.app](https://ahwa.app), YunoHost
+package at [ahwa_ynh](https://github.com/remoun/ahwa_ynh).
+
+**What's next (M3):** per-party memory, two-party mediation, the
+Historian persona.
 
 See [CLAUDE.md](./CLAUDE.md) for the full milestone plan.
 
