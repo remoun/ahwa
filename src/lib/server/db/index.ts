@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Database } from 'bun:sqlite';
-import { type BunSQLiteDatabase,drizzle } from 'drizzle-orm/bun-sqlite';
+import { type BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
 import { mkdirSync } from 'fs';
 
 import { ensureMigrated } from './migrate-runner';
