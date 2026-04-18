@@ -4,6 +4,7 @@ import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
 import {
 	defaultModelFor,
 	detectDefaultProvider,
+	detectPersonaName,
 	getAvailableProviders,
 	resolveModelConfig,
 	type ModelConfig
@@ -220,5 +221,44 @@ describe('defaultModelFor', () => {
 				else process.env[envKey] = saved;
 			}
 		}
+	});
+});
+
+describe('detectPersonaName', () => {
+	it('matches "elder" in any case anywhere in the prompt', () => {
+		expect(detectPersonaName('You are an Elder speaking from...')).toBe('Elder');
+		expect(detectPersonaName('the elder voice')).toBe('Elder');
+	});
+
+	it('matches "engineer" or "systems" → Engineer', () => {
+		expect(detectPersonaName('You are a systems thinker.')).toBe('Engineer');
+		expect(detectPersonaName('You are an engineer.')).toBe('Engineer');
+	});
+
+	it('matches "weaver" or "relational" → Weaver', () => {
+		expect(detectPersonaName('a relational thinker')).toBe('Weaver');
+		expect(detectPersonaName('You are the Weaver.')).toBe('Weaver');
+	});
+
+	it('matches "instigator" or "agency" → Instigator', () => {
+		expect(detectPersonaName('You believe in agency.')).toBe('Instigator');
+		expect(detectPersonaName('You are the Instigator.')).toBe('Instigator');
+	});
+
+	it('matches "synthesiz" → Synthesizer (covers "synthesize" / "synthesizer")', () => {
+		expect(detectPersonaName('You synthesize the deliberation.')).toBe('Synthesizer');
+		expect(detectPersonaName('You are the Synthesizer.')).toBe('Synthesizer');
+	});
+
+	it('returns the supplied fallback for an unrecognized prompt', () => {
+		expect(detectPersonaName('completely off the rails')).toBe('Persona');
+		expect(detectPersonaName('completely off the rails', 'Unknown')).toBe('Unknown');
+	});
+
+	it('first-match-wins on order: elder > engineer > ...', () => {
+		// A prompt that mentions both "elder" and "engineer" gets Elder
+		// because the matcher checks elder first. Documents the precedence
+		// so future renames don't accidentally swap it.
+		expect(detectPersonaName('an elder who is also an engineer')).toBe('Elder');
 	});
 });

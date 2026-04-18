@@ -3,7 +3,11 @@ import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as schema from '../src/lib/server/db/schema';
 import { ensureMigrated } from '../src/lib/server/db/migrate-runner';
-import type { CompleteRequest, CompleteResult } from '../src/lib/server/llm';
+import {
+	detectPersonaName,
+	type CompleteRequest,
+	type CompleteResult
+} from '../src/lib/server/llm';
 
 /**
  * In-memory DB seeded by running the same migrations as production.
@@ -21,15 +25,7 @@ export type TestDb = ReturnType<typeof createTestDb>;
 
 /** Deterministic mock LLM: identifies persona from system prompt, returns labeled response */
 export async function mockComplete(opts: CompleteRequest): Promise<CompleteResult> {
-	const prompt = opts.system.toLowerCase();
-	let name = 'Unknown';
-	if (prompt.includes('elder')) name = 'Elder';
-	else if (prompt.includes('mirror')) name = 'Mirror';
-	else if (prompt.includes('engineer') || prompt.includes('systems')) name = 'Engineer';
-	else if (prompt.includes('weaver') || prompt.includes('relational')) name = 'Weaver';
-	else if (prompt.includes('instigator') || prompt.includes('agency')) name = 'Instigator';
-	else if (prompt.includes('synthesiz')) name = 'Synthesizer';
-
+	const name = detectPersonaName(opts.system, 'Unknown');
 	const text = `[${name}] I have considered this dilemma carefully.`;
 	return {
 		textStream: (async function* () {

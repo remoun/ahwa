@@ -20,6 +20,28 @@ export interface CompleteRequest {
 	modelConfig?: ModelConfig;
 }
 
+/**
+ * Map a persona's system prompt to a short display label, used by both
+ * mock LLMs (this file's mockComplete and tests/helpers.ts mockComplete)
+ * to label their synthetic responses.
+ *
+ * Matchers are intentionally loose — they fire on any persona whose
+ * system prompt contains the keyword, so renaming a persona doesn't
+ * break the mock as long as the role's flavor word remains. Falls
+ * back to the supplied fallback (default "Persona") for prompts that
+ * don't match any known role.
+ */
+export function detectPersonaName(systemPrompt: string, fallback = 'Persona'): string {
+	const prompt = systemPrompt.toLowerCase();
+	if (prompt.includes('elder')) return 'Elder';
+	if (prompt.includes('mirror')) return 'Mirror';
+	if (prompt.includes('engineer') || prompt.includes('systems')) return 'Engineer';
+	if (prompt.includes('weaver') || prompt.includes('relational')) return 'Weaver';
+	if (prompt.includes('instigator') || prompt.includes('agency')) return 'Instigator';
+	if (prompt.includes('synthesiz')) return 'Synthesizer';
+	return fallback;
+}
+
 export interface CompleteResult {
 	textStream: AsyncIterable<string>;
 	/**
@@ -155,15 +177,7 @@ function mockComplete(request: CompleteRequest): CompleteResult {
 		throw new Error('Mock LLM failure injected via [MOCK_FAIL] marker');
 	}
 
-	const prompt = request.system.toLowerCase();
-	let name = 'Persona';
-	if (prompt.includes('elder')) name = 'Elder';
-	else if (prompt.includes('mirror')) name = 'Mirror';
-	else if (prompt.includes('engineer') || prompt.includes('systems')) name = 'Engineer';
-	else if (prompt.includes('weaver') || prompt.includes('relational')) name = 'Weaver';
-	else if (prompt.includes('instigator') || prompt.includes('agency')) name = 'Instigator';
-	else if (prompt.includes('synthesiz')) name = 'Synthesizer';
-
+	const name = detectPersonaName(request.system);
 	const text = `[${name}] This is a mocked response for E2E testing.`;
 	return {
 		textStream: (async function* () {
