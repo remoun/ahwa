@@ -150,11 +150,25 @@ export async function* runDeliberation(
 			else allCallsReportedUsage = false;
 		};
 
+		// Build the round plan. tables.max_rounds (per-table override)
+		// can extend beyond the council's defined rounds — when N >
+		// council.rounds.length, we repeat the last round's prompt for
+		// the extra rounds. Councils define round shape; the operator
+		// decides depth.
+		const definedRounds = roundStructure.rounds;
+		const targetRoundCount = existing.maxRounds && existing.maxRounds > 0
+			? existing.maxRounds
+			: definedRounds.length;
+		const roundPlan: RoundDef[] = [];
+		for (let i = 0; i < targetRoundCount; i++) {
+			roundPlan.push(definedRounds[Math.min(i, definedRounds.length - 1)]);
+		}
+
 		// Run each round. Personas within a round run in parallel; rounds
 		// themselves are serial because each round reads the complete
 		// transcript of prior rounds.
-		for (let roundIdx = 0; roundIdx < roundStructure.rounds.length; roundIdx++) {
-			const round = roundStructure.rounds[roundIdx];
+		for (let roundIdx = 0; roundIdx < roundPlan.length; roundIdx++) {
+			const round = roundPlan[roundIdx];
 
 			// Abort between rounds — mid-round cancellation would orphan
 			// in-flight LLM calls. Between-rounds is the natural seam.

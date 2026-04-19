@@ -714,6 +714,28 @@ describe('orchestrator', () => {
 			expect(table?.status).toBe('running');
 		});
 
+		it('respects tables.max_rounds: 4 rounds when council defines 2', async () => {
+			createTable(db, 'tbl-rounds', 'd', 'test-council', 'party-1');
+			db.update(schema.tables)
+				.set({ maxRounds: 4 })
+				.where(eq(schema.tables.id, 'tbl-rounds'))
+				.run();
+
+			const events: SseEvent[] = [];
+			for await (const e of runDeliberation(db, {
+				tableId: 'tbl-rounds',
+				dilemma: 'd',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				events.push(e);
+			}
+
+			const rounds = events.filter((e) => e.type === 'round_started');
+			expect(rounds).toHaveLength(4);
+		});
+
 		it("marks the running party's runStatus completed at end of run", async () => {
 			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
 			createTable(db, 'tbl-mp3', 'shared dilemma', 'test-council', 'party-1');
