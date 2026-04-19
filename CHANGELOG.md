@@ -4,6 +4,18 @@ All notable changes to Ahwa are documented here. The format is loosely
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project
 aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2](https://github.com/remoun/ahwa/compare/v0.2.1...v0.2.2) (2026-04-19)
+
+
+### Bug Fixes
+
+* **release-assets:** checkout targetCommitish for draft releases ([fa36b66](https://github.com/remoun/ahwa/commit/fa36b66cf76731d98c781bdfa2c50a15067d3fe1))
+* **release-assets:** checkout targetCommitish, not the not-yet-existing tag ([3d381fb](https://github.com/remoun/ahwa/commit/3d381fb8f33fd3897213a0ab18d9cc3f3d160a17))
+* **release-assets:** leave release as draft for manual publish ([f2c1a5c](https://github.com/remoun/ahwa/commit/f2c1a5c92a285b0bfbc2ec4162bab2c3a83a6505))
+* **release-assets:** set GH_REPO env so gh works before checkout ([ded8d47](https://github.com/remoun/ahwa/commit/ded8d4722f81779213c5fd635ba7aa1b4d508afd))
+* **release-assets:** set GH_REPO so gh works before checkout ([b894687](https://github.com/remoun/ahwa/commit/b89468750e021dae16d2f4f260b9010b959cfcc0))
+* **release-assets:** wrap tarball in ahwa-VERSION/ directory ([3235a1d](https://github.com/remoun/ahwa/commit/3235a1d275c0490c7916d897a75f7ea5063b83ec))
+
 ## [0.2.1](https://github.com/remoun/ahwa/compare/v0.2.0...v0.2.1) (2026-04-19)
 
 
