@@ -1,0 +1,1 @@
+ALTER TABLE `table_parties` ADD `run_status` text DEFAULT 'pending';

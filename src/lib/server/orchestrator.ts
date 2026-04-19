@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
-import type { SseEvent } from '../schemas/events';
+import { Events, type SseEvent } from '../schemas/events';
 import { errorMessage } from '../util';
 import type { DB } from './db';
 import * as schema from './db/schema';
@@ -14,6 +14,7 @@ import {
 	resolveCouncilModelConfig,
 	resolveModelConfig
 } from './llm';
+import { publish } from './table-bus';
 
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
 
@@ -91,18 +92,33 @@ export async function* runDeliberation(
 			);
 		}
 
-		// Load party IDs at this table for visible_to. Invariant #8:
-		// in single-party tables, visible_to = [all parties]. When M3 adds
-		// two-party mode, this query still returns the right set — visibility
-		// filtering per-party happens at the read layer, not here.
+		// Invariant #8: in multi-party tables, each party's raw persona
+		// turns are private to that party (and the synthesizer) until an
+		// explicit reveal. In single-party tables, visible_to = [all
+		// parties] (which collapses to [partyId] in practice).
+		// Synthesis turns always go to every party (set further below).
 		const allPartyIds = db
 			.select({ partyId: schema.tableParties.partyId })
 			.from(schema.tableParties)
 			.where(eq(schema.tableParties.tableId, tableId))
 			.all()
 			.map((r) => r.partyId);
-		// Fallback for callers that haven't linked the party yet (shouldn't happen in prod)
-		const visibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
+		const isMultiParty = allPartyIds.length > 1;
+		const visibleTo = isMultiParty ? [partyId] : allPartyIds.length > 0 ? allPartyIds : [partyId];
+		const synthVisibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
+
+		// Load this party's stance — the council reads it as the party's
+		// framing on the dilemma. Single-party tables typically have no
+		// stance (the dilemma is enough); multi-party tables have one
+		// stance per party (gated above).
+		const partyLink = db
+			.select()
+			.from(schema.tableParties)
+			.where(
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
+			)
+			.get();
+		const stance = partyLink?.stance ?? null;
 
 		// Set status to 'running' if it wasn't already (guard may have done it).
 		if (existing.status === 'pending') {
@@ -113,6 +129,10 @@ export async function* runDeliberation(
 		}
 
 		yield { type: 'table_opened', tableId };
+		// Tell every other viewer of this table that this party started
+		// running. Their MultiPartyControls will re-render the badge from
+		// "pending" to "running" on the next bus event tick.
+		publish(tableId, Events.partyRunStarted(partyId));
 
 		// Track all turns for cross-examination context
 		const turnsByRound: Map<number, Array<{ personaName: string; text: string }>> = new Map();
@@ -128,11 +148,24 @@ export async function* runDeliberation(
 			else allCallsReportedUsage = false;
 		};
 
+		// Build the round plan. tables.max_rounds (per-table override)
+		// can extend beyond the council's defined rounds — when N >
+		// council.rounds.length, we repeat the last round's prompt for
+		// the extra rounds. Councils define round shape; the operator
+		// decides depth.
+		const definedRounds = roundStructure.rounds;
+		const targetRoundCount =
+			existing.maxRounds && existing.maxRounds > 0 ? existing.maxRounds : definedRounds.length;
+		const roundPlan: RoundDef[] = [];
+		for (let i = 0; i < targetRoundCount; i++) {
+			roundPlan.push(definedRounds[Math.min(i, definedRounds.length - 1)]);
+		}
+
 		// Run each round. Personas within a round run in parallel; rounds
 		// themselves are serial because each round reads the complete
 		// transcript of prior rounds.
-		for (let roundIdx = 0; roundIdx < roundStructure.rounds.length; roundIdx++) {
-			const round = roundStructure.rounds[roundIdx];
+		for (let roundIdx = 0; roundIdx < roundPlan.length; roundIdx++) {
+			const round = roundPlan[roundIdx];
 
 			// Abort between rounds — mid-round cancellation would orphan
 			// in-flight LLM calls. Between-rounds is the natural seam.
@@ -160,7 +193,7 @@ export async function* runDeliberation(
 			const truncatedFlags: boolean[] = personas.map(() => false);
 			const personaStreams = personas.map((persona, idx) =>
 				(async function* (): AsyncGenerator<SseEvent> {
-					const messages = buildMessages(dilemma, round, roundIdx, turnsByRound);
+					const messages = buildMessages(dilemma, stance, round, roundIdx, turnsByRound);
 					const result = await completeFn({
 						model: resolvedConfig.model,
 						system: persona.systemPrompt ?? '',
@@ -232,8 +265,11 @@ export async function* runDeliberation(
 			turnsByRound.set(roundIdx, roundTurns);
 		}
 
-		// Run synthesis if configured (and not aborted)
-		if (roundStructure.synthesize && council.synthesisPrompt && !signal?.aborted) {
+		// Synthesis runs inline only for single-party tables. Multi-party
+		// tables defer synthesis to a manual trigger that fires after
+		// every party has completed their run — their raw turns aren't
+		// finished yet from this stream's POV.
+		if (!isMultiParty && roundStructure.synthesize && council.synthesisPrompt && !signal?.aborted) {
 			yield { type: 'synthesis_started' };
 
 			const allTurns = Array.from(turnsByRound.values()).flat();
@@ -277,7 +313,7 @@ export async function* runDeliberation(
 					partyId: 'synthesizer',
 					personaName: 'Synthesizer',
 					text: synthesisText,
-					visibleTo,
+					visibleTo: synthVisibleTo,
 					truncated: synthTruncated ? 1 : 0
 				})
 				.run();
@@ -289,45 +325,86 @@ export async function* runDeliberation(
 				.run();
 		}
 
-		// Mark table completed regardless of whether synthesis ran
-		db.update(schema.tables)
-			.set({ status: 'completed', updatedAt: Date.now() })
-			.where(eq(schema.tables.id, tableId))
+		// This party's run is done. Multi-party tables stay 'running' on
+		// the table row until synthesis fires. Single-party tables
+		// transition straight to completed alongside their party.
+		db.update(schema.tableParties)
+			.set({ runStatus: 'completed' })
+			.where(
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
+			)
 			.run();
 
+		if (!isMultiParty) {
+			db.update(schema.tables)
+				.set({ status: 'completed', updatedAt: Date.now() })
+				.where(eq(schema.tables.id, tableId))
+				.run();
+		}
+
+		publish(tableId, Events.partyRunCompleted(partyId));
 		yield {
 			type: 'table_closed',
 			totalTokens: allCallsReportedUsage ? summedTotalTokens : undefined
 		};
 	} catch (err) {
-		// Mark table as failed so it doesn't stay stuck in 'running'.
-		// Persist the error message so users see the cause when they
-		// revisit the table instead of a generic "encountered an error".
-		db.update(schema.tables)
-			.set({ status: 'failed', errorMessage: errorMessage(err), updatedAt: Date.now() })
-			.where(eq(schema.tables.id, tableId))
+		// Mark this party's run as failed. In multi-party tables the
+		// table itself stays 'running' if other parties are still going;
+		// in single-party tables the table also flips to 'failed' so
+		// the list view shows the error and the user sees the cause on
+		// reload instead of a generic "encountered an error".
+		db.update(schema.tableParties)
+			.set({ runStatus: 'failed', errorMessage: errorMessage(err) })
+			.where(
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
+			)
 			.run();
+		const allPartiesFailed = db
+			.select()
+			.from(schema.tableParties)
+			.where(eq(schema.tableParties.tableId, tableId))
+			.all()
+			.every((tp) => tp.runStatus === 'failed');
+		if (allPartiesFailed) {
+			db.update(schema.tables)
+				.set({ status: 'failed', errorMessage: errorMessage(err), updatedAt: Date.now() })
+				.where(eq(schema.tables.id, tableId))
+				.run();
+		} else {
+			// Don't write errorMessage on the table when other parties may
+			// still succeed — a stale per-party error would mislead anyone
+			// who later reloads after a successful synthesis. The failed
+			// party's own runStatus already carries the signal.
+			db.update(schema.tables)
+				.set({ updatedAt: Date.now() })
+				.where(eq(schema.tables.id, tableId))
+				.run();
+		}
+		publish(tableId, Events.partyRunFailed(partyId));
 		throw err;
 	}
 }
 
 function buildMessages(
 	dilemma: string,
+	stance: string | null,
 	round: RoundDef,
 	roundIdx: number,
 	turnsByRound: Map<number, Array<{ personaName: string; text: string }>>
 ): Array<{ role: 'user' | 'assistant'; content: string }> {
+	const stanceBlock = stance?.trim()
+		? `\n\nThe person you're advising frames it this way:\n\n${stance.trim()}`
+		: '';
+
 	if (roundIdx === 0) {
-		// Opening round: just the dilemma
 		return [
 			{
 				role: 'user',
-				content: `The person is facing this dilemma:\n\n${dilemma}\n\n${round.prompt_suffix}`
+				content: `The person is facing this dilemma:\n\n${dilemma}${stanceBlock}\n\n${round.prompt_suffix}`
 			}
 		];
 	}
 
-	// Cross-examination and later rounds: include prior context
 	const priorTurns = Array.from(turnsByRound.entries())
 		.filter(([idx]) => idx < roundIdx)
 		.flatMap(([, turns]) => turns);
@@ -337,7 +414,7 @@ function buildMessages(
 	return [
 		{
 			role: 'user',
-			content: `The person is facing this dilemma:\n\n${dilemma}\n\nHere is what the council has said so far:\n\n${context}\n\n${round.prompt_suffix}`
+			content: `The person is facing this dilemma:\n\n${dilemma}${stanceBlock}\n\nHere is what the council has said so far:\n\n${context}\n\n${round.prompt_suffix}`
 		}
 	];
 }

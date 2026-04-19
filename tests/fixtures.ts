@@ -41,6 +41,10 @@ export function createParty(db: TestDb, id: string, displayName = 'me') {
 /**
  * Pre-create a table row and link a party to it. The orchestrator
  * expects the table to exist in 'pending' state before it runs.
+ *
+ * The party's run_status mirrors the table status — fixtures stay
+ * coherent for single-party scenarios. Multi-party tests should add
+ * extra parties with explicit run_status if they need a mix.
  */
 export function createTable(
 	db: TestDb,
@@ -51,5 +55,7 @@ export function createTable(
 	status: 'pending' | 'running' | 'completed' | 'failed' = 'pending'
 ) {
 	db.insert(schema.tables).values({ id, dilemma, councilId, status }).run();
-	db.insert(schema.tableParties).values({ tableId: id, partyId, role: 'initiator' }).run();
+	db.insert(schema.tableParties)
+		.values({ tableId: id, partyId, role: 'initiator', runStatus: status })
+		.run();
 }

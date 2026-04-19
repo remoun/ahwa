@@ -2,8 +2,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	import { invalidateAll } from '$app/navigation';
+	import MultiPartyControls from '$lib/components/MultiPartyControls.svelte';
 	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
 	import TurnCard from '$lib/components/TurnCard.svelte';
+	import { Labels } from '$lib/labels';
 	import type { SseEvent } from '$lib/schemas/events';
 	import { consumeSseStream } from '$lib/sse-client';
 
@@ -22,6 +25,13 @@
 	let { data }: { data: PageData } = $props();
 
 	interface Turn {
+		// id/partyId/visibleTo are populated for historical turns
+		// (loaded from DB) so the reveal control can target them. Live
+		// SSE turns leave these unset — reveal is a post-hoc action
+		// available on reload after the run completes.
+		id?: string;
+		partyId?: string | null;
+		visibleTo?: string[] | null;
 		personaId: string;
 		personaName: string;
 		emoji: string;
@@ -71,13 +81,19 @@
 	});
 
 	$effect(() => {
-		// Render persisted turns for completed AND failed tables — a failed
-		// deliberation may have completed some turns before the error, and
-		// users should see what the council said before things went wrong.
-		if (data.table?.status === 'completed' || data.table?.status === 'failed') {
+		// Render persisted turns whenever there are any visible to this
+		// viewer — covers the obvious cases (completed/failed tables)
+		// plus the multi-party intermediate state where the viewer's
+		// own run is done but the table is still 'running' (waiting on
+		// other parties). The page server already filtered visible_to
+		// for us; we just render what we got.
+		if (data.turns?.length) {
 			turns = data.turns
 				.filter((t) => t.round > 0)
 				.map((t) => ({
+					id: t.id,
+					partyId: t.partyId,
+					visibleTo: t.visibleTo,
 					personaId: '',
 					personaName: t.personaName ?? '',
 					emoji: t.emoji ?? '',
@@ -87,8 +103,6 @@
 					round: t.round
 				}));
 			synthesis = data.table?.synthesis ?? '';
-			// Only mark done for successfully completed tables; failed tables
-			// show their own banner via isFailed.
 			if (data.table?.status === 'completed') {
 				done = true;
 			}
@@ -97,13 +111,68 @@
 
 	onMount(() => {
 		const status = data.table?.status;
+		const isMultiParty = (data.parties?.length ?? 0) > 1;
+		const viewer = data.parties?.find((p) => p.partyId === data.viewerPartyId);
+		const params = new globalThis.URLSearchParams(window.location.search);
+		const explicitStart = params.get('start') === '1';
+		const composeMode = params.get('compose') === '1';
+
+		// Subscribe to the table's event bus for live state updates.
+		// Always open (when the table isn't terminal) — even single-party
+		// tables can become multi-party mid-life via invite, and the
+		// initiator's subscription needs to already be live to receive
+		// the party_joined event for that very invite.
+		let busAbort: AbortController | undefined;
+		let busReconnectTimer: ReturnType<typeof setTimeout> | undefined;
+		const subUrl = data.token
+			? `/t/${data.tableId}?subscribe=1&party=${data.partyId}&token=${data.token}`
+			: `/t/${data.tableId}?subscribe=1&party=${data.partyId}`;
+		// Auto-reconnect with capped exponential backoff. Server restarts,
+		// network blips, and proxies that close idle SSE all benefit from
+		// re-establishing the stream so the user doesn't see a silently
+		// stalled UI. The backoff caps at 10s — we'd rather over-reconnect
+		// on flaky networks than silently miss events for minutes.
+		let reconnectDelayMs = 500;
+		const openBusStream = () => {
+			busAbort = new AbortController();
+			consumeSseStream({
+				url: subUrl,
+				signal: busAbort.signal,
+				onEvent: () => {
+					// Successful event = healthy connection. Reset the
+					// backoff so the next disconnect retries fast.
+					reconnectDelayMs = 500;
+					// Coarse: any event triggers a full data refresh. The
+					// page server already enforces visible_to so we trust
+					// invalidateAll to deliver the right view per viewer.
+					invalidateAll();
+				},
+				onError: () => {
+					if (busAbort?.signal.aborted) return;
+					busReconnectTimer = setTimeout(openBusStream, reconnectDelayMs);
+					reconnectDelayMs = Math.min(reconnectDelayMs * 2, 10_000);
+				}
+			});
+		};
+		if (status !== 'completed' && status !== 'failed') {
+			openBusStream();
+		}
 
 		// Completed/failed tables show historical data only; no SSE.
-		if (status === 'completed' || status === 'failed') return;
+		if (status === 'completed' || status === 'failed') return () => busAbort?.abort();
 
-		if (status === 'running') {
-			// Table is running server-side (user navigated away and back).
-			// Poll until it completes, then reload to show the result.
+		// Multi-party OR initiator-in-compose-mode: hold off auto-start.
+		// The page becomes the stance/invite/synthesize control surface.
+		// SSE only fires when the user clicks "run my council" (?start=1)
+		// or hits the URL with start=1 explicitly.
+		if (isMultiParty || composeMode) {
+			if (!explicitStart || viewer?.runStatus !== 'pending') {
+				return () => busAbort?.abort();
+			}
+			// fall through to SSE start below
+		} else if (status === 'running') {
+			// Single-party table running server-side (user navigated
+			// away and back). Poll until it completes.
 			const interval = setInterval(async () => {
 				const res = await fetch(`/api/tables/${data.tableId}`);
 				if (res.ok) {
@@ -114,11 +183,13 @@
 					}
 				}
 			}, 3000);
-			return () => clearInterval(interval);
+			return () => {
+				clearInterval(interval);
+				busAbort?.abort();
+			};
+		} else if (status !== 'pending') {
+			return () => busAbort?.abort();
 		}
-
-		// Pending — start the deliberation via SSE
-		if (status !== 'pending') return;
 
 		const controller = new AbortController();
 
@@ -143,6 +214,8 @@
 
 		return () => {
 			window.removeEventListener('beforeunload', onUnload);
+			busAbort?.abort();
+			if (busReconnectTimer) window.clearTimeout(busReconnectTimer);
 		};
 	});
 
@@ -188,18 +261,29 @@
 
 			case 'synthesis_started':
 				synthesizing = true;
-				currentRound = 'Synthesis';
+				currentRound = Labels.synthesisHeading;
 				break;
 
 			case 'synthesis_token':
 				synthesis += event.text;
 				break;
 
-			case 'table_closed':
+			case 'table_closed': {
 				synthesizing = false;
-				done = true;
 				currentRound = '';
+				// Single-party: synthesis ran inline → table.status is now
+				// 'completed' on disk. Flip done so the view shows the
+				// deliberation-complete marker without waiting for an
+				// invalidate round-trip. Multi-party: this party's run
+				// closed but the table is still 'running' until synthesis
+				// fires from the trigger; "done" would mislead by showing
+				// "Deliberation complete." next to the still-active
+				// MultiPartyControls. Hold off until the bus delivers
+				// table_synthesized.
+				const isMulti = (data.parties?.length ?? 0) > 1;
+				if (!isMulti) done = true;
 				break;
+			}
 
 			case 'error':
 				error = event.message;
@@ -234,6 +318,48 @@
 		io.observe(sentinel);
 		return () => io.disconnect();
 	});
+
+	/**
+	 * Per-turn reveal targets. Renders a "Reveal to <party>" button on
+	 * the viewer's own private turns when the table is multi-party and
+	 * not yet synthesized. Already-revealed parties show as "Shared
+	 * with X" instead. Synthesizer turns and others' turns get nothing.
+	 */
+	function revealTargetsFor(turn: Turn) {
+		const empty = {
+			revealable: [] as { partyId: string; label: string }[],
+			revealed: [] as { partyId: string; label: string }[]
+		};
+		if (!turn.id || !turn.partyId) return empty;
+		if (turn.partyId === 'synthesizer') return empty;
+		if (turn.partyId !== data.viewerPartyId) return empty;
+		if (data.table?.status === 'completed') return empty;
+		const others = (data.parties ?? []).filter((p) => p.partyId !== data.viewerPartyId);
+		if (others.length === 0) return empty;
+		const visible = new Set(turn.visibleTo ?? []);
+		const revealable: { partyId: string; label: string }[] = [];
+		const revealed: { partyId: string; label: string }[] = [];
+		for (const p of others) {
+			const label = p.partyId.slice(0, 8);
+			if (visible.has(p.partyId)) revealed.push({ partyId: p.partyId, label });
+			else revealable.push({ partyId: p.partyId, label });
+		}
+		return { revealable, revealed };
+	}
+
+	async function revealTurn(turnId: string, withPartyId: string) {
+		const res = await fetch(`/api/turns/${turnId}/reveal`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ withPartyId })
+		});
+		if (res.ok) {
+			// invalidateAll re-runs the page-server load which re-derives
+			// visible_to. The recipient's tab picks up the turn live via
+			// their own bus subscription's turn_revealed event.
+			invalidateAll();
+		}
+	}
 
 	let copyState = $state<'idle' | 'copied' | 'error'>('idle');
 	async function copyMarkdown() {
@@ -337,6 +463,17 @@
 		</figure>
 	{/if}
 
+	{#if data.parties && data.viewerPartyId}
+		<MultiPartyControls
+			tableId={data.tableId}
+			viewerPartyId={data.viewerPartyId}
+			token={data.token}
+			parties={data.parties}
+			tableStatus={data.table?.status}
+			onChange={() => invalidateAll()}
+		/>
+	{/if}
+
 	{#if error}
 		<div class="bg-danger-bg border border-danger-border rounded-xl p-4 mb-6 animate-fade-in">
 			<p class="text-danger text-sm">{error}</p>
@@ -380,6 +517,10 @@
 					text={turn.text}
 					complete={turn.complete}
 					streaming={view === 'streaming'}
+					turnId={turn.id}
+					revealableTo={revealTargetsFor(turn).revealable}
+					revealedTo={revealTargetsFor(turn).revealed}
+					onReveal={revealTurn}
 				/>
 			{/each}
 		</div>
@@ -390,7 +531,7 @@
 	{/if}
 
 	{#if view === 'completed'}
-		<p class="mt-8 text-fg-subtle text-sm text-center">Deliberation complete.</p>
+		<p class="mt-8 text-fg-subtle text-sm text-center">{Labels.deliberationComplete}</p>
 	{:else if view === 'runningElsewhere'}
 		<div
 			class="flex items-center gap-3 text-fg-subtle text-sm p-4 bg-surface border border-border rounded-xl shadow-sm"

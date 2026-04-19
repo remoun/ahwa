@@ -647,4 +647,190 @@ describe('orchestrator', () => {
 		expect(elderTurns.every((t) => t.truncated === 1)).toBe(true);
 		expect(mirrorTurns.every((t) => t.truncated === 0)).toBe(true);
 	});
+
+	describe('invariant #8: visible_to in multi-party tables', () => {
+		it('persona turns in a multi-party table are private to the running party', async () => {
+			// Two-party table: A is initiator, B is invited
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-mp',
+				dilemma: 'shared dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const personaTurns = db
+				.select()
+				.from(schema.turns)
+				.where(eq(schema.turns.tableId, 'tbl-mp'))
+				.all()
+				.filter((t) => t.partyId !== 'synthesizer');
+
+			expect(personaTurns.length).toBeGreaterThan(0);
+			for (const t of personaTurns) {
+				expect(t.visibleTo).toEqual(['party-1']);
+			}
+		});
+
+		it('does not auto-run synthesis in a multi-party table (deferred to manual trigger)', async () => {
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp2', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp2', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-mp2',
+				dilemma: 'shared dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const synth = db
+				.select()
+				.from(schema.turns)
+				.where(eq(schema.turns.tableId, 'tbl-mp2'))
+				.all()
+				.find((t) => t.partyId === 'synthesizer');
+			expect(synth).toBeUndefined();
+
+			// Table stays 'running' until synthesis trigger fires.
+			const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-mp2')).get();
+			expect(table?.status).toBe('running');
+		});
+
+		it('respects tables.max_rounds: 4 rounds when council defines 2', async () => {
+			createTable(db, 'tbl-rounds', 'd', 'test-council', 'party-1');
+			db.update(schema.tables)
+				.set({ maxRounds: 4 })
+				.where(eq(schema.tables.id, 'tbl-rounds'))
+				.run();
+
+			const events: SseEvent[] = [];
+			for await (const e of runDeliberation(db, {
+				tableId: 'tbl-rounds',
+				dilemma: 'd',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				events.push(e);
+			}
+
+			const rounds = events.filter((e) => e.type === 'round_started');
+			expect(rounds).toHaveLength(4);
+		});
+
+		it("writes the failure cause to the failed party's errorMessage (not the table's)", async () => {
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp-err', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp-err', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			const failingComplete = async () => {
+				throw new Error('boom from provider');
+			};
+
+			let threw = false;
+			try {
+				for await (const _ of runDeliberation(db, {
+					tableId: 'tbl-mp-err',
+					dilemma: 'shared dilemma',
+					councilId: 'test-council',
+					partyId: 'party-1',
+					completeFn: failingComplete
+				})) {
+					// consume
+				}
+			} catch {
+				threw = true;
+			}
+			expect(threw).toBe(true);
+
+			const aLink = db
+				.select()
+				.from(schema.tableParties)
+				.where(eq(schema.tableParties.partyId, 'party-1'))
+				.get();
+			expect(aLink?.runStatus).toBe('failed');
+			expect(aLink?.errorMessage).toContain('boom from provider');
+
+			// Other party + table itself stay clean — only this party failed.
+			const bLink = db
+				.select()
+				.from(schema.tableParties)
+				.where(eq(schema.tableParties.partyId, 'party-B'))
+				.get();
+			expect(bLink?.errorMessage).toBeNull();
+			const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-mp-err')).get();
+			expect(table?.status).toBe('running');
+			expect(table?.errorMessage).toBeNull();
+		});
+
+		it("marks the running party's runStatus completed at end of run", async () => {
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp3', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp3', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-mp3',
+				dilemma: 'shared dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const links = db
+				.select()
+				.from(schema.tableParties)
+				.where(eq(schema.tableParties.tableId, 'tbl-mp3'))
+				.all();
+			const a = links.find((l) => l.partyId === 'party-1');
+			const b = links.find((l) => l.partyId === 'party-B');
+			expect(a?.runStatus).toBe('completed');
+			// B never ran — still pending, so they can claim later
+			expect(b?.runStatus).toBe('pending');
+		});
+
+		it('single-party table keeps the existing visible_to = [all parties] shape', async () => {
+			createTable(db, 'tbl-sp', 'solo dilemma', 'test-council', 'party-1');
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-sp',
+				dilemma: 'solo dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const personaTurns = db
+				.select()
+				.from(schema.turns)
+				.where(eq(schema.turns.tableId, 'tbl-sp'))
+				.all()
+				.filter((t) => t.partyId !== 'synthesizer');
+
+			for (const t of personaTurns) {
+				expect(t.visibleTo).toEqual(['party-1']);
+			}
+		});
+	});
 });

@@ -20,28 +20,42 @@
       "idx": 3,
       "version": "6",
       "when": 1776428332467,
-      "tag": "0003_breezy_doctor_strange",
+      "tag": "0003_turn_truncated",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "6",
       "when": 1776491667361,
-      "tag": "0004_flippant_longshot",
+      "tag": "0004_party_external_id",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "6",
       "when": 1776494087661,
-      "tag": "0005_typical_shooting_star",
+      "tag": "0005_demo_usage",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "6",
       "when": 1776520119961,
-      "tag": "0006_cooing_red_ghost",
+      "tag": "0006_persona_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1776598915656,
+      "tag": "0007_add_run_status_to_table_parties",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1776603637374,
+      "tag": "0008_m3_stance_max_rounds_party_error",
       "breakpoints": true
     }
   ]

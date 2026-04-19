@@ -32,7 +32,8 @@ describe('validateDeliberationRequest', () => {
 			.values({
 				tableId: 'completed-table',
 				partyId: 'alice',
-				role: 'initiator'
+				role: 'initiator',
+				runStatus: 'completed'
 			})
 			.run();
 
@@ -167,9 +168,30 @@ describe('validateDeliberationRequest', () => {
 		}
 	});
 
-	it('accepts requests without any token (localhost direct access)', () => {
-		// M1 is localhost-only; guard only enforces token validity when one
-		// is supplied. Null token means no token check — pass through.
+	it('accepts requests without any token when caller IS the party', () => {
+		// On M1 / single-party flow, the initiator's own session calls the
+		// guard without a token. Allowed when caller's identity matches.
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', null, 'alice');
+		expect(result.ok).toBe(true);
+	});
+
+	it('rejects no-token requests when caller is NOT the named party (M2 hijack guard)', () => {
+		// On M2 the SSE endpoint is reachable by any authenticated user.
+		// Without a share token AND without identity match, refuse — else
+		// any logged-in user could hijack runs by guessing party IDs.
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', null, 'bob');
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.status).toBe(403);
+			expect(result.message).toMatch(/identity|token/i);
+		}
+	});
+
+	it('accepts no-caller, no-token (legacy callers); behaves as M1 trust-localhost', () => {
+		// Backwards compatibility: tests / direct local callers that
+		// haven't been updated still pass through. Real routes plumb
+		// `callerPartyId` from locals — this branch is tightened where
+		// it counts.
 		const result = validateDeliberationRequest(db, 'pending-table', 'alice', null);
 		expect(result.ok).toBe(true);
 	});
@@ -198,5 +220,59 @@ describe('validateDeliberationRequest', () => {
 		// Confirm in DB too
 		const row = db.select().from(schema.tables).where(eq(schema.tables.id, 'pending-table')).get();
 		expect(row!.status).toBe('running');
+	});
+
+	describe('multi-party gating', () => {
+		beforeEach(() => {
+			// Add bob as a second party on pending-table for the multi-party scenarios.
+			db.insert(schema.tableParties)
+				.values({ tableId: 'pending-table', partyId: 'bob', role: 'invited', stance: 'b view' })
+				.run();
+			// Seed alice's stance too — multi-party tables require a stance.
+			db.update(schema.tableParties)
+				.set({ stance: 'a view' })
+				.where(eq(schema.tableParties.partyId, 'alice'))
+				.run();
+		});
+
+		it("alice's claim does not block bob from claiming the same table", () => {
+			const aliceClaim = validateDeliberationRequest(db, 'pending-table', 'alice');
+			expect(aliceClaim.ok).toBe(true);
+
+			const bobClaim = validateDeliberationRequest(db, 'pending-table', 'bob');
+			expect(bobClaim.ok).toBe(true);
+		});
+
+		it('per-party atomic: bob cannot claim twice in a row', () => {
+			expect(validateDeliberationRequest(db, 'pending-table', 'bob').ok).toBe(true);
+			const second = validateDeliberationRequest(db, 'pending-table', 'bob');
+			expect(second.ok).toBe(false);
+			if (!second.ok) {
+				expect(second.status).toBe(409);
+			}
+		});
+
+		it('refuses to start when the party has no stance (multi-party only)', () => {
+			db.update(schema.tableParties)
+				.set({ stance: null })
+				.where(eq(schema.tableParties.partyId, 'alice'))
+				.run();
+			const res = validateDeliberationRequest(db, 'pending-table', 'alice');
+			expect(res.ok).toBe(false);
+			if (!res.ok) {
+				expect(res.status).toBe(412);
+				expect(res.message).toMatch(/stance/i);
+			}
+		});
+
+		it('table.status flips to running on first party claim and stays running on second', () => {
+			validateDeliberationRequest(db, 'pending-table', 'alice');
+			let row = db.select().from(schema.tables).where(eq(schema.tables.id, 'pending-table')).get();
+			expect(row!.status).toBe('running');
+
+			validateDeliberationRequest(db, 'pending-table', 'bob');
+			row = db.select().from(schema.tables).where(eq(schema.tables.id, 'pending-table')).get();
+			expect(row!.status).toBe('running');
+		});
 	});
 });

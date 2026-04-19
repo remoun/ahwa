@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { Labels } from '$lib/labels';
 
 	import type { PageData } from '../../routes/$types';
 	import TableCard from './TableCard.svelte';
@@ -13,6 +14,7 @@
 
 	let dilemma = $state('');
 	let councilId = $state('default');
+	let mediation = $state(false);
 	let loading = $state(false);
 
 	async function setTable() {
@@ -26,7 +28,11 @@
 		});
 
 		const { tableId, partyId, token } = await res.json();
-		goto(`/t/${tableId}?party=${partyId}&token=${token}`);
+		// compose=1 tells the table page to show the stance editor +
+		// invite controls instead of auto-starting the council. Solo
+		// "just run with it" tables skip the param and stream right away.
+		const composeParam = mediation ? '&compose=1' : '';
+		goto(`/t/${tableId}?party=${partyId}&token=${token}${composeParam}`);
 	}
 </script>
 
@@ -89,12 +95,27 @@
 				</div>
 			</div>
 
+			<label class="mt-4 flex items-start gap-2 text-sm text-fg-muted cursor-pointer">
+				<input type="checkbox" bind:checked={mediation} class="mt-0.5 accent-accent" />
+				<span>
+					<span class="font-medium text-fg">{Labels.mediationCheckbox}</span>
+					<span class="block text-xs text-fg-subtle">
+						You'll write your stance and (optionally) invite another party with their own stance.
+						The council deliberates with each side, then synthesizes.
+					</span>
+				</span>
+			</label>
+
 			<button
 				type="submit"
 				disabled={loading || !dilemma.trim()}
 				class="mt-4 w-full sm:w-auto px-6 py-2.5 bg-accent text-white text-sm font-medium rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-colors shadow-sm"
 			>
-				{loading ? 'Setting the table...' : 'Set a table'}
+				{loading
+					? 'Setting the table...'
+					: mediation
+						? Labels.setTableMediation
+						: Labels.setTableSolo}
 			</button>
 		</form>
 	</section>
