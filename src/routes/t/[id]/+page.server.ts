@@ -59,10 +59,15 @@ export const load: PageServerLoad = ({ params, url, locals }) =>
 			partyId: l.partyId,
 			role: l.role,
 			runStatus: l.runStatus,
-			// Only expose this party's stance if it's the viewer's own
-			// stance, or the table is already synthesized.
+			// Only expose this party's stance text if it's the viewer's
+			// own stance, or the table is already synthesized.
 			stance:
 				l.partyId === viewerPartyId || table.status === 'completed' ? (l.stance ?? null) : null,
+			// stanceSet is the "ready signal" — every member can see
+			// whether each other party has authored a stance, without
+			// the text leaking until synthesis. Lets the initiator know
+			// "bob's drafted, waiting on carol" before kicking off runs.
+			stanceSet: !!l.stance?.trim(),
 			// Per-party run failures surface their cause to everyone at
 			// the table — useful for "Bob's run failed: <reason>" badges
 			// without polluting the table-level errorMessage that's

@@ -3,10 +3,12 @@ import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+import { Events } from '../schemas/events';
 import type { DB } from './db';
 import * as schema from './db/schema';
 import type { ResolvedParty } from './identity';
 import { signShareToken } from './share';
+import { publish } from './table-bus';
 
 /**
  * Mints an "invited" placeholder party on a table and returns a share URL.
@@ -57,6 +59,7 @@ export function createInviteHandler(deps: InviteDeps) {
 		const token = signShareToken(tableId, partyId);
 		const url = `/t/${tableId}?party=${partyId}&token=${token}`;
 
+		publish(tableId, Events.partyJoined(partyId));
 		return json({ partyId, token, url }, { status: 201 });
 	};
 }

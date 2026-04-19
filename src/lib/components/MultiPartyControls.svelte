@@ -15,6 +15,7 @@
 		role: 'initiator' | 'invited' | null;
 		runStatus: 'pending' | 'running' | 'completed' | 'failed' | null;
 		stance: string | null;
+		stanceSet: boolean;
 		errorMessage: string | null;
 	}
 
@@ -88,7 +89,9 @@
 			}
 			const body = (await res.json()) as { url: string };
 			inviteUrl = `${window.location.origin}${body.url}`;
-			onChange();
+			// No onChange() here — reloading would wipe the URL we just
+			// displayed. The new party will show up in the list on the
+			// initiator's next navigation; the URL is what they need now.
 		} finally {
 			inviting = false;
 		}
@@ -123,7 +126,7 @@
 				`/api/tables/${tableId}/parties/${viewerPartyId}/uncommit${tokenQuery}`,
 				{ method: 'POST' }
 			);
-			if (res.ok) window.location.reload();
+			if (res.ok) onChange();
 		} finally {
 			uncommitting = false;
 		}
@@ -141,7 +144,7 @@
 				synthError = body.error ?? `HTTP ${res.status}`;
 				return;
 			}
-			window.location.reload();
+			onChange();
 		} finally {
 			synthesizing = false;
 		}
@@ -243,6 +246,17 @@
 									>{p.role ?? 'party'}</span
 								>
 								<span class="font-mono text-xs">{p.partyId.slice(0, 8)}</span>
+								<!-- Stance "ready signal" — every member can see whether
+								     each other party has authored a stance, without the
+								     text leaking until synthesis. -->
+								<span
+									class="text-xs px-2 py-0.5 rounded-full {p.stanceSet
+										? 'bg-accent-bg text-accent'
+										: 'bg-surface-muted text-fg-subtle'}"
+									title={p.stanceSet ? 'Stance written' : 'No stance yet'}
+								>
+									{p.stanceSet ? 'stance ✓' : 'drafting'}
+								</span>
 								<span
 									class="text-xs px-2 py-0.5 rounded-full
 									{p.runStatus === 'completed'

@@ -2,10 +2,12 @@
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 
+import { Events } from '../schemas/events';
 import type { DB } from './db';
 import * as schema from './db/schema';
 import type { ResolvedParty } from './identity';
 import { verifyShareToken } from './share';
+import { publish } from './table-bus';
 
 /**
  * Revoke a party's finished run before synthesis fires. Effect: the
@@ -62,6 +64,12 @@ export function createUncommitHandler(deps: UncommitDeps) {
 			)
 			.run();
 
+		// Tell every viewer the party reset — their UI re-renders with
+		// the runStatus badge back to pending and (for the party
+		// themselves) the stance editor available again. We piggyback
+		// on partyRunStarted because subscribers treat it as "refetch
+		// this party's state"; they don't care about the actual transition.
+		publish(tableId, Events.partyRunStarted(partyId));
 		return json({ ok: true });
 	};
 }

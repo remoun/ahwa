@@ -2,10 +2,12 @@
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 
+import { Events } from '../schemas/events';
 import type { DB } from './db';
 import * as schema from './db/schema';
 import type { ResolvedParty } from './identity';
 import { verifyShareToken } from './share';
+import { publish } from './table-bus';
 
 /**
  * Edit a party's stance — their POV/framing on the dilemma. The council
@@ -66,6 +68,7 @@ export function createStanceHandler(deps: StanceDeps) {
 			)
 			.run();
 
+		publish(tableId, Events.partyStanceSet(partyId));
 		return json({ ok: true, stance: text });
 	};
 }

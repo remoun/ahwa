@@ -3,6 +3,7 @@ import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+import { Events } from '../schemas/events';
 import type { DB } from './db';
 import * as schema from './db/schema';
 import type { ResolvedParty } from './identity';
@@ -13,6 +14,7 @@ import {
 	resolveCouncilModelConfig,
 	resolveModelConfig
 } from './llm';
+import { publish } from './table-bus';
 
 /**
  * Manual synthesis trigger for multi-party tables. Single-party tables
@@ -135,6 +137,7 @@ export function createSynthesizeHandler(deps: SynthesizeDeps) {
 			.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'running')))
 			.run();
 
+		publish(tableId, Events.tableSynthesized());
 		return json({ ok: true, synthesis: synthesisText });
 	};
 }

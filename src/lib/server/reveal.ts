@@ -2,9 +2,11 @@
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 
+import { Events } from '../schemas/events';
 import type { DB } from './db';
 import * as schema from './db/schema';
 import type { ResolvedParty } from './identity';
+import { publish } from './table-bus';
 
 /**
  * One-way reveal: the turn's author appends a recipient party to the
@@ -55,6 +57,7 @@ export function createRevealHandler(deps: RevealDeps) {
 		const updated = [...current, withPartyId];
 		db.update(schema.turns).set({ visibleTo: updated }).where(eq(schema.turns.id, turnId)).run();
 
+		publish(turn.tableId, Events.turnRevealed(turnId, withPartyId));
 		return json({ ok: true, visibleTo: updated });
 	};
 }

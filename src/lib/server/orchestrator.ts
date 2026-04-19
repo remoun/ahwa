@@ -2,7 +2,7 @@
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
-import type { SseEvent } from '../schemas/events';
+import { Events, type SseEvent } from '../schemas/events';
 import { errorMessage } from '../util';
 import type { DB } from './db';
 import * as schema from './db/schema';
@@ -14,6 +14,7 @@ import {
 	resolveCouncilModelConfig,
 	resolveModelConfig
 } from './llm';
+import { publish } from './table-bus';
 
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
 
@@ -128,6 +129,10 @@ export async function* runDeliberation(
 		}
 
 		yield { type: 'table_opened', tableId };
+		// Tell every other viewer of this table that this party started
+		// running. Their MultiPartyControls will re-render the badge from
+		// "pending" to "running" on the next bus event tick.
+		publish(tableId, Events.partyRunStarted(partyId));
 
 		// Track all turns for cross-examination context
 		const turnsByRound: Map<number, Array<{ personaName: string; text: string }>> = new Map();
@@ -337,6 +342,7 @@ export async function* runDeliberation(
 				.run();
 		}
 
+		publish(tableId, Events.partyRunCompleted(partyId));
 		yield {
 			type: 'table_closed',
 			totalTokens: allCallsReportedUsage ? summedTotalTokens : undefined
@@ -374,6 +380,7 @@ export async function* runDeliberation(
 				.where(eq(schema.tables.id, tableId))
 				.run();
 		}
+		publish(tableId, Events.partyRunFailed(partyId));
 		throw err;
 	}
 }

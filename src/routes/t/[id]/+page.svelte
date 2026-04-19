@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	import { invalidateAll } from '$app/navigation';
 	import MultiPartyControls from '$lib/components/MultiPartyControls.svelte';
 	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
 	import TurnCard from '$lib/components/TurnCard.svelte';
@@ -115,8 +116,36 @@
 		const explicitStart = params.get('start') === '1';
 		const composeMode = params.get('compose') === '1';
 
+		// Subscribe to the table's event bus for live state updates.
+		// Multi-party tables broadcast party_joined / party_stance_set /
+		// party_run_* / turn_revealed / table_synthesized events; single-
+		// party tables emit nothing of cross-viewer interest, so we skip
+		// the connection there. Completed/failed tables also skip — no
+		// more events coming.
+		let busAbort: AbortController | undefined;
+		if (isMultiParty && status !== 'completed' && status !== 'failed') {
+			busAbort = new AbortController();
+			const subUrl = data.token
+				? `/t/${data.tableId}?subscribe=1&party=${data.partyId}&token=${data.token}`
+				: `/t/${data.tableId}?subscribe=1&party=${data.partyId}`;
+			consumeSseStream({
+				url: subUrl,
+				signal: busAbort.signal,
+				onEvent: () => {
+					// Coarse: any event triggers a full data refresh. The
+					// page server already enforces visible_to so we trust
+					// invalidateAll to deliver the right view per viewer.
+					invalidateAll();
+				},
+				onError: () => {
+					// Bus disconnect is non-fatal — page falls back to its
+					// last-loaded state. User can reload to retry.
+				}
+			});
+		}
+
 		// Completed/failed tables show historical data only; no SSE.
-		if (status === 'completed' || status === 'failed') return;
+		if (status === 'completed' || status === 'failed') return () => busAbort?.abort();
 
 		// Multi-party OR initiator-in-compose-mode: hold off auto-start.
 		// The page becomes the stance/invite/synthesize control surface.
@@ -124,7 +153,7 @@
 		// or hits the URL with start=1 explicitly.
 		if (isMultiParty || composeMode) {
 			if (!explicitStart || viewer?.runStatus !== 'pending') {
-				return;
+				return () => busAbort?.abort();
 			}
 			// fall through to SSE start below
 		} else if (status === 'running') {
@@ -140,9 +169,12 @@
 					}
 				}
 			}, 3000);
-			return () => clearInterval(interval);
+			return () => {
+				clearInterval(interval);
+				busAbort?.abort();
+			};
 		} else if (status !== 'pending') {
-			return;
+			return () => busAbort?.abort();
 		}
 
 		const controller = new AbortController();
@@ -168,6 +200,7 @@
 
 		return () => {
 			window.removeEventListener('beforeunload', onUnload);
+			busAbort?.abort();
 		};
 	});
 
@@ -295,9 +328,10 @@
 			body: JSON.stringify({ withPartyId })
 		});
 		if (res.ok) {
-			// Reload so the page server re-derives visible_to and the
-			// other party's view picks up the new turn on their next visit.
-			window.location.reload();
+			// invalidateAll re-runs the page-server load which re-derives
+			// visible_to. The recipient's tab picks up the turn live via
+			// their own bus subscription's turn_revealed event.
+			invalidateAll();
 		}
 	}
 
@@ -410,7 +444,7 @@
 			token={data.token}
 			parties={data.parties}
 			tableStatus={data.table?.status}
-			onChange={() => window.location.reload()}
+			onChange={() => invalidateAll()}
 		/>
 	{/if}
 
