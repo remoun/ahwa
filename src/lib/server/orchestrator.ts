@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import type { SseEvent } from '../schemas/events';
@@ -238,8 +238,16 @@ export async function* runDeliberation(
 			turnsByRound.set(roundIdx, roundTurns);
 		}
 
-		// Run synthesis if configured (and not aborted)
-		if (roundStructure.synthesize && council.synthesisPrompt && !signal?.aborted) {
+		// Synthesis runs inline only for single-party tables. Multi-party
+		// tables defer synthesis to a manual trigger that fires after
+		// every party has completed their run — their raw turns aren't
+		// finished yet from this stream's POV.
+		if (
+			!isMultiParty &&
+			roundStructure.synthesize &&
+			council.synthesisPrompt &&
+			!signal?.aborted
+		) {
 			yield { type: 'synthesis_started' };
 
 			const allTurns = Array.from(turnsByRound.values()).flat();
@@ -295,24 +303,62 @@ export async function* runDeliberation(
 				.run();
 		}
 
-		// Mark table completed regardless of whether synthesis ran
-		db.update(schema.tables)
-			.set({ status: 'completed', updatedAt: Date.now() })
-			.where(eq(schema.tables.id, tableId))
+		// This party's run is done. Multi-party tables stay 'running' on
+		// the table row until synthesis fires. Single-party tables
+		// transition straight to completed alongside their party.
+		db.update(schema.tableParties)
+			.set({ runStatus: 'completed' })
+			.where(
+				and(
+					eq(schema.tableParties.tableId, tableId),
+					eq(schema.tableParties.partyId, partyId)
+				)
+			)
 			.run();
+
+		if (!isMultiParty) {
+			db.update(schema.tables)
+				.set({ status: 'completed', updatedAt: Date.now() })
+				.where(eq(schema.tables.id, tableId))
+				.run();
+		}
 
 		yield {
 			type: 'table_closed',
 			totalTokens: allCallsReportedUsage ? summedTotalTokens : undefined
 		};
 	} catch (err) {
-		// Mark table as failed so it doesn't stay stuck in 'running'.
-		// Persist the error message so users see the cause when they
-		// revisit the table instead of a generic "encountered an error".
-		db.update(schema.tables)
-			.set({ status: 'failed', errorMessage: errorMessage(err), updatedAt: Date.now() })
-			.where(eq(schema.tables.id, tableId))
+		// Mark this party's run as failed. In multi-party tables the
+		// table itself stays 'running' if other parties are still going;
+		// in single-party tables the table also flips to 'failed' so
+		// the list view shows the error and the user sees the cause on
+		// reload instead of a generic "encountered an error".
+		db.update(schema.tableParties)
+			.set({ runStatus: 'failed' })
+			.where(
+				and(
+					eq(schema.tableParties.tableId, tableId),
+					eq(schema.tableParties.partyId, partyId)
+				)
+			)
 			.run();
+		const allPartiesFailed = db
+			.select()
+			.from(schema.tableParties)
+			.where(eq(schema.tableParties.tableId, tableId))
+			.all()
+			.every((tp) => tp.runStatus === 'failed');
+		if (allPartiesFailed) {
+			db.update(schema.tables)
+				.set({ status: 'failed', errorMessage: errorMessage(err), updatedAt: Date.now() })
+				.where(eq(schema.tables.id, tableId))
+				.run();
+		} else {
+			db.update(schema.tables)
+				.set({ errorMessage: errorMessage(err), updatedAt: Date.now() })
+				.where(eq(schema.tables.id, tableId))
+				.run();
+		}
 		throw err;
 	}
 }

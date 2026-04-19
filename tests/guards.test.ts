@@ -32,7 +32,8 @@ describe('validateDeliberationRequest', () => {
 			.values({
 				tableId: 'completed-table',
 				partyId: 'alice',
-				role: 'initiator'
+				role: 'initiator',
+				runStatus: 'completed'
 			})
 			.run();
 
@@ -198,5 +199,41 @@ describe('validateDeliberationRequest', () => {
 		// Confirm in DB too
 		const row = db.select().from(schema.tables).where(eq(schema.tables.id, 'pending-table')).get();
 		expect(row!.status).toBe('running');
+	});
+
+	describe('multi-party gating', () => {
+		beforeEach(() => {
+			// Add bob as a second party on pending-table for the multi-party scenarios.
+			db.insert(schema.tableParties)
+				.values({ tableId: 'pending-table', partyId: 'bob', role: 'invited' })
+				.run();
+		});
+
+		it("alice's claim does not block bob from claiming the same table", () => {
+			const aliceClaim = validateDeliberationRequest(db, 'pending-table', 'alice');
+			expect(aliceClaim.ok).toBe(true);
+
+			const bobClaim = validateDeliberationRequest(db, 'pending-table', 'bob');
+			expect(bobClaim.ok).toBe(true);
+		});
+
+		it('per-party atomic: bob cannot claim twice in a row', () => {
+			expect(validateDeliberationRequest(db, 'pending-table', 'bob').ok).toBe(true);
+			const second = validateDeliberationRequest(db, 'pending-table', 'bob');
+			expect(second.ok).toBe(false);
+			if (!second.ok) {
+				expect(second.status).toBe(409);
+			}
+		});
+
+		it('table.status flips to running on first party claim and stays running on second', () => {
+			validateDeliberationRequest(db, 'pending-table', 'alice');
+			let row = db.select().from(schema.tables).where(eq(schema.tables.id, 'pending-table')).get();
+			expect(row!.status).toBe('running');
+
+			validateDeliberationRequest(db, 'pending-table', 'bob');
+			row = db.select().from(schema.tables).where(eq(schema.tables.id, 'pending-table')).get();
+			expect(row!.status).toBe('running');
+		});
 	});
 });

@@ -43,6 +43,13 @@
       "when": 1776520119961,
       "tag": "0006_persona_description",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1776598915656,
+      "tag": "0007_add_run_status_to_table_parties",
+      "breakpoints": true
     }
   ]
 }

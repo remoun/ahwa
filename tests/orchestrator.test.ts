@@ -680,7 +680,7 @@ describe('orchestrator', () => {
 			}
 		});
 
-		it('synthesis turn in a multi-party table is visible to all parties', async () => {
+		it('does not auto-run synthesis in a multi-party table (deferred to manual trigger)', async () => {
 			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
 			createTable(db, 'tbl-mp2', 'shared dilemma', 'test-council', 'party-1');
 			db.insert(schema.tableParties)
@@ -703,9 +703,44 @@ describe('orchestrator', () => {
 				.where(eq(schema.turns.tableId, 'tbl-mp2'))
 				.all()
 				.find((t) => t.partyId === 'synthesizer');
+			expect(synth).toBeUndefined();
 
-			expect(synth).toBeDefined();
-			expect(synth!.visibleTo?.sort()).toEqual(['party-1', 'party-B'].sort());
+			// Table stays 'running' until synthesis trigger fires.
+			const table = db
+				.select()
+				.from(schema.tables)
+				.where(eq(schema.tables.id, 'tbl-mp2'))
+				.get();
+			expect(table?.status).toBe('running');
+		});
+
+		it("marks the running party's runStatus completed at end of run", async () => {
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp3', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp3', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-mp3',
+				dilemma: 'shared dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const links = db
+				.select()
+				.from(schema.tableParties)
+				.where(eq(schema.tableParties.tableId, 'tbl-mp3'))
+				.all();
+			const a = links.find((l) => l.partyId === 'party-1');
+			const b = links.find((l) => l.partyId === 'party-B');
+			expect(a?.runStatus).toBe('completed');
+			// B never ran — still pending, so they can claim later
+			expect(b?.runStatus).toBe('pending');
 		});
 
 		it('single-party table keeps the existing visible_to = [all parties] shape', async () => {

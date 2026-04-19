@@ -38,7 +38,14 @@ export const tableParties = sqliteTable(
 	{
 		tableId: text('table_id').notNull(),
 		partyId: text('party_id').notNull(),
-		role: text('role', { enum: ['initiator', 'invited'] })
+		role: text('role', { enum: ['initiator', 'invited'] }),
+		// Per-party deliberation lifecycle. In multi-party tables each
+		// party runs the council independently — gating on tables.status
+		// would let A's run block B's. The atomic claim happens here.
+		// Single-party tables track tables.status 1:1.
+		runStatus: text('run_status', {
+			enum: ['pending', 'running', 'completed', 'failed']
+		}).default('pending')
 	},
 	(t) => [primaryKey({ columns: [t.tableId, t.partyId] })]
 );

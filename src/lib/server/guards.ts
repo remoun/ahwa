@@ -17,12 +17,14 @@ export interface GuardSuccess {
 }
 
 /**
- * Validate and atomically claim a table for deliberation.
+ * Validate and atomically claim a deliberation slot for one party at one
+ * table. Per-party gating (not table gating) so multi-party tables let
+ * each party run the council independently — A's run can't block B's.
  *
- * The status transition (pending → running) happens inside this function
- * via a conditional UPDATE, not in the orchestrator. This eliminates the
- * race window between "check status" and "set running" — if two requests
- * hit a pending table simultaneously, exactly one wins.
+ * The atomic claim happens on table_parties.runStatus, transitioning
+ * pending → running. If two requests for the same party hit at once,
+ * exactly one wins. tables.status is bumped to 'running' alongside the
+ * first party's claim so the table list reflects in-progress activity.
  */
 export function validateDeliberationRequest(
 	db: DB,
@@ -42,9 +44,10 @@ export function validateDeliberationRequest(
 	const link = db
 		.select()
 		.from(schema.tableParties)
-		.where(eq(schema.tableParties.tableId, tableId))
-		.all()
-		.find((tp) => tp.partyId === partyId);
+		.where(
+			and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
+		)
+		.get();
 	if (!link) {
 		return { ok: false, status: 403, message: 'party is not a member of this table' };
 	}
@@ -56,20 +59,35 @@ export function validateDeliberationRequest(
 		return { ok: false, status: 403, message: 'invalid share token' };
 	}
 
-	// Atomic claim: only transitions pending → running.
-	// If another request already claimed it, changes === 0.
+	// Atomic per-party claim: only transitions pending → running.
 	const result = db
-		.update(schema.tables)
-		.set({ status: 'running', updatedAt: Date.now() })
-		.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'pending')))
+		.update(schema.tableParties)
+		.set({ runStatus: 'running' })
+		.where(
+			and(
+				eq(schema.tableParties.tableId, tableId),
+				eq(schema.tableParties.partyId, partyId),
+				eq(schema.tableParties.runStatus, 'pending')
+			)
+		)
 		.run() as unknown as { changes: number };
 
 	if (result.changes === 0) {
-		// Re-read to get current status for the error message
-		const current = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
-		return { ok: false, status: 409, message: `Table is already ${current?.status ?? 'unknown'}` };
+		return {
+			ok: false,
+			status: 409,
+			message: `Party run is already ${link.runStatus ?? 'unknown'}`
+		};
 	}
 
-	// Return the table with the updated status
+	// Bump table.status from pending → running on the first party claim.
+	// No-op if some other party already started.
+	if (table.status === 'pending') {
+		db.update(schema.tables)
+			.set({ status: 'running', updatedAt: Date.now() })
+			.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'pending')))
+			.run();
+	}
+
 	return { ok: true, table: { ...table, status: 'running' } };
 }
