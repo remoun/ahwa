@@ -117,13 +117,12 @@
 		const composeMode = params.get('compose') === '1';
 
 		// Subscribe to the table's event bus for live state updates.
-		// Multi-party tables broadcast party_joined / party_stance_set /
-		// party_run_* / turn_revealed / table_synthesized events; single-
-		// party tables emit nothing of cross-viewer interest, so we skip
-		// the connection there. Completed/failed tables also skip — no
-		// more events coming.
+		// Always open (when the table isn't terminal) — even single-party
+		// tables can become multi-party mid-life via invite, and the
+		// initiator's subscription needs to already be live to receive
+		// the party_joined event for that very invite.
 		let busAbort: AbortController | undefined;
-		if (isMultiParty && status !== 'completed' && status !== 'failed') {
+		if (status !== 'completed' && status !== 'failed') {
 			busAbort = new AbortController();
 			const subUrl = data.token
 				? `/t/${data.tableId}?subscribe=1&party=${data.partyId}&token=${data.token}`
@@ -253,11 +252,22 @@
 				synthesis += event.text;
 				break;
 
-			case 'table_closed':
+			case 'table_closed': {
 				synthesizing = false;
-				done = true;
 				currentRound = '';
+				// Single-party: synthesis ran inline → table.status is now
+				// 'completed' on disk. Flip done so the view shows the
+				// deliberation-complete marker without waiting for an
+				// invalidate round-trip. Multi-party: this party's run
+				// closed but the table is still 'running' until synthesis
+				// fires from the trigger; "done" would mislead by showing
+				// "Deliberation complete." next to the still-active
+				// MultiPartyControls. Hold off until the bus delivers
+				// table_synthesized.
+				const isMulti = (data.parties?.length ?? 0) > 1;
+				if (!isMulti) done = true;
 				break;
+			}
 
 			case 'error':
 				error = event.message;

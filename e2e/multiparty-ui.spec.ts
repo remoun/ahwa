@@ -153,6 +153,69 @@ test.describe('multi-party UI', () => {
 		await carolCtx.close();
 	});
 
+	test('live broadcast: bob writing a stance updates alice without reload', async ({ browser }) => {
+		const aliceCtx = await browser.newContext();
+		const aliceTab = await aliceCtx.newPage();
+		await createMediationTable(aliceTab, 'Live broadcast test');
+		await aliceTab.getByLabel(/Your stance/i).fill('A');
+		await aliceTab.getByRole('button', { name: /^Save draft$/ }).click();
+		const bobInvite = await copyInviteUrl(aliceTab, aliceCtx);
+
+		// Alice sees bob's row in the parties list (via the local invite
+		// onChange invalidate). Bob is "drafting" — no stance yet.
+		await expect(aliceTab.getByText('drafting').first()).toBeVisible();
+
+		// Bob writes a stance. Alice's tab is still open — no manual
+		// reload — and should pick up bob's stance via the bus.
+		const bobCtx = await browser.newContext();
+		const bobTab = await bobCtx.newPage();
+		await bobTab.goto(bobInvite);
+		await bobTab.getByLabel(/Your stance/i).fill('B');
+		await bobTab.getByRole('button', { name: /^Save draft$/ }).click();
+
+		// Alice's "drafting" badge flips to "stance ✓" within a few
+		// seconds (bus event → invalidateAll → page-server reload).
+		await expect(aliceTab.getByText(/stance ✓/i).first()).toBeVisible({ timeout: 10_000 });
+
+		await aliceCtx.close();
+		await bobCtx.close();
+	});
+
+	test('live broadcast: alice synthesizing closes the table on bob without reload', async ({
+		browser
+	}) => {
+		const aliceCtx = await browser.newContext();
+		const aliceTab = await aliceCtx.newPage();
+		await createMediationTable(aliceTab, 'Live synth test');
+		await aliceTab.getByLabel(/Your stance/i).fill('A');
+		await aliceTab.getByRole('button', { name: /^Save draft$/ }).click();
+		const bobInvite = await copyInviteUrl(aliceTab, aliceCtx);
+
+		const bobCtx = await browser.newContext();
+		const bobTab = await bobCtx.newPage();
+		await bobTab.goto(bobInvite);
+		await fillStanceAndRun(bobTab, 'B');
+		await expect(bobTab.getByRole('heading', { name: 'Synthesis' })).not.toBeVisible();
+
+		// Alice runs.
+		await aliceTab.goto(aliceTab.url().replace(/&compose=1/, ''));
+		await aliceTab.getByRole('button', { name: /Save & run my council/i }).click();
+		await expect(aliceTab.getByText(/Your council has finished/i)).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+		// Alice triggers synthesis.
+		await aliceTab.getByRole('button', { name: /^Synthesize this deliberation$/ }).click();
+
+		// Bob's still-open tab picks up table_synthesized via the bus and
+		// re-renders with the synthesis heading visible.
+		await expect(bobTab.getByRole('heading', { name: 'Synthesis' })).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+
+		await aliceCtx.close();
+		await bobCtx.close();
+	});
+
 	test('reveal button shares one of own turns with the other party', async ({ browser }) => {
 		const aliceCtx = await browser.newContext();
 		const aliceTab = await aliceCtx.newPage();
