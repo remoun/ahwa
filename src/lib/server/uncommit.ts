@@ -56,7 +56,7 @@ export function createUncommitHandler(deps: UncommitDeps) {
 			.where(and(eq(schema.turns.tableId, tableId), eq(schema.turns.partyId, partyId)))
 			.run();
 		db.update(schema.tableParties)
-			.set({ runStatus: 'pending' })
+			.set({ runStatus: 'pending', errorMessage: null })
 			.where(
 				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)

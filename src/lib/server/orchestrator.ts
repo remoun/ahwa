@@ -348,7 +348,7 @@ export async function* runDeliberation(
 		// the list view shows the error and the user sees the cause on
 		// reload instead of a generic "encountered an error".
 		db.update(schema.tableParties)
-			.set({ runStatus: 'failed' })
+			.set({ runStatus: 'failed', errorMessage: errorMessage(err) })
 			.where(
 				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)

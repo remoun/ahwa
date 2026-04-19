@@ -62,7 +62,12 @@ export const load: PageServerLoad = ({ params, url, locals }) =>
 			// Only expose this party's stance if it's the viewer's own
 			// stance, or the table is already synthesized.
 			stance:
-				l.partyId === viewerPartyId || table.status === 'completed' ? (l.stance ?? null) : null
+				l.partyId === viewerPartyId || table.status === 'completed' ? (l.stance ?? null) : null,
+			// Per-party run failures surface their cause to everyone at
+			// the table — useful for "Bob's run failed: <reason>" badges
+			// without polluting the table-level errorMessage that's
+			// reserved for the all-failed terminal state.
+			errorMessage: l.errorMessage ?? null
 		}));
 
 		const rawTurns = visibleTurns(db, tableId, viewerPartyId);

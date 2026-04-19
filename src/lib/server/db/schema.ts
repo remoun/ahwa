@@ -57,7 +57,13 @@ export const tableParties = sqliteTable(
 		// reads this as the party's opening message so personas
 		// deliberate from this party's standpoint, not a neutral one.
 		// Empty/null = not yet authored; run gating refuses to start.
-		stance: text('stance')
+		stance: text('stance'),
+		// Per-party run failure reason. tables.error_message is reserved
+		// for the "all parties failed" terminal state; this column lets
+		// a single failed party in an otherwise-running multi-party
+		// table surface its own diagnostic without polluting the table
+		// row everyone reads.
+		errorMessage: text('error_message')
 	},
 	(t) => [primaryKey({ columns: [t.tableId, t.partyId] })]
 );

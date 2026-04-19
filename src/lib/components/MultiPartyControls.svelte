@@ -15,6 +15,7 @@
 		role: 'initiator' | 'invited' | null;
 		runStatus: 'pending' | 'running' | 'completed' | 'failed' | null;
 		stance: string | null;
+		errorMessage: string | null;
 	}
 
 	let {
@@ -220,9 +221,15 @@
 				Your council is deliberating…
 			</p>
 		{:else if viewer?.runStatus === 'failed'}
-			<p class="text-sm text-danger">
-				Your run failed. <button onclick={uncommit} class="underline">Reset and try again</button>.
-			</p>
+			<div class="space-y-1">
+				<p class="text-sm text-danger">
+					Your run failed. <button onclick={uncommit} class="underline">Reset and try again</button
+					>.
+				</p>
+				{#if viewer.errorMessage}
+					<p class="text-xs text-danger/80 font-mono">{viewer.errorMessage}</p>
+				{/if}
+			</div>
 		{/if}
 
 		<!-- Other parties at a glance (multi-party only) -->
@@ -230,23 +237,28 @@
 			<ul class="text-sm space-y-1 border-t border-border pt-3">
 				{#each parties as p (p.partyId)}
 					{#if p.partyId !== viewerPartyId}
-						<li class="flex items-center gap-2 text-fg-muted">
-							<span class="text-xs uppercase tracking-wider text-fg-subtle"
-								>{p.role ?? 'party'}</span
-							>
-							<span class="font-mono text-xs">{p.partyId.slice(0, 8)}</span>
-							<span
-								class="text-xs px-2 py-0.5 rounded-full
-								{p.runStatus === 'completed'
-									? 'bg-accent-bg text-accent'
-									: p.runStatus === 'running'
-										? 'bg-amber-100 text-amber-800'
-										: p.runStatus === 'failed'
-											? 'bg-danger-bg text-danger'
-											: 'bg-surface-muted text-fg-subtle'}"
-							>
-								{p.runStatus ?? 'pending'}
-							</span>
+						<li class="text-fg-muted">
+							<div class="flex items-center gap-2">
+								<span class="text-xs uppercase tracking-wider text-fg-subtle"
+									>{p.role ?? 'party'}</span
+								>
+								<span class="font-mono text-xs">{p.partyId.slice(0, 8)}</span>
+								<span
+									class="text-xs px-2 py-0.5 rounded-full
+									{p.runStatus === 'completed'
+										? 'bg-accent-bg text-accent'
+										: p.runStatus === 'running'
+											? 'bg-amber-100 text-amber-800'
+											: p.runStatus === 'failed'
+												? 'bg-danger-bg text-danger'
+												: 'bg-surface-muted text-fg-subtle'}"
+								>
+									{p.runStatus ?? 'pending'}
+								</span>
+							</div>
+							{#if p.runStatus === 'failed' && p.errorMessage}
+								<p class="ml-1 mt-0.5 text-xs text-danger/80 font-mono">{p.errorMessage}</p>
+							{/if}
 						</li>
 					{/if}
 				{/each}

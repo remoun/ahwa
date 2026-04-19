@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9e072428-4d83-4aa5-8e38-2c85de243bcc",
+  "id": "640286e9-984b-4f09-b4af-d89d86794ed6",
   "prevId": "c72580ad-7971-4330-98d6-478f48bcc388",
   "tables": {
     "councils": {
@@ -294,6 +294,13 @@
         },
         "stance": {
           "name": "stance",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_message": {
+          "name": "error_message",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

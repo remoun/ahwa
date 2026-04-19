@@ -732,6 +732,53 @@ describe('orchestrator', () => {
 			expect(rounds).toHaveLength(4);
 		});
 
+		it("writes the failure cause to the failed party's errorMessage (not the table's)", async () => {
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp-err', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp-err', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			const failingComplete = async () => {
+				throw new Error('boom from provider');
+			};
+
+			let threw = false;
+			try {
+				for await (const _ of runDeliberation(db, {
+					tableId: 'tbl-mp-err',
+					dilemma: 'shared dilemma',
+					councilId: 'test-council',
+					partyId: 'party-1',
+					completeFn: failingComplete
+				})) {
+					// consume
+				}
+			} catch {
+				threw = true;
+			}
+			expect(threw).toBe(true);
+
+			const aLink = db
+				.select()
+				.from(schema.tableParties)
+				.where(eq(schema.tableParties.partyId, 'party-1'))
+				.get();
+			expect(aLink?.runStatus).toBe('failed');
+			expect(aLink?.errorMessage).toContain('boom from provider');
+
+			// Other party + table itself stay clean — only this party failed.
+			const bLink = db
+				.select()
+				.from(schema.tableParties)
+				.where(eq(schema.tableParties.partyId, 'party-B'))
+				.get();
+			expect(bLink?.errorMessage).toBeNull();
+			const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-mp-err')).get();
+			expect(table?.status).toBe('running');
+			expect(table?.errorMessage).toBeNull();
+		});
+
 		it("marks the running party's runStatus completed at end of run", async () => {
 			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
 			createTable(db, 'tbl-mp3', 'shared dilemma', 'test-council', 'party-1');
