@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	import MultiPartyControls from '$lib/components/MultiPartyControls.svelte';
 	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
 	import TurnCard from '$lib/components/TurnCard.svelte';
 	import type { SseEvent } from '$lib/schemas/events';
@@ -97,13 +98,27 @@
 
 	onMount(() => {
 		const status = data.table?.status;
+		const isMultiParty = (data.parties?.length ?? 0) > 1;
+		const viewer = data.parties?.find((p) => p.partyId === data.viewerPartyId);
+		const params = new URLSearchParams(window.location.search);
+		const explicitStart = params.get('start') === '1';
+		const composeMode = params.get('compose') === '1';
 
 		// Completed/failed tables show historical data only; no SSE.
 		if (status === 'completed' || status === 'failed') return;
 
-		if (status === 'running') {
-			// Table is running server-side (user navigated away and back).
-			// Poll until it completes, then reload to show the result.
+		// Multi-party OR initiator-in-compose-mode: hold off auto-start.
+		// The page becomes the stance/invite/synthesize control surface.
+		// SSE only fires when the user clicks "run my council" (?start=1)
+		// or hits the URL with start=1 explicitly.
+		if (isMultiParty || composeMode) {
+			if (!explicitStart || viewer?.runStatus !== 'pending') {
+				return;
+			}
+			// fall through to SSE start below
+		} else if (status === 'running') {
+			// Single-party table running server-side (user navigated
+			// away and back). Poll until it completes.
 			const interval = setInterval(async () => {
 				const res = await fetch(`/api/tables/${data.tableId}`);
 				if (res.ok) {
@@ -115,10 +130,9 @@
 				}
 			}, 3000);
 			return () => clearInterval(interval);
+		} else if (status !== 'pending') {
+			return;
 		}
-
-		// Pending — start the deliberation via SSE
-		if (status !== 'pending') return;
 
 		const controller = new AbortController();
 
@@ -335,6 +349,17 @@
 			{/if}
 			<p class={dilemmaClass}>{data.table.dilemma}</p>
 		</figure>
+	{/if}
+
+	{#if data.parties && data.viewerPartyId}
+		<MultiPartyControls
+			tableId={data.tableId}
+			viewerPartyId={data.viewerPartyId}
+			token={data.token}
+			parties={data.parties}
+			tableStatus={data.table?.status}
+			onChange={() => window.location.reload()}
+		/>
 	{/if}
 
 	{#if error}

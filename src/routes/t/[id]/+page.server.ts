@@ -32,8 +32,37 @@ export const load: PageServerLoad = ({ params, url, locals }) =>
 		const partyId = urlParty || viewerPartyId;
 
 		if (!table) {
-			return { tableId, partyId, token, table: null, turns: [], council: null };
+			return {
+				tableId,
+				partyId,
+				token,
+				table: null,
+				turns: [],
+				council: null,
+				viewerPartyId,
+				parties: []
+			};
 		}
+
+		// Multi-party UI needs to know all party slots and their states
+		// (not just the viewer's). Stances of OTHER parties stay hidden
+		// until the table is fully synthesized — until then each party's
+		// framing is private. Once synthesized, stances become readable
+		// alongside the synthesizer's output.
+		const allLinks = db
+			.select()
+			.from(schema.tableParties)
+			.where(eq(schema.tableParties.tableId, tableId))
+			.all();
+		const parties = allLinks.map((l) => ({
+			partyId: l.partyId,
+			role: l.role,
+			runStatus: l.runStatus,
+			// Only expose this party's stance if it's the viewer's own
+			// stance, or the table is already synthesized.
+			stance:
+				l.partyId === viewerPartyId || table.status === 'completed' ? (l.stance ?? null) : null
+		}));
 
 		const rawTurns = visibleTurns(db, tableId, viewerPartyId);
 
@@ -52,5 +81,15 @@ export const load: PageServerLoad = ({ params, url, locals }) =>
 			if (p.name && p.description) personaMeta[p.name] = p.description;
 		}
 
-		return { tableId, partyId, token, table, turns, council, personaMeta };
+		return {
+			tableId,
+			partyId,
+			token,
+			table,
+			turns,
+			council,
+			personaMeta,
+			viewerPartyId,
+			parties
+		};
 	});
