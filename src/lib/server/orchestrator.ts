@@ -110,6 +110,22 @@ export async function* runDeliberation(
 				: [partyId];
 		const synthVisibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
 
+		// Load this party's stance — the council reads it as the party's
+		// framing on the dilemma. Single-party tables typically have no
+		// stance (the dilemma is enough); multi-party tables have one
+		// stance per party (gated above).
+		const partyLink = db
+			.select()
+			.from(schema.tableParties)
+			.where(
+				and(
+					eq(schema.tableParties.tableId, tableId),
+					eq(schema.tableParties.partyId, partyId)
+				)
+			)
+			.get();
+		const stance = partyLink?.stance ?? null;
+
 		// Set status to 'running' if it wasn't already (guard may have done it).
 		if (existing.status === 'pending') {
 			db.update(schema.tables)
@@ -166,7 +182,7 @@ export async function* runDeliberation(
 			const truncatedFlags: boolean[] = personas.map(() => false);
 			const personaStreams = personas.map((persona, idx) =>
 				(async function* (): AsyncGenerator<SseEvent> {
-					const messages = buildMessages(dilemma, round, roundIdx, turnsByRound);
+					const messages = buildMessages(dilemma, stance, round, roundIdx, turnsByRound);
 					const result = await completeFn({
 						model: resolvedConfig.model,
 						system: persona.systemPrompt ?? '',
@@ -365,21 +381,24 @@ export async function* runDeliberation(
 
 function buildMessages(
 	dilemma: string,
+	stance: string | null,
 	round: RoundDef,
 	roundIdx: number,
 	turnsByRound: Map<number, Array<{ personaName: string; text: string }>>
 ): Array<{ role: 'user' | 'assistant'; content: string }> {
+	const stanceBlock = stance?.trim()
+		? `\n\nThe person you're advising frames it this way:\n\n${stance.trim()}`
+		: '';
+
 	if (roundIdx === 0) {
-		// Opening round: just the dilemma
 		return [
 			{
 				role: 'user',
-				content: `The person is facing this dilemma:\n\n${dilemma}\n\n${round.prompt_suffix}`
+				content: `The person is facing this dilemma:\n\n${dilemma}${stanceBlock}\n\n${round.prompt_suffix}`
 			}
 		];
 	}
 
-	// Cross-examination and later rounds: include prior context
 	const priorTurns = Array.from(turnsByRound.entries())
 		.filter(([idx]) => idx < roundIdx)
 		.flatMap(([, turns]) => turns);
@@ -389,7 +408,7 @@ function buildMessages(
 	return [
 		{
 			role: 'user',
-			content: `The person is facing this dilemma:\n\n${dilemma}\n\nHere is what the council has said so far:\n\n${context}\n\n${round.prompt_suffix}`
+			content: `The person is facing this dilemma:\n\n${dilemma}${stanceBlock}\n\nHere is what the council has said so far:\n\n${context}\n\n${round.prompt_suffix}`
 		}
 	];
 }

@@ -59,6 +59,18 @@ export function validateDeliberationRequest(
 		return { ok: false, status: 403, message: 'invalid share token' };
 	}
 
+	// In multi-party tables a party must author a stance before they
+	// can run. Single-party keeps the old "dilemma is enough" semantics
+	// so existing tables (no stance) still work.
+	const partyCount = db
+		.select()
+		.from(schema.tableParties)
+		.where(eq(schema.tableParties.tableId, tableId))
+		.all().length;
+	if (partyCount > 1 && !link.stance?.trim()) {
+		return { ok: false, status: 412, message: 'stance required before running' };
+	}
+
 	// Atomic per-party claim: only transitions pending → running.
 	const result = db
 		.update(schema.tableParties)

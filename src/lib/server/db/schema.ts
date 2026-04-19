@@ -29,6 +29,12 @@ export const tables = sqliteTable('tables', {
 	synthesis: text('synthesis'),
 	errorMessage: text('error_message'),
 	isDemo: integer('is_demo').default(0),
+	// Optional per-table override of the council's round count. Null
+	// uses the council's roundStructure as-is. When N exceeds the
+	// council's defined rounds, the orchestrator repeats the last
+	// round's prompt for the remainder — councils define round shape;
+	// the operator decides depth.
+	maxRounds: integer('max_rounds'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now()),
 	updatedAt: integer('updated_at').$defaultFn(() => Date.now())
 });
@@ -45,7 +51,13 @@ export const tableParties = sqliteTable(
 		// Single-party tables track tables.status 1:1.
 		runStatus: text('run_status', {
 			enum: ['pending', 'running', 'completed', 'failed']
-		}).default('pending')
+		}).default('pending'),
+		// The party's framing/POV for the dilemma — markdown. Distinct
+		// from tables.dilemma (which is the shared situation). Council
+		// reads this as the party's opening message so personas
+		// deliberate from this party's standpoint, not a neutral one.
+		// Empty/null = not yet authored; run gating refuses to start.
+		stance: text('stance')
 	},
 	(t) => [primaryKey({ columns: [t.tableId, t.partyId] })]
 );

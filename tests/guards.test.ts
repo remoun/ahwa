@@ -205,7 +205,12 @@ describe('validateDeliberationRequest', () => {
 		beforeEach(() => {
 			// Add bob as a second party on pending-table for the multi-party scenarios.
 			db.insert(schema.tableParties)
-				.values({ tableId: 'pending-table', partyId: 'bob', role: 'invited' })
+				.values({ tableId: 'pending-table', partyId: 'bob', role: 'invited', stance: 'b view' })
+				.run();
+			// Seed alice's stance too — multi-party tables require a stance.
+			db.update(schema.tableParties)
+				.set({ stance: 'a view' })
+				.where(eq(schema.tableParties.partyId, 'alice'))
 				.run();
 		});
 
@@ -223,6 +228,19 @@ describe('validateDeliberationRequest', () => {
 			expect(second.ok).toBe(false);
 			if (!second.ok) {
 				expect(second.status).toBe(409);
+			}
+		});
+
+		it('refuses to start when the party has no stance (multi-party only)', () => {
+			db.update(schema.tableParties)
+				.set({ stance: null })
+				.where(eq(schema.tableParties.partyId, 'alice'))
+				.run();
+			const res = validateDeliberationRequest(db, 'pending-table', 'alice');
+			expect(res.ok).toBe(false);
+			if (!res.ok) {
+				expect(res.status).toBe(412);
+				expect(res.message).toMatch(/stance/i);
 			}
 		});
 
