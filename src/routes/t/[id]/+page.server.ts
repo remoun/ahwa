@@ -23,13 +23,14 @@ export const load: PageServerLoad = ({ params, url, locals }) =>
 		// flow); else fall back to the request's identity. Filtering
 		// by viewer keeps an invitee from seeing the initiator's
 		// private turns on reload — invariant #8 at the page layer.
-		const viewerPartyId =
-			urlParty && verifyShareToken(tableId, urlParty, token) ? urlParty : locals.party.id;
+		const tokenVerified = !!urlParty && verifyShareToken(tableId, urlParty, token);
+		const viewerPartyId = tokenVerified ? urlParty : locals.party.id;
 
-		// Echo the URL party back to the client so the SSE GET uses
-		// the same identity. Falling back to viewer here keeps single-
-		// party tables working when the URL has no ?party.
-		const partyId = urlParty || viewerPartyId;
+		// Echo the SAME identity to the client so the SSE GET / mutation
+		// calls use the resolved viewer — never the unverified urlParty,
+		// which would otherwise mismatch the server's filtering and the
+		// SSE guard would 403 the start-run anyway.
+		const partyId = viewerPartyId;
 
 		if (!table) {
 			return {

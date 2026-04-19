@@ -168,9 +168,30 @@ describe('validateDeliberationRequest', () => {
 		}
 	});
 
-	it('accepts requests without any token (localhost direct access)', () => {
-		// M1 is localhost-only; guard only enforces token validity when one
-		// is supplied. Null token means no token check — pass through.
+	it('accepts requests without any token when caller IS the party', () => {
+		// On M1 / single-party flow, the initiator's own session calls the
+		// guard without a token. Allowed when caller's identity matches.
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', null, 'alice');
+		expect(result.ok).toBe(true);
+	});
+
+	it('rejects no-token requests when caller is NOT the named party (M2 hijack guard)', () => {
+		// On M2 the SSE endpoint is reachable by any authenticated user.
+		// Without a share token AND without identity match, refuse — else
+		// any logged-in user could hijack runs by guessing party IDs.
+		const result = validateDeliberationRequest(db, 'pending-table', 'alice', null, 'bob');
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.status).toBe(403);
+			expect(result.message).toMatch(/identity|token/i);
+		}
+	});
+
+	it('accepts no-caller, no-token (legacy callers); behaves as M1 trust-localhost', () => {
+		// Backwards compatibility: tests / direct local callers that
+		// haven't been updated still pass through. Real routes plumb
+		// `callerPartyId` from locals — this branch is tightened where
+		// it counts.
 		const result = validateDeliberationRequest(db, 'pending-table', 'alice', null);
 		expect(result.ok).toBe(true);
 	});

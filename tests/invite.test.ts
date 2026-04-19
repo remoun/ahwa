@@ -71,4 +71,14 @@ describe('invite handler', () => {
 		const res = await call('nope');
 		expect(res.status).toBe(404);
 	});
+
+	it('refuses to invite into a demo table (invariant #11)', async () => {
+		// Demo tables must never participate in two-party mode. Inviting
+		// into one would silently flip it multi-party and trip every
+		// downstream "is_demo + multi-party" guard the rest of the code
+		// doesn't have because those combinations weren't supposed to exist.
+		db.update(schema.tables).set({ isDemo: 1 }).where(eq(schema.tables.id, 'tbl-1')).run();
+		const res = await call('tbl-1');
+		expect(res.status).toBe(403);
+	});
 });

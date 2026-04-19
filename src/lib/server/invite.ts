@@ -32,6 +32,12 @@ export function createInviteHandler(deps: InviteDeps) {
 
 		const table = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
 		if (!table) return json({ error: 'Table not found' }, { status: 404 });
+		// Invariant #11: demo tables are second-class — never multi-party,
+		// memory, or sync. Refusing the invite at the source keeps every
+		// downstream "is_demo + multi-party" guard a no-op.
+		if (table.isDemo === 1) {
+			return json({ error: 'Cannot invite to a demo table' }, { status: 403 });
+		}
 
 		const callerLink = db
 			.select()

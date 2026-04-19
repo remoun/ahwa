@@ -365,8 +365,12 @@ export async function* runDeliberation(
 				.where(eq(schema.tables.id, tableId))
 				.run();
 		} else {
+			// Don't write errorMessage on the table when other parties may
+			// still succeed — a stale per-party error would mislead anyone
+			// who later reloads after a successful synthesis. The failed
+			// party's own runStatus already carries the signal.
 			db.update(schema.tables)
-				.set({ errorMessage: errorMessage(err), updatedAt: Date.now() })
+				.set({ updatedAt: Date.now() })
 				.where(eq(schema.tables.id, tableId))
 				.run();
 		}

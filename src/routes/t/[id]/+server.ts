@@ -14,14 +14,14 @@ import type { RequestHandler } from './$types';
 const DEMO_ESTIMATE_TOKENS = parseInt(process.env.AHWA_DEMO_ESTIMATE_TOKENS ?? '5000', 10);
 const DEMO_USD_PER_MILLION = parseFloat(process.env.AHWA_DEMO_USD_PER_MILLION_TOKENS ?? '0.75');
 
-export const GET: RequestHandler = async ({ params, url, request }) => {
+export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 	try {
 		const tableId = params.id;
 		const partyId = url.searchParams.get('party');
 		const token = url.searchParams.get('token');
 
 		const db = getDb();
-		const guard = validateDeliberationRequest(db, tableId, partyId, token);
+		const guard = validateDeliberationRequest(db, tableId, partyId, token, locals.party.id);
 		if (!guard.ok) {
 			return new Response(JSON.stringify({ error: guard.message }), {
 				status: guard.status,
