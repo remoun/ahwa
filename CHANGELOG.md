@@ -4,6 +4,14 @@ All notable changes to Ahwa are documented here. The format is loosely
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project
 aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/remoun/ahwa/compare/v0.1.0...v0.2.0) (2026-04-19)
+
+
+### Features
+
+* **release:** create as draft, attach asset, then publish ([d83e0b9](https://github.com/remoun/ahwa/commit/d83e0b925f4a042b0d40175e29dbc43f769bc3e8))
+* **release:** create as draft, attach asset, then publish ([a58a770](https://github.com/remoun/ahwa/commit/a58a7702bd28937a50e3c4b8a32b514e251e7697))
+
 ## [M1] — Self-host v1
 
 See [CLAUDE.md](./CLAUDE.md#milestones) for the full milestone plan.
