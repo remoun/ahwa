@@ -2,12 +2,17 @@
 import { getDb } from '$lib/server/db';
 import { cleanupExpiredDemoTables } from '$lib/server/demo-cleanup';
 import { createIdentityHandle, readIdentityEnv } from '$lib/server/identity';
+import { registerShutdownHandler } from '$lib/server/lifecycle';
 
 // Resolve once at module load — env doesn't change between requests, and
 // the result of readIdentityEnv is a tiny config object.
 const identityEnv = readIdentityEnv(process.env);
 
 export const handle = createIdentityHandle({ getDb, env: identityEnv });
+
+// Wire SIGTERM/SIGINT to drain in-flight deliberations before exit.
+// Idempotent: registerShutdownHandler ignores second + calls.
+registerShutdownHandler();
 
 // ---------------------------------------------------------------------
 // Demo TTL sweep — runs once per process at startup.
