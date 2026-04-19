@@ -23,6 +23,13 @@
 	let { data }: { data: PageData } = $props();
 
 	interface Turn {
+		// id/partyId/visibleTo are populated for historical turns
+		// (loaded from DB) so the reveal control can target them. Live
+		// SSE turns leave these unset — reveal is a post-hoc action
+		// available on reload after the run completes.
+		id?: string;
+		partyId?: string | null;
+		visibleTo?: string[] | null;
 		personaId: string;
 		personaName: string;
 		emoji: string;
@@ -72,13 +79,19 @@
 	});
 
 	$effect(() => {
-		// Render persisted turns for completed AND failed tables — a failed
-		// deliberation may have completed some turns before the error, and
-		// users should see what the council said before things went wrong.
-		if (data.table?.status === 'completed' || data.table?.status === 'failed') {
+		// Render persisted turns whenever there are any visible to this
+		// viewer — covers the obvious cases (completed/failed tables)
+		// plus the multi-party intermediate state where the viewer's
+		// own run is done but the table is still 'running' (waiting on
+		// other parties). The page server already filtered visible_to
+		// for us; we just render what we got.
+		if (data.turns?.length) {
 			turns = data.turns
 				.filter((t) => t.round > 0)
 				.map((t) => ({
+					id: t.id,
+					partyId: t.partyId,
+					visibleTo: t.visibleTo,
 					personaId: '',
 					personaName: t.personaName ?? '',
 					emoji: t.emoji ?? '',
@@ -88,8 +101,6 @@
 					round: t.round
 				}));
 			synthesis = data.table?.synthesis ?? '';
-			// Only mark done for successfully completed tables; failed tables
-			// show their own banner via isFailed.
 			if (data.table?.status === 'completed') {
 				done = true;
 			}
@@ -249,6 +260,47 @@
 		return () => io.disconnect();
 	});
 
+	/**
+	 * Per-turn reveal targets. Renders a "Reveal to <party>" button on
+	 * the viewer's own private turns when the table is multi-party and
+	 * not yet synthesized. Already-revealed parties show as "Shared
+	 * with X" instead. Synthesizer turns and others' turns get nothing.
+	 */
+	function revealTargetsFor(turn: Turn) {
+		const empty = {
+			revealable: [] as { partyId: string; label: string }[],
+			revealed: [] as { partyId: string; label: string }[]
+		};
+		if (!turn.id || !turn.partyId) return empty;
+		if (turn.partyId === 'synthesizer') return empty;
+		if (turn.partyId !== data.viewerPartyId) return empty;
+		if (data.table?.status === 'completed') return empty;
+		const others = (data.parties ?? []).filter((p) => p.partyId !== data.viewerPartyId);
+		if (others.length === 0) return empty;
+		const visible = new Set(turn.visibleTo ?? []);
+		const revealable: { partyId: string; label: string }[] = [];
+		const revealed: { partyId: string; label: string }[] = [];
+		for (const p of others) {
+			const label = p.partyId.slice(0, 8);
+			if (visible.has(p.partyId)) revealed.push({ partyId: p.partyId, label });
+			else revealable.push({ partyId: p.partyId, label });
+		}
+		return { revealable, revealed };
+	}
+
+	async function revealTurn(turnId: string, withPartyId: string) {
+		const res = await fetch(`/api/turns/${turnId}/reveal`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ withPartyId })
+		});
+		if (res.ok) {
+			// Reload so the page server re-derives visible_to and the
+			// other party's view picks up the new turn on their next visit.
+			window.location.reload();
+		}
+	}
+
 	let copyState = $state<'idle' | 'copied' | 'error'>('idle');
 	async function copyMarkdown() {
 		try {
@@ -405,6 +457,10 @@
 					text={turn.text}
 					complete={turn.complete}
 					streaming={view === 'streaming'}
+					turnId={turn.id}
+					revealableTo={revealTargetsFor(turn).revealable}
+					revealedTo={revealTargetsFor(turn).revealed}
+					onReveal={revealTurn}
 				/>
 			{/each}
 		</div>
