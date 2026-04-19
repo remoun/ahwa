@@ -69,13 +69,23 @@ jobs:
           TAG: ${{ steps.target.outputs.tag }}
         run: |
           set -euo pipefail
+          # Wrap files in an ahwa-VERSION/ directory to match the
+          # GitHub source-archive convention. YNH's ynh_setup_source
+          # defaults to in_subdir=true (strip one leading dir on
+          # extract); a flat tarball without a wrapper triggers it to
+          # eat 'build/' as the wrapper, losing all top-level files.
+          dir="ahwa-${TAG#v}"
+          mkdir "$dir"
+          cp -r build/ "$dir/"
+          cp package.json bun.lock .bun-version "$dir/"
+
           name="ahwa-build-${TAG}.tar.gz"
           # The tarball contains everything an installer needs to:
           #   1. bun install --production --frozen-lockfile
           #   2. systemd-run build/index.js
           # No source tree, no devDeps, no .git. Lockfile + bun-version
           # ensure the prod install is reproducible.
-          tar -czf "$name" build/ package.json bun.lock .bun-version
+          tar -czf "$name" "$dir"
           ls -lh "$name"
           shasum -a 256 "$name"
 
