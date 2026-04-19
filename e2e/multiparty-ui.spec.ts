@@ -250,4 +250,183 @@ test.describe('multi-party UI', () => {
 		await aliceCtx.close();
 		await bobCtx.close();
 	});
+
+	test('uncommit & re-edit: alice runs, uncommits, edits stance, runs again', async ({
+		browser
+	}) => {
+		const aliceCtx = await browser.newContext();
+		const aliceTab = await aliceCtx.newPage();
+		await createMediationTable(aliceTab, 'Uncommit flow');
+		await aliceTab.getByLabel(/Your stance/i).fill('first take');
+		await aliceTab.getByRole('button', { name: /^Save draft$/ }).click();
+		await copyInviteUrl(aliceTab, aliceCtx); // make it multi-party so synth is deferred
+
+		// Run with the first stance.
+		await aliceTab.goto(aliceTab.url().replace(/&compose=1/, ''));
+		await aliceTab.getByRole('button', { name: /Save & run my council/i }).click();
+		await expect(aliceTab.getByText(/Your council has finished/i)).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+
+		// Uncommit. Editor should reappear with the previous stance prefilled.
+		await aliceTab.getByRole('button', { name: /uncommit & edit/i }).click();
+		await expect(aliceTab.getByLabel(/Your stance/i)).toBeVisible({ timeout: 5_000 });
+		await expect(aliceTab.getByLabel(/Your stance/i)).toHaveValue('first take');
+
+		// Edit + re-run.
+		await aliceTab.getByLabel(/Your stance/i).fill('revised take');
+		await aliceTab.getByRole('button', { name: /Save & run my council/i }).click();
+		await expect(aliceTab.getByText(/Your council has finished/i)).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+
+		await aliceCtx.close();
+	});
+
+	test('live broadcast: alice revealing a turn surfaces it on bob without reload', async ({
+		browser
+	}) => {
+		const aliceCtx = await browser.newContext();
+		const aliceTab = await aliceCtx.newPage();
+		await createMediationTable(aliceTab, 'Live reveal test');
+		await aliceTab.getByLabel(/Your stance/i).fill('A');
+		await aliceTab.getByRole('button', { name: /^Save draft$/ }).click();
+		const bobInvite = await copyInviteUrl(aliceTab, aliceCtx);
+
+		// Alice runs first.
+		await aliceTab.goto(aliceTab.url().replace(/&compose=1/, ''));
+		await aliceTab.getByRole('button', { name: /Save & run my council/i }).click();
+		await expect(aliceTab.getByText(/Your council has finished/i)).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+
+		// Bob opens the link and sees no persona turns yet (alice's are private).
+		const bobCtx = await browser.newContext();
+		const bobTab = await bobCtx.newPage();
+		await bobTab.goto(bobInvite);
+		await expect(bobTab.getByText(/mocked response for E2E testing/i)).not.toBeVisible();
+
+		// Alice reveals her first turn — bob's tab should pick up the
+		// turn_revealed event via the bus and re-render with that turn
+		// visible. No reload on bob's side.
+		await aliceTab
+			.getByRole('button', { name: /^Reveal to /i })
+			.first()
+			.click();
+		await expect(bobTab.getByText(/mocked response for E2E testing/i).first()).toBeVisible({
+			timeout: 10_000
+		});
+
+		await aliceCtx.close();
+		await bobCtx.close();
+	});
+
+	test('per-party failure: alice errors via [MOCK_FAIL], badge + errorMessage shown, recovery via uncommit', async ({
+		browser
+	}) => {
+		const aliceCtx = await browser.newContext();
+		const aliceTab = await aliceCtx.newPage();
+		await createMediationTable(aliceTab, 'Failure recovery test');
+		// [MOCK_FAIL] in the stance is what the council prompt forwards
+		// to the LLM as user message — the mock LLM throws on it.
+		await aliceTab.getByLabel(/Your stance/i).fill('[MOCK_FAIL] please fail');
+		await aliceTab.getByRole('button', { name: /^Save draft$/ }).click();
+		await copyInviteUrl(aliceTab, aliceCtx);
+
+		// Run — expected to fail.
+		await aliceTab.goto(aliceTab.url().replace(/&compose=1/, ''));
+		await aliceTab.getByRole('button', { name: /Save & run my council/i }).click();
+		await expect(aliceTab.getByText(/Your run failed/i)).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+		// Per-party errorMessage surfaced in the badge area.
+		await expect(aliceTab.getByText(/Mock LLM failure injected/i).first()).toBeVisible();
+
+		// Recover via uncommit — should reset to a writable stance editor.
+		await aliceTab.getByRole('button', { name: /Reset and try again/i }).click();
+		await expect(aliceTab.getByLabel(/Your stance/i)).toBeVisible({ timeout: 5_000 });
+
+		// Edit + re-run with a passing stance.
+		await aliceTab.getByLabel(/Your stance/i).fill('clean re-attempt');
+		await aliceTab.getByRole('button', { name: /Save & run my council/i }).click();
+		await expect(aliceTab.getByText(/Your council has finished/i)).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+
+		await aliceCtx.close();
+	});
+
+	test('concurrent runs: alice and bob start at the same time, both complete', async ({
+		browser
+	}) => {
+		const aliceCtx = await browser.newContext();
+		const aliceTab = await aliceCtx.newPage();
+		await createMediationTable(aliceTab, 'Concurrent runs');
+		await aliceTab.getByLabel(/Your stance/i).fill('A');
+		await aliceTab.getByRole('button', { name: /^Save draft$/ }).click();
+		const bobInvite = await copyInviteUrl(aliceTab, aliceCtx);
+
+		const bobCtx = await browser.newContext();
+		const bobTab = await bobCtx.newPage();
+		await bobTab.goto(bobInvite);
+		await bobTab.getByLabel(/Your stance/i).fill('B');
+		await bobTab.getByRole('button', { name: /^Save draft$/ }).click();
+
+		// Navigate alice off compose mode so the "run my council" path
+		// is the same shape as bob's.
+		await aliceTab.goto(aliceTab.url().replace(/&compose=1/, ''));
+
+		// Fire both runs in parallel via Promise.all on the click events.
+		// The per-party gate is row-scoped (table_parties.run_status
+		// atomic claim), so A's claim must not block B's. If gating were
+		// table-scoped, one party would 409.
+		await Promise.all([
+			aliceTab.getByRole('button', { name: /Save & run my council/i }).click(),
+			bobTab.getByRole('button', { name: /Save & run my council/i }).click()
+		]);
+
+		await Promise.all([
+			expect(aliceTab.getByText(/Your council has finished/i)).toBeVisible({
+				timeout: DELIBERATION_TIMEOUT
+			}),
+			expect(bobTab.getByText(/Your council has finished/i)).toBeVisible({
+				timeout: DELIBERATION_TIMEOUT
+			})
+		]);
+
+		await aliceCtx.close();
+		await bobCtx.close();
+	});
+
+	test('live broadcast: bob seeing alice fail mid-run picks up party_run_failed', async ({
+		browser
+	}) => {
+		const aliceCtx = await browser.newContext();
+		const aliceTab = await aliceCtx.newPage();
+		await createMediationTable(aliceTab, 'Live failure test');
+		await aliceTab.getByLabel(/Your stance/i).fill('[MOCK_FAIL] failing stance');
+		await aliceTab.getByRole('button', { name: /^Save draft$/ }).click();
+		const bobInvite = await copyInviteUrl(aliceTab, aliceCtx);
+
+		// Bob opens the link and sees alice in 'pending' state.
+		const bobCtx = await browser.newContext();
+		const bobTab = await bobCtx.newPage();
+		await bobTab.goto(bobInvite);
+		// Alice's badge should be visible (other-party row).
+		await expect(bobTab.locator('text=initiator').first()).toBeVisible();
+
+		// Alice runs and fails.
+		await aliceTab.goto(aliceTab.url().replace(/&compose=1/, ''));
+		await aliceTab.getByRole('button', { name: /Save & run my council/i }).click();
+		await expect(aliceTab.getByText(/Your run failed/i)).toBeVisible({
+			timeout: DELIBERATION_TIMEOUT
+		});
+
+		// Bob's tab — still open — picks up party_run_failed event;
+		// alice's badge in his other-parties list flips to 'failed'.
+		await expect(bobTab.locator('text=failed').first()).toBeVisible({ timeout: 10_000 });
+
+		await aliceCtx.close();
+		await bobCtx.close();
+	});
 });
