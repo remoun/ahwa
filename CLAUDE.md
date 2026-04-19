@@ -123,6 +123,37 @@ See README for user-facing install docs. The architectural constraints:
 - **License:** AGPL-3.0-or-later. Every source file gets
   `// SPDX-License-Identifier: AGPL-3.0-or-later`.
 
+## Live state propagation (M3+)
+
+Multi-party tables stay in sync across viewers via a per-table event
+bus (`src/lib/server/table-bus.ts`). The bus is in-memory and process-
+local on purpose; multi-process deploys would swap in Redis pub/sub or
+postgres LISTEN/NOTIFY behind the same `subscribe()` / `publish()`
+interface.
+
+Rules for new mutation handlers (or new orchestrator state transitions)
+that change something a viewer would want to see live:
+
+- **Define the event in `src/lib/schemas/events.ts`** as a new
+  StateEvent variant. Add a typed constructor to `Events.*` so call
+  sites read uniformly.
+- **`publish(tableId, Events.xxx(...))`** at the end of the handler,
+  AFTER the DB write commits. Don't publish optimistically — if the
+  write fails, subscribers shouldn't see the event.
+- **Do not publish high-bandwidth content** (token streams, full turn
+  text). Those go on the runner's own SSE response. The bus is for
+  sparse "something changed; refetch" signals; subscribers respond by
+  invalidating their SvelteKit page data.
+- **Token streams stay party-private.** The subscribe-only branch in
+  `src/routes/t/[id]/+server.ts` filters out token / persona_turn_*
+  events for non-runner viewers. If you add a new token-shaped event,
+  add it to that filter or the runner's tokens leak to other viewers.
+
+The client (`src/routes/t/[id]/+page.svelte`) opens the subscribe
+stream on mount for any non-terminal table and calls `invalidateAll()`
+on every event. Visibility filtering happens server-side in the page
+load — the client trusts what it gets.
+
 ## Architectural invariants (do not violate)
 
 These are the decisions that keep later milestones cheap. If a change would
