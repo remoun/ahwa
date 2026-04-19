@@ -2,13 +2,20 @@
 #
 # release-please opens (and maintains) a "Release PR" on main that bumps
 # the version + updates CHANGELOG.md based on conventional-commit
-# subjects since the last release. Merging that PR cuts a tag + GitHub
-# release, which produces the tarball the YunoHost package pins against.
+# subjects since the last release. Merging that PR cuts a tag + draft
+# GitHub release; release-assets.yml then attaches the build tarball
+# and publishes the release.
 #
 # Why a PR-gated release rather than tag-on-every-push: the YNH catalog
 # autoupdate bot files a sha256-bump PR for every new release, so we want
 # releases to mean "we intend to ship this" — not "main moved." The PR is
 # the gate; everything else is mechanical.
+#
+# Config lives in release-please-config.json (release-type, draft,
+# package layout) and .release-please-manifest.json (tracked version).
+# We pass NO inline `with:` options here — when you specify
+# release-type inline, the action ignores the config file entirely
+# (and silently drops draft: true with it).
 name: release-please
 
 on:
@@ -24,8 +31,3 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4
-        with:
-          # `simple` = just bumps a version file, no language-specific
-          # publishing. The tag + GitHub release are what we want for
-          # YNH consumption.
-          release-type: simple
