@@ -51,18 +51,33 @@ export async function* runDeliberation(
 	db: DB,
 	request: DeliberationRequest
 ): AsyncGenerator<SseEvent> {
+	// Preflight: missing-row and terminal-state errors throw without
+	// any DB writes — re-issuing a deliberation against a completed
+	// table shouldn't degrade the calling party's status to 'failed'.
+	// Only failures past this point go through markPartyFailed.
+	preflight(db, request.tableId);
+
 	try {
 		const ctx = prepareContext(db, request);
 		const orchestrator = new Orchestrator(ctx);
 		yield* orchestrator.run();
 	} catch (err) {
-		// Catches both preparation errors (council not found, etc.) and
-		// run-time errors. The original implementation wrapped the
-		// whole generator body in one try; preserve that — otherwise
-		// an early load error leaves the table stuck in 'pending'.
+		// Catches both preparation errors (council not found, persona
+		// load issues, etc.) and run-time errors. The original
+		// implementation wrapped the whole generator body in one try;
+		// preserve that — otherwise an early load error leaves the
+		// table stuck in 'pending'.
 		markPartyFailed(db, request.tableId, request.partyId, err);
 		publish(request.tableId, Events.partyRunFailed(request.partyId));
 		throw err;
+	}
+}
+
+function preflight(db: DB, tableId: string): void {
+	const existing = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
+	if (!existing) throw new Error(`Table not found: ${tableId}`);
+	if (existing.status !== 'pending' && existing.status !== 'running') {
+		throw new Error(`Table is in terminal state: ${existing.status}`);
 	}
 }
 
@@ -93,14 +108,9 @@ interface DeliberationContext {
 function prepareContext(db: DB, request: DeliberationRequest): DeliberationContext {
 	const { tableId, dilemma, councilId, partyId, completeFn = defaultComplete, signal } = request;
 
-	// Verify the row exists before doing anything else. If it doesn't,
-	// there's nothing to mark 'failed' on a later throw — fail loud here
-	// instead so the caller sees a clean missing-row error.
-	const existing = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get();
-	if (!existing) throw new Error(`Table not found: ${tableId}`);
-	if (existing.status !== 'pending' && existing.status !== 'running') {
-		throw new Error(`Table is in terminal state: ${existing.status}`);
-	}
+	// Preflight already verified the row exists and isn't terminal; the
+	// re-fetch here is just for the snapshot fields we need below.
+	const existing = db.select().from(schema.tables).where(eq(schema.tables.id, tableId)).get()!;
 
 	const council = db.select().from(schema.councils).where(eq(schema.councils.id, councilId)).get();
 	if (!council) throw new Error(`Council not found: ${councilId}`);
