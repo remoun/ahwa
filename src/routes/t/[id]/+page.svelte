@@ -6,6 +6,7 @@
 	import MultiPartyControls from '$lib/components/MultiPartyControls.svelte';
 	import SynthesisPanel from '$lib/components/SynthesisPanel.svelte';
 	import TurnCard from '$lib/components/TurnCard.svelte';
+	import { Labels } from '$lib/labels';
 	import type { SseEvent } from '$lib/schemas/events';
 	import { consumeSseStream } from '$lib/sse-client';
 
@@ -122,25 +123,39 @@
 		// initiator's subscription needs to already be live to receive
 		// the party_joined event for that very invite.
 		let busAbort: AbortController | undefined;
-		if (status !== 'completed' && status !== 'failed') {
+		let busReconnectTimer: ReturnType<typeof setTimeout> | undefined;
+		const subUrl = data.token
+			? `/t/${data.tableId}?subscribe=1&party=${data.partyId}&token=${data.token}`
+			: `/t/${data.tableId}?subscribe=1&party=${data.partyId}`;
+		// Auto-reconnect with capped exponential backoff. Server restarts,
+		// network blips, and proxies that close idle SSE all benefit from
+		// re-establishing the stream so the user doesn't see a silently
+		// stalled UI. The backoff caps at 10s — we'd rather over-reconnect
+		// on flaky networks than silently miss events for minutes.
+		let reconnectDelayMs = 500;
+		const openBusStream = () => {
 			busAbort = new AbortController();
-			const subUrl = data.token
-				? `/t/${data.tableId}?subscribe=1&party=${data.partyId}&token=${data.token}`
-				: `/t/${data.tableId}?subscribe=1&party=${data.partyId}`;
 			consumeSseStream({
 				url: subUrl,
 				signal: busAbort.signal,
 				onEvent: () => {
+					// Successful event = healthy connection. Reset the
+					// backoff so the next disconnect retries fast.
+					reconnectDelayMs = 500;
 					// Coarse: any event triggers a full data refresh. The
 					// page server already enforces visible_to so we trust
 					// invalidateAll to deliver the right view per viewer.
 					invalidateAll();
 				},
 				onError: () => {
-					// Bus disconnect is non-fatal — page falls back to its
-					// last-loaded state. User can reload to retry.
+					if (busAbort?.signal.aborted) return;
+					busReconnectTimer = setTimeout(openBusStream, reconnectDelayMs);
+					reconnectDelayMs = Math.min(reconnectDelayMs * 2, 10_000);
 				}
 			});
+		};
+		if (status !== 'completed' && status !== 'failed') {
+			openBusStream();
 		}
 
 		// Completed/failed tables show historical data only; no SSE.
@@ -200,6 +215,7 @@
 		return () => {
 			window.removeEventListener('beforeunload', onUnload);
 			busAbort?.abort();
+			if (busReconnectTimer) window.clearTimeout(busReconnectTimer);
 		};
 	});
 
@@ -245,7 +261,7 @@
 
 			case 'synthesis_started':
 				synthesizing = true;
-				currentRound = 'Synthesis';
+				currentRound = Labels.synthesisHeading;
 				break;
 
 			case 'synthesis_token':
@@ -515,7 +531,7 @@
 	{/if}
 
 	{#if view === 'completed'}
-		<p class="mt-8 text-fg-subtle text-sm text-center">Deliberation complete.</p>
+		<p class="mt-8 text-fg-subtle text-sm text-center">{Labels.deliberationComplete}</p>
 	{:else if view === 'runningElsewhere'}
 		<div
 			class="flex items-center gap-3 text-fg-subtle text-sm p-4 bg-surface border border-border rounded-xl shadow-sm"

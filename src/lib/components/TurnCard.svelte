@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+	import { Labels } from '$lib/labels';
 	import { renderMarkdown } from '$lib/markdown';
 
 	import BreathingDots from './BreathingDots.svelte';
@@ -80,7 +81,7 @@
 			<div class="mt-1.5 ml-1 flex flex-wrap items-center gap-2 text-xs text-fg-subtle">
 				{#if revealedTo.length > 0}
 					<span class="text-fg-subtle">
-						Shared with
+						{Labels.sharedWithPrefix}
 						{#each revealedTo as r, i (r.partyId)}
 							<span class="font-mono text-fg-muted">{r.label}</span>{#if i < revealedTo.length - 1},
 							{/if}
@@ -94,7 +95,7 @@
 						class="px-2 py-0.5 border border-border rounded-full hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
 						title="Make this turn visible to {r.label}"
 					>
-						{revealing === r.partyId ? 'Revealing…' : `Reveal to ${r.label}`}
+						{revealing === r.partyId ? 'Revealing…' : `${Labels.revealToPrefix}${r.label}`}
 					</button>
 				{/each}
 			</div>

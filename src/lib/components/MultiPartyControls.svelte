@@ -1,5 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+	import { Labels } from '$lib/labels';
+
 	/**
 	 * Multi-party deliberation controls: stance editor, run, uncommit,
 	 * invite, synthesize. Renders nothing for single-party tables — the
@@ -45,6 +47,7 @@
 	// Local editable copy of the viewer's stance. The parent reloads on
 	// successful save (onChange), which remounts and re-initializes
 	// from the new prop — no need for an effect-driven re-sync.
+	// svelte-ignore state_referenced_locally
 	let stanceText = $state(viewer?.stance ?? '');
 	let saving = $state(false);
 	let saveError = $state('');
@@ -109,10 +112,11 @@
 
 	let syncingRun = $state(false);
 	function startRun() {
-		// SSE is consumed by the parent page on mount when tableStatus is
-		// 'pending'. For multi-party we kick off by reloading with the
-		// party + token in the URL — page mounts, sees pending runStatus
-		// for this party, opens SSE.
+		// Full navigation (not goto) on purpose — the SSE consumer is
+		// inside the page's onMount, so we need an actual remount to
+		// open the deliberation stream. SvelteKit's goto does
+		// client-side navigation that refreshes data but doesn't
+		// remount the component, which leaves SSE never connected.
 		syncingRun = true;
 		const url = `/t/${tableId}?party=${viewerPartyId}${token ? `&token=${token}` : ''}&start=1`;
 		window.location.href = url;
@@ -160,10 +164,11 @@
 		aria-labelledby="mp-heading"
 	>
 		<div class="flex items-baseline justify-between gap-3">
-			<h2 id="mp-heading" class="font-semibold text-fg">Your seat at the table</h2>
+			<h2 id="mp-heading" class="font-semibold text-fg">{Labels.seatHeading}</h2>
 			{#if isMultiParty}
-				<span class="text-xs text-fg-subtle uppercase tracking-wider">{parties.length} parties</span
-				>
+				<span class="text-xs text-fg-subtle uppercase tracking-wider">
+					{parties.length} parties
+				</span>
 			{/if}
 		</div>
 
@@ -171,7 +176,7 @@
 		{#if viewer && !stanceCommitted && tableStatus !== 'completed'}
 			<div class="space-y-2">
 				<label for="stance" class="block text-sm font-medium text-fg-muted">
-					Your stance / framing
+					{Labels.stanceLabel}
 				</label>
 				<p class="text-xs text-fg-subtle">
 					How you see this dilemma, in your own words. The council reads this so personas deliberate
@@ -192,7 +197,7 @@
 						disabled={saving || !stanceText.trim()}
 						class="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 					>
-						{saving ? 'Saving…' : 'Save draft'}
+						{saving ? 'Saving…' : Labels.saveDraft}
 					</button>
 					<button
 						onclick={async () => {
@@ -202,20 +207,21 @@
 						disabled={saving || syncingRun || !stanceText.trim()}
 						class="px-3 py-1.5 text-sm border border-accent text-accent rounded-lg hover:bg-accent hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 					>
-						{syncingRun ? 'Starting…' : 'Save & run my council'}
+						{syncingRun ? 'Starting…' : Labels.saveAndRun}
 					</button>
 				</div>
 			</div>
 		{:else if viewer?.runStatus === 'completed'}
 			<div class="space-y-2">
 				<p class="text-sm text-fg-muted">
-					Your council has finished deliberating. Waiting on the others, or
+					{Labels.councilFinished} deliberating. Waiting on the others, or
 					<button
 						onclick={uncommit}
 						disabled={uncommitting || tableStatus === 'completed'}
 						class="underline text-fg-subtle hover:text-fg disabled:no-underline disabled:opacity-50"
-						>uncommit & edit</button
-					> if you want to revise.
+					>
+						{Labels.uncommit}
+					</button> if you want to revise.
 				</p>
 			</div>
 		{:else if viewer?.runStatus === 'running'}
@@ -226,8 +232,10 @@
 		{:else if viewer?.runStatus === 'failed'}
 			<div class="space-y-1">
 				<p class="text-sm text-danger">
-					Your run failed. <button onclick={uncommit} class="underline">Reset and try again</button
-					>.
+					{Labels.runFailed}.
+					<button onclick={uncommit} class="underline">
+						{Labels.resetAndTryAgain}
+					</button>.
 				</p>
 				{#if viewer.errorMessage}
 					<p class="text-xs text-danger/80 font-mono">{viewer.errorMessage}</p>
@@ -242,9 +250,9 @@
 					{#if p.partyId !== viewerPartyId}
 						<li class="text-fg-muted">
 							<div class="flex items-center gap-2">
-								<span class="text-xs uppercase tracking-wider text-fg-subtle"
-									>{p.role ?? 'party'}</span
-								>
+								<span class="text-xs uppercase tracking-wider text-fg-subtle">
+									{p.role ?? 'party'}
+								</span>
 								<span class="font-mono text-xs">{p.partyId.slice(0, 8)}</span>
 								<!-- Stance "ready signal" — every member can see whether
 								     each other party has authored a stance, without the
@@ -255,7 +263,7 @@
 										: 'bg-surface-muted text-fg-subtle'}"
 									title={p.stanceSet ? 'Stance written' : 'No stance yet'}
 								>
-									{p.stanceSet ? 'stance ✓' : 'drafting'}
+									{p.stanceSet ? Labels.stanceReady : Labels.stanceDrafting}
 								</span>
 								<span
 									class="text-xs px-2 py-0.5 rounded-full
@@ -288,7 +296,7 @@
 						disabled={inviting}
 						class="text-sm px-3 py-1.5 border border-border-strong rounded-lg hover:bg-surface-muted text-fg-muted disabled:opacity-50"
 					>
-						{inviting ? 'Generating…' : '+ Invite someone to this table'}
+						{inviting ? 'Generating…' : Labels.inviteButton}
 					</button>
 					{#if inviteError}
 						<p class="text-xs text-danger">{inviteError}</p>
@@ -297,8 +305,9 @@
 					<label
 						for="invite-url"
 						class="block text-xs font-medium text-fg-muted uppercase tracking-wider"
-						>Share this link with the other party</label
 					>
+						{Labels.shareLinkLabel}
+					</label>
 					<div class="flex items-center gap-2">
 						<input
 							id="invite-url"
@@ -329,7 +338,7 @@
 					disabled={synthesizing}
 					class="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50"
 				>
-					{synthesizing ? 'Synthesizing…' : 'Synthesize this deliberation'}
+					{synthesizing ? 'Synthesizing…' : Labels.synthesizeButton}
 				</button>
 				{#if synthError}
 					<p class="text-xs text-danger">{synthError}</p>

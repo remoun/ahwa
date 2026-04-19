@@ -71,6 +71,12 @@ want.
 the community, not from us. Ship JSON. Open a pull request. The tool
 improves as its users shape it.
 
+**Mediation mode.** Two or more parties can sit at the same table, each
+write their own framing of the dilemma, and have the council deliberate
+from each side privately. A synthesis at the end reconciles both — no
+one's raw turns leak to the other party unless they explicitly reveal
+them. Useful when the disagreement is the dilemma.
+
 **AGPL-3.0.** Hosted forks stay open. No extractive re-licensing.
 
 ## What it isn't

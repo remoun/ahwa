@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { Labels } from '$lib/labels';
 
 	import type { PageData } from '../../routes/$types';
 	import TableCard from './TableCard.svelte';
@@ -97,7 +98,7 @@
 			<label class="mt-4 flex items-start gap-2 text-sm text-fg-muted cursor-pointer">
 				<input type="checkbox" bind:checked={mediation} class="mt-0.5 accent-accent" />
 				<span>
-					<span class="font-medium text-fg">Mediation mode</span>
+					<span class="font-medium text-fg">{Labels.mediationCheckbox}</span>
 					<span class="block text-xs text-fg-subtle">
 						You'll write your stance and (optionally) invite another party with their own stance.
 						The council deliberates with each side, then synthesizes.
@@ -110,7 +111,11 @@
 				disabled={loading || !dilemma.trim()}
 				class="mt-4 w-full sm:w-auto px-6 py-2.5 bg-accent text-white text-sm font-medium rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-colors shadow-sm"
 			>
-				{loading ? 'Setting the table...' : mediation ? 'Set the table' : 'Set a table'}
+				{loading
+					? 'Setting the table...'
+					: mediation
+						? Labels.setTableMediation
+						: Labels.setTableSolo}
 			</button>
 		</form>
 	</section>
