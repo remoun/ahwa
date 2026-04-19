@@ -148,24 +148,28 @@ export async function* runDeliberation(
 			else allCallsReportedUsage = false;
 		};
 
-		// Build the round plan. tables.max_rounds (per-table override)
-		// can extend beyond the council's defined rounds — when N >
-		// council.rounds.length, we repeat the last round's prompt for
-		// the extra rounds. Councils define round shape; the operator
-		// decides depth.
+		// Two stopping conditions for the round loop:
+		//   - 'rounds' (default): exactly `targetRoundCount` rounds run.
+		//     tables.max_rounds overrides the council default; rounds
+		//     beyond the defined ones repeat the last prompt.
+		//   - 'consensus' (opt-in, requires council.consensus_check):
+		//     after the council's defined rounds, run a small check
+		//     LLM call and stop early if it returns 'consensus'.
+		//     `consensusMaxRounds` caps the loop so a stubborn council
+		//     can't run forever.
 		const definedRounds = roundStructure.rounds;
+		const consensusEnabled =
+			existing.consensusTarget === 'consensus' && council.consensusCheck?.enabled === true;
+		const consensusMaxRounds = council.consensusCheck?.max_rounds ?? 8;
 		const targetRoundCount =
 			existing.maxRounds && existing.maxRounds > 0 ? existing.maxRounds : definedRounds.length;
-		const roundPlan: RoundDef[] = [];
-		for (let i = 0; i < targetRoundCount; i++) {
-			roundPlan.push(definedRounds[Math.min(i, definedRounds.length - 1)]);
-		}
 
-		// Run each round. Personas within a round run in parallel; rounds
+		// Run rounds. Personas within a round run in parallel; rounds
 		// themselves are serial because each round reads the complete
 		// transcript of prior rounds.
-		for (let roundIdx = 0; roundIdx < roundPlan.length; roundIdx++) {
-			const round = roundPlan[roundIdx];
+		let roundIdx = 0;
+		while (true) {
+			const round = definedRounds[Math.min(roundIdx, definedRounds.length - 1)];
 
 			// Abort between rounds — mid-round cancellation would orphan
 			// in-flight LLM calls. Between-rounds is the natural seam.
@@ -263,6 +267,31 @@ export async function* runDeliberation(
 			}
 
 			turnsByRound.set(roundIdx, roundTurns);
+
+			roundIdx++;
+
+			// Stopping decision happens after the round persists, so the
+			// consensus check sees a complete transcript including this
+			// round's turns.
+			if (consensusEnabled) {
+				// Always run every defined round before considering
+				// consensus — the council's structure (opening,
+				// cross-examination, etc.) needs to play out first.
+				if (roundIdx < definedRounds.length) continue;
+				// Hard cap — runaway protection trumps consensus signal.
+				if (roundIdx >= consensusMaxRounds) break;
+				const verdict = await runConsensusCheck({
+					completeFn,
+					resolvedConfig,
+					councilCheckPrompt: council.consensusCheck!.prompt,
+					turnsByRound,
+					accumulateUsage
+				});
+				yield { type: 'consensus_checked', verdict: verdict.verdict, reason: verdict.reason };
+				if (verdict.verdict === 'consensus') break;
+			} else {
+				if (roundIdx >= targetRoundCount) break;
+			}
 		}
 
 		// Synthesis runs inline only for single-party tables. Multi-party
@@ -382,6 +411,52 @@ export async function* runDeliberation(
 		}
 		publish(tableId, Events.partyRunFailed(partyId));
 		throw err;
+	}
+}
+
+/**
+ * Run a single consensus-check LLM call after a round. Returns the
+ * verdict + a short reason string that gets persisted on the SSE
+ * event. Falls through to 'continue' on any error so a flaky check
+ * call doesn't end deliberation early — the hard cap on round count
+ * is the runaway guard, not the check call's reliability.
+ */
+async function runConsensusCheck(opts: {
+	completeFn: CompleteFn;
+	resolvedConfig: ReturnType<typeof resolveModelConfig>;
+	councilCheckPrompt: string;
+	turnsByRound: Map<number, Array<{ personaName: string; text: string }>>;
+	accumulateUsage: (totalTokens?: number) => void;
+}): Promise<{ verdict: 'consensus' | 'continue'; reason: string }> {
+	const transcript = Array.from(opts.turnsByRound.values())
+		.flat()
+		.map((t) => `**${t.personaName}:** ${t.text}`)
+		.join('\n\n');
+	try {
+		const result = await opts.completeFn({
+			model: opts.resolvedConfig.model,
+			system: opts.councilCheckPrompt,
+			messages: [
+				{
+					role: 'user',
+					content: `Read this council deliberation and return a verdict.\n\nReply with EXACTLY one word as the first token: "consensus" if the council's central recommendations clearly align, or "continue" otherwise. After the verdict, give a one-sentence reason.\n\nDeliberation:\n\n${transcript}`
+				}
+			],
+			stream: true,
+			modelConfig: opts.resolvedConfig
+		});
+		let text = '';
+		for await (const chunk of result.textStream) text += chunk;
+		const { totalTokens } = await result.finished;
+		opts.accumulateUsage(totalTokens);
+		const trimmed = text.trim();
+		const lower = trimmed.toLowerCase();
+		const verdict: 'consensus' | 'continue' = lower.startsWith('consensus')
+			? 'consensus'
+			: 'continue';
+		return { verdict, reason: trimmed.slice(0, 200) };
+	} catch (err) {
+		return { verdict: 'continue', reason: `check failed: ${errorMessage(err)}` };
 	}
 }
 

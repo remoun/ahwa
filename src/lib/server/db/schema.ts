@@ -2,7 +2,7 @@
 import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { nanoid } from 'nanoid';
 
-import type { ModelConfig, RoundStructure } from '../../schemas/council';
+import type { ConsensusCheck, ModelConfig, RoundStructure } from '../../schemas/council';
 
 export const parties = sqliteTable('parties', {
 	id: text('id')
@@ -35,6 +35,13 @@ export const tables = sqliteTable('tables', {
 	// round's prompt for the remainder — councils define round shape;
 	// the operator decides depth.
 	maxRounds: integer('max_rounds'),
+	// 'rounds' (default): run exactly maxRounds (or council default).
+	// 'consensus': after each round beyond the council's defined ones,
+	// run a small consensus-check LLM call. Stop early if the check
+	// returns 'consensus'; cap at council.consensus_check.max_rounds
+	// to bound runaway. Per-table opt-in so users get the predictable
+	// fixed-rounds default unless they ask for the smarter loop.
+	consensusTarget: text('consensus_target', { enum: ['rounds', 'consensus'] }).default('rounds'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now()),
 	updatedAt: integer('updated_at').$defaultFn(() => Date.now())
 });
@@ -108,6 +115,11 @@ export const councils = sqliteTable('councils', {
 	synthesisPrompt: text('synthesis_prompt'),
 	roundStructure: text('round_structure', { mode: 'json' }).$type<RoundStructure>(),
 	modelConfig: text('model_config', { mode: 'json' }).$type<ModelConfig>(),
+	// Optional consensus-check config; when null, the council can't
+	// participate in consensus mode (the table-level opt-in falls back
+	// to fixed rounds). Council-scoped because the right wording for
+	// "what counts as consensus" depends on the personas + tone.
+	consensusCheck: text('consensus_check', { mode: 'json' }).$type<ConsensusCheck>(),
 	ownerParty: text('owner_party'),
 	createdAt: integer('created_at').$defaultFn(() => Date.now())
 });

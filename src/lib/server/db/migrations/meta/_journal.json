@@ -57,6 +57,13 @@
       "when": 1776603637374,
       "tag": "0008_m3_stance_max_rounds_party_error",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1776633560195,
+      "tag": "0009_add_consensus_check_and_target",
+      "breakpoints": true
     }
   ]
 }
