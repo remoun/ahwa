@@ -14,7 +14,7 @@ bun run dev              # start dev server
 bun run build            # production build
 bun run check            # svelte-check + type checking
 bun run db:push          # push schema to SQLite
-bun run db:generate      # generate Drizzle migration
+NAME=add_thing bun run db:generate  # generate migration (NAME required, snake_case)
 bun run db:studio        # open Drizzle Studio
 bun test                 # run tests (Bun's built-in test runner)
 ```
