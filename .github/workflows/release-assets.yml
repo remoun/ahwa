@@ -13,6 +13,11 @@
 # uploads to published releases ("Cannot upload assets to an immutable
 # release") — so the asset has to land before publish.
 #
+# IMPORTANT: a draft release has no git tag yet — GitHub creates the
+# tag when the draft is published. So this workflow checks out the
+# release's targetCommitish (the SHA the tag WILL point at), not the
+# tag itself.
+#
 # workflow_dispatch is the manual escape hatch (rebuild an asset on an
 # existing draft if this workflow itself was buggy when the release
 # was first cut).
@@ -24,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build assets for (e.g. v0.1.1)'
+        description: 'Tag to build assets for (e.g. v0.2.1)'
         required: true
 
 permissions:
@@ -34,9 +39,22 @@ jobs:
   build-and-attach:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve target commit
+        id: target
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          # For drafts, .tagName exists in the API response but the git
+          # tag itself doesn't exist yet, so we fetch targetCommitish.
+          sha=$(gh release view "$TAG" --json targetCommitish --jq '.targetCommitish')
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ steps.target.outputs.sha }}
 
       - uses: ./.github/actions/setup-bun
 
@@ -45,7 +63,7 @@ jobs:
 
       - name: Pack the runnable tarball
         env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          TAG: ${{ steps.target.outputs.tag }}
         run: |
           set -euo pipefail
           name="ahwa-build-${TAG}.tar.gz"
@@ -61,11 +79,12 @@ jobs:
       - name: Attach asset and publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          TAG: ${{ steps.target.outputs.tag }}
         run: |
           set -euo pipefail
           gh release upload "$TAG" "ahwa-build-${TAG}.tar.gz" --clobber
           # Flip from draft to published. release-please created it as
           # a draft so this workflow could attach the asset before
-          # GitHub's immutability lock kicked in.
+          # GitHub's immutability lock kicked in. Publishing also
+          # creates the actual git tag at targetCommitish.
           gh release edit "$TAG" --draft=false
