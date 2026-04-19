@@ -14,7 +14,7 @@ import {
 	resolveCouncilModelConfig,
 	resolveModelConfig
 } from './llm';
-import { publish } from './table-bus';
+import type { TableBus } from './table-bus';
 
 type CompleteFn = (request: CompleteRequest) => Promise<CompleteResult>;
 
@@ -23,6 +23,7 @@ export interface DeliberationRequest {
 	dilemma: string;
 	councilId: string;
 	partyId: string;
+	bus: TableBus;
 	completeFn?: CompleteFn;
 	signal?: AbortSignal;
 }
@@ -68,7 +69,7 @@ export async function* runDeliberation(
 		// preserve that — otherwise an early load error leaves the
 		// table stuck in 'pending'.
 		markPartyFailed(db, request.tableId, request.partyId, err);
-		publish(request.tableId, Events.partyRunFailed(request.partyId));
+		request.bus.publish(request.tableId, Events.partyRunFailed(request.partyId));
 		throw err;
 	}
 }
@@ -87,6 +88,7 @@ function preflight(db: DB, tableId: string): void {
  */
 interface DeliberationContext {
 	db: DB;
+	bus: TableBus;
 	tableId: string;
 	partyId: string;
 	dilemma: string;
@@ -106,7 +108,15 @@ interface DeliberationContext {
 }
 
 function prepareContext(db: DB, request: DeliberationRequest): DeliberationContext {
-	const { tableId, dilemma, councilId, partyId, completeFn = defaultComplete, signal } = request;
+	const {
+		tableId,
+		dilemma,
+		councilId,
+		partyId,
+		bus,
+		completeFn = defaultComplete,
+		signal
+	} = request;
 
 	// Preflight already verified the row exists and isn't terminal; the
 	// re-fetch here is just for the snapshot fields we need below.
@@ -181,6 +191,7 @@ function prepareContext(db: DB, request: DeliberationRequest): DeliberationConte
 
 	return {
 		db,
+		bus,
 		tableId,
 		partyId,
 		dilemma,
@@ -214,12 +225,12 @@ class Orchestrator {
 
 	/** Drive the deliberation end-to-end. */
 	async *run(): AsyncGenerator<SseEvent> {
-		const { tableId, partyId, isMultiParty, council, signal } = this.ctx;
+		const { tableId, partyId, bus, isMultiParty, council, signal } = this.ctx;
 
 		yield { type: 'table_opened', tableId };
 		// Tell every other viewer this party started running. Their
 		// MultiPartyControls re-renders the badge from "pending" → "running".
-		publish(tableId, Events.partyRunStarted(partyId));
+		bus.publish(tableId, Events.partyRunStarted(partyId));
 
 		// Run rounds. Personas within a round run in parallel; rounds
 		// themselves are serial because each round reads the complete
@@ -251,7 +262,7 @@ class Orchestrator {
 		}
 
 		this.markSucceeded();
-		publish(tableId, Events.partyRunCompleted(partyId));
+		bus.publish(tableId, Events.partyRunCompleted(partyId));
 		yield {
 			type: 'table_closed',
 			totalTokens: this.allCallsReportedUsage ? this.summedTotalTokens : undefined

@@ -6,6 +6,7 @@ import * as schema from '../src/lib/server/db/schema';
 import type { ResolvedParty } from '../src/lib/server/identity';
 import { createInviteHandler } from '../src/lib/server/invite';
 import { verifyShareToken } from '../src/lib/server/share';
+import { TableBus } from '../src/lib/server/table-bus';
 import { createTestDb, type TestDb } from './helpers';
 
 describe('invite handler', () => {
@@ -33,7 +34,7 @@ describe('invite handler', () => {
 	});
 
 	function call(tableId: string, party: ResolvedParty = initiator) {
-		const handler = createInviteHandler({ getDb: () => db });
+		const handler = createInviteHandler({ getDb: () => db, bus: new TableBus() });
 		return handler({ tableId, party });
 	}
 

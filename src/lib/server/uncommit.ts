@@ -3,11 +3,10 @@ import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 
 import { Events } from '../schemas/events';
-import type { DB } from './db';
 import * as schema from './db/schema';
+import type { HandlerDeps } from './deps';
 import type { ResolvedParty } from './identity';
 import { verifyShareToken } from './share';
-import { publish } from './table-bus';
 
 /**
  * Revoke a party's finished run before synthesis fires. Effect: the
@@ -23,9 +22,7 @@ export interface UncommitRequest {
 	token?: string;
 }
 
-export interface UncommitDeps {
-	getDb: () => DB;
-}
+export type UncommitDeps = HandlerDeps;
 
 export function createUncommitHandler(deps: UncommitDeps) {
 	return async ({ tableId, partyId, party, token }: UncommitRequest): Promise<Response> => {
@@ -75,7 +72,7 @@ export function createUncommitHandler(deps: UncommitDeps) {
 		// themselves) the stance editor available again. We piggyback
 		// on partyRunStarted because subscribers treat it as "refetch
 		// this party's state"; they don't care about the actual transition.
-		publish(tableId, Events.partyRunStarted(partyId));
+		deps.bus.publish(tableId, Events.partyRunStarted(partyId));
 		return json({ ok: true });
 	};
 }

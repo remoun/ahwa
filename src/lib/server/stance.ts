@@ -3,11 +3,10 @@ import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 
 import { Events } from '../schemas/events';
-import type { DB } from './db';
 import * as schema from './db/schema';
+import type { HandlerDeps } from './deps';
 import type { ResolvedParty } from './identity';
 import { verifyShareToken } from './share';
-import { publish } from './table-bus';
 
 /**
  * Edit a party's stance — their POV/framing on the dilemma. The council
@@ -27,9 +26,7 @@ export interface StanceRequest {
 	token?: string;
 }
 
-export interface StanceDeps {
-	getDb: () => DB;
-}
+export type StanceDeps = HandlerDeps;
 
 export function createStanceHandler(deps: StanceDeps) {
 	return async ({ tableId, partyId, stance, party, token }: StanceRequest): Promise<Response> => {
@@ -68,7 +65,7 @@ export function createStanceHandler(deps: StanceDeps) {
 			)
 			.run();
 
-		publish(tableId, Events.partyStanceSet(partyId));
+		deps.bus.publish(tableId, Events.partyStanceSet(partyId));
 		return json({ ok: true, stance: text });
 	};
 }

@@ -6,6 +6,7 @@ import * as schema from '../src/lib/server/db/schema';
 import type { ResolvedParty } from '../src/lib/server/identity';
 import { mockCompleteResult } from '../src/lib/server/llm';
 import { createSynthesizeHandler } from '../src/lib/server/synthesize';
+import { TableBus } from '../src/lib/server/table-bus';
 import { seedMiniCouncil } from './fixtures';
 import { createTestDb, type TestDb } from './helpers';
 
@@ -70,7 +71,7 @@ describe('synthesize handler', () => {
 	});
 
 	function call(tableId: string, party: ResolvedParty) {
-		const handler = createSynthesizeHandler({ getDb: () => db, completeFn });
+		const handler = createSynthesizeHandler({ getDb: () => db, bus: new TableBus(), completeFn });
 		return handler({ tableId, party });
 	}
 
@@ -130,6 +131,7 @@ describe('synthesize handler', () => {
 		};
 		const handler = createSynthesizeHandler({
 			getDb: () => db,
+			bus: new TableBus(),
 			completeFn: captureFn as never
 		});
 		await handler({ tableId: 'tbl', party: alice });

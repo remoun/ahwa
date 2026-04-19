@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import type { ResolvedParty } from '../src/lib/server/identity';
 import { signShareToken } from '../src/lib/server/share';
+import { TableBus } from '../src/lib/server/table-bus';
 import { createUncommitHandler } from '../src/lib/server/uncommit';
 import { createTestDb, type TestDb } from './helpers';
 
@@ -67,7 +68,7 @@ describe('uncommit handler', () => {
 	});
 
 	function call(opts: { tableId: string; partyId: string; party: ResolvedParty; token?: string }) {
-		const handler = createUncommitHandler({ getDb: () => db });
+		const handler = createUncommitHandler({ getDb: () => db, bus: new TableBus() });
 		return handler(opts);
 	}
 

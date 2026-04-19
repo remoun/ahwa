@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import * as schema from '../src/lib/server/db/schema';
 import type { ResolvedParty } from '../src/lib/server/identity';
 import { createRevealHandler } from '../src/lib/server/reveal';
+import { TableBus } from '../src/lib/server/table-bus';
 import { createTestDb, type TestDb } from './helpers';
 
 describe('reveal handler', () => {
@@ -40,7 +41,7 @@ describe('reveal handler', () => {
 	});
 
 	function call(turnId: string, withPartyId: string, party: ResolvedParty) {
-		const handler = createRevealHandler({ getDb: () => db });
+		const handler = createRevealHandler({ getDb: () => db, bus: new TableBus() });
 		return handler({ turnId, withPartyId, party });
 	}
 

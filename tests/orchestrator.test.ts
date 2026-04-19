@@ -4,9 +4,8 @@ import { eq } from 'drizzle-orm';
 
 import type { SseEvent } from '../src/lib/schemas/events';
 import * as schema from '../src/lib/server/db/schema';
-import { runDeliberation } from '../src/lib/server/orchestrator';
 import { createTable, seedMiniCouncil } from './fixtures';
-import { createTestDb, mockComplete, type TestDb } from './helpers';
+import { createTestDb, mockComplete, runDeliberation, type TestDb } from './helpers';
 
 describe('orchestrator', () => {
 	let db: TestDb;

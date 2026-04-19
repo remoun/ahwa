@@ -3,10 +3,11 @@ import { json } from '@sveltejs/kit';
 
 import { getDb } from '$lib/server/db';
 import { createRevealHandler } from '$lib/server/reveal';
+import { tableBus } from '$lib/server/table-bus';
 
 import type { RequestHandler } from './$types';
 
-const handle = createRevealHandler({ getDb });
+const handle = createRevealHandler({ getDb, bus: tableBus });
 
 export const POST: RequestHandler = async ({ params, request, locals }) => {
 	let body: { withPartyId?: string };
