@@ -89,16 +89,21 @@ jobs:
           ls -lh "$name"
           shasum -a 256 "$name"
 
-      - name: Attach asset to the draft release
+      - name: Attach asset and publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.target.outputs.tag }}
         run: |
           set -euo pipefail
           gh release upload "$TAG" "ahwa-build-${TAG}.tar.gz" --clobber
-          # Leave the release as a draft. Manual publish via the GitHub
-          # UI (or `gh release edit "$TAG" --draft=false`) is the gate
-          # for going live — gives a chance to eyeball release notes +
-          # confirm the asset attached as expected before downstream
-          # consumers (the YNH catalog autoupdate bot, ahwa_ynh) see it.
-          # Publishing creates the actual git tag at targetCommitish.
+          # Flip from draft to published. release-please created it as
+          # a draft so this workflow could attach the asset before
+          # GitHub's immutability lock kicked in. Publishing also
+          # creates the actual git tag at targetCommitish.
+          #
+          # The "is this release ready" gate lives at the Release-PR
+          # merge — by the time we get here, you've already decided to
+          # ship the batched commits. A second manual step here would
+          # only catch "did the workflow produce a sane asset", which
+          # this small workflow makes unlikely enough to skip.
+          gh release edit "$TAG" --draft=false
