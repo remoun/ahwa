@@ -4,6 +4,14 @@ All notable changes to Ahwa are documented here. The format is loosely
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project
 aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1](https://github.com/remoun/ahwa/compare/v0.2.0...v0.2.1) (2026-04-19)
+
+
+### Bug Fixes
+
+* **release:** drop inline release-type so release-please reads the config ([2637ef4](https://github.com/remoun/ahwa/commit/2637ef49eab35d228ce46347ac4617710246e277))
+* **release:** read draft:true from config (was silently ignored) ([f29947f](https://github.com/remoun/ahwa/commit/f29947f7ec047acc293acd36d9fa66e3e24cb700))
+
 ## [0.2.0](https://github.com/remoun/ahwa/compare/v0.1.0...v0.2.0) (2026-04-19)
 
 
