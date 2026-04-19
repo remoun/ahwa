@@ -120,22 +120,29 @@ export function createSynthesizeHandler(deps: SynthesizeDeps) {
 			synthesisText += chunk;
 		}
 
+		// Two writes: persist the synthesis turn + flip the table to
+		// completed. If the table update failed after the turn insert,
+		// you'd see a synthesis turn on a still-'running' table — the
+		// "synthesize again" button would re-fire and double the row.
+		// Wrap in a tx so either both land or neither does.
 		const visibleTo = links.map((l) => l.partyId);
-		db.insert(schema.turns)
-			.values({
-				id: nanoid(),
-				tableId,
-				round: 0,
-				partyId: 'synthesizer',
-				personaName: 'Synthesizer',
-				text: synthesisText,
-				visibleTo
-			})
-			.run();
-		db.update(schema.tables)
-			.set({ synthesis: synthesisText, status: 'completed', updatedAt: Date.now() })
-			.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'running')))
-			.run();
+		db.transaction((tx) => {
+			tx.insert(schema.turns)
+				.values({
+					id: nanoid(),
+					tableId,
+					round: 0,
+					partyId: 'synthesizer',
+					personaName: 'Synthesizer',
+					text: synthesisText,
+					visibleTo
+				})
+				.run();
+			tx.update(schema.tables)
+				.set({ synthesis: synthesisText, status: 'completed', updatedAt: Date.now() })
+				.where(and(eq(schema.tables.id, tableId), eq(schema.tables.status, 'running')))
+				.run();
+		});
 
 		publish(tableId, Events.tableSynthesized());
 		return json({ ok: true, synthesis: synthesisText });

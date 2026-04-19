@@ -52,13 +52,20 @@ export function createInviteHandler(deps: InviteDeps) {
 			return json({ error: 'Not a member of this table' }, { status: 403 });
 		}
 
+		// Two writes: party row + table_parties link. If the second
+		// fails, the party row would be an orphan with no table — wrap
+		// in a tx so either both land or neither does.
 		const partyId = nanoid();
-		db.insert(schema.parties).values({ id: partyId, displayName: 'invited' }).run();
-		db.insert(schema.tableParties).values({ tableId, partyId, role: 'invited' }).run();
+		db.transaction((tx) => {
+			tx.insert(schema.parties).values({ id: partyId, displayName: 'invited' }).run();
+			tx.insert(schema.tableParties).values({ tableId, partyId, role: 'invited' }).run();
+		});
 
 		const token = signShareToken(tableId, partyId);
 		const url = `/t/${tableId}?party=${partyId}&token=${token}`;
 
+		// Publish AFTER the tx commits — subscribers shouldn't see the
+		// event for a write that rolled back.
 		publish(tableId, Events.partyJoined(partyId));
 		return json({ partyId, token, url }, { status: 201 });
 	};

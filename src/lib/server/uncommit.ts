@@ -54,15 +54,21 @@ export function createUncommitHandler(deps: UncommitDeps) {
 			return json({ error: `Run is ${link.runStatus} — nothing to uncommit` }, { status: 409 });
 		}
 
-		db.delete(schema.turns)
-			.where(and(eq(schema.turns.tableId, tableId), eq(schema.turns.partyId, partyId)))
-			.run();
-		db.update(schema.tableParties)
-			.set({ runStatus: 'pending', errorMessage: null })
-			.where(
-				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
-			)
-			.run();
+		// Two writes: delete the party's turns + reset their runStatus.
+		// If the update failed after the delete, the turns would be gone
+		// but runStatus would still say completed/failed — wrap in a tx
+		// so the row state and turn state move together.
+		db.transaction((tx) => {
+			tx.delete(schema.turns)
+				.where(and(eq(schema.turns.tableId, tableId), eq(schema.turns.partyId, partyId)))
+				.run();
+			tx.update(schema.tableParties)
+				.set({ runStatus: 'pending', errorMessage: null })
+				.where(
+					and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
+				)
+				.run();
+		});
 
 		// Tell every viewer the party reset — their UI re-renders with
 		// the runStatus badge back to pending and (for the party
