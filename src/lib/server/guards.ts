@@ -44,9 +44,7 @@ export function validateDeliberationRequest(
 	const link = db
 		.select()
 		.from(schema.tableParties)
-		.where(
-			and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
-		)
+		.where(and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId)))
 		.get();
 	if (!link) {
 		return { ok: false, status: 403, message: 'party is not a member of this table' };

@@ -30,13 +30,7 @@ export interface StanceDeps {
 }
 
 export function createStanceHandler(deps: StanceDeps) {
-	return async ({
-		tableId,
-		partyId,
-		stance,
-		party,
-		token
-	}: StanceRequest): Promise<Response> => {
+	return async ({ tableId, partyId, stance, party, token }: StanceRequest): Promise<Response> => {
 		const db = deps.getDb();
 
 		const text = stance.trim();
@@ -46,10 +40,7 @@ export function createStanceHandler(deps: StanceDeps) {
 			.select()
 			.from(schema.tableParties)
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, partyId)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)
 			.get();
 		if (!link) return json({ error: 'Not found' }, { status: 404 });
@@ -71,10 +62,7 @@ export function createStanceHandler(deps: StanceDeps) {
 		db.update(schema.tableParties)
 			.set({ stance: text })
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, partyId)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)
 			.run();
 

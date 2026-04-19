@@ -103,11 +103,7 @@ export async function* runDeliberation(
 			.all()
 			.map((r) => r.partyId);
 		const isMultiParty = allPartyIds.length > 1;
-		const visibleTo = isMultiParty
-			? [partyId]
-			: allPartyIds.length > 0
-				? allPartyIds
-				: [partyId];
+		const visibleTo = isMultiParty ? [partyId] : allPartyIds.length > 0 ? allPartyIds : [partyId];
 		const synthVisibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
 
 		// Load this party's stance — the council reads it as the party's
@@ -118,10 +114,7 @@ export async function* runDeliberation(
 			.select()
 			.from(schema.tableParties)
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, partyId)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)
 			.get();
 		const stance = partyLink?.stance ?? null;
@@ -156,9 +149,8 @@ export async function* runDeliberation(
 		// the extra rounds. Councils define round shape; the operator
 		// decides depth.
 		const definedRounds = roundStructure.rounds;
-		const targetRoundCount = existing.maxRounds && existing.maxRounds > 0
-			? existing.maxRounds
-			: definedRounds.length;
+		const targetRoundCount =
+			existing.maxRounds && existing.maxRounds > 0 ? existing.maxRounds : definedRounds.length;
 		const roundPlan: RoundDef[] = [];
 		for (let i = 0; i < targetRoundCount; i++) {
 			roundPlan.push(definedRounds[Math.min(i, definedRounds.length - 1)]);
@@ -272,12 +264,7 @@ export async function* runDeliberation(
 		// tables defer synthesis to a manual trigger that fires after
 		// every party has completed their run — their raw turns aren't
 		// finished yet from this stream's POV.
-		if (
-			!isMultiParty &&
-			roundStructure.synthesize &&
-			council.synthesisPrompt &&
-			!signal?.aborted
-		) {
+		if (!isMultiParty && roundStructure.synthesize && council.synthesisPrompt && !signal?.aborted) {
 			yield { type: 'synthesis_started' };
 
 			const allTurns = Array.from(turnsByRound.values()).flat();
@@ -339,10 +326,7 @@ export async function* runDeliberation(
 		db.update(schema.tableParties)
 			.set({ runStatus: 'completed' })
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, partyId)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)
 			.run();
 
@@ -366,10 +350,7 @@ export async function* runDeliberation(
 		db.update(schema.tableParties)
 			.set({ runStatus: 'failed' })
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, partyId)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)
 			.run();
 		const allPartiesFailed = db

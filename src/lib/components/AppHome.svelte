@@ -95,16 +95,12 @@
 			</div>
 
 			<label class="mt-4 flex items-start gap-2 text-sm text-fg-muted cursor-pointer">
-				<input
-					type="checkbox"
-					bind:checked={mediation}
-					class="mt-0.5 accent-accent"
-				/>
+				<input type="checkbox" bind:checked={mediation} class="mt-0.5 accent-accent" />
 				<span>
 					<span class="font-medium text-fg">Mediation mode</span>
 					<span class="block text-xs text-fg-subtle">
-						You'll write your stance and (optionally) invite another party with their own
-						stance. The council deliberates with each side, then synthesizes.
+						You'll write your stance and (optionally) invite another party with their own stance.
+						The council deliberates with each side, then synthesizes.
 					</span>
 				</span>
 			</label>

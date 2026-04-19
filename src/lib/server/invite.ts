@@ -37,10 +37,7 @@ export function createInviteHandler(deps: InviteDeps) {
 			.select()
 			.from(schema.tableParties)
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, party.id)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, party.id))
 			)
 			.get();
 		if (!callerLink) {
@@ -49,9 +46,7 @@ export function createInviteHandler(deps: InviteDeps) {
 
 		const partyId = nanoid();
 		db.insert(schema.parties).values({ id: partyId, displayName: 'invited' }).run();
-		db.insert(schema.tableParties)
-			.values({ tableId, partyId, role: 'invited' })
-			.run();
+		db.insert(schema.tableParties).values({ tableId, partyId, role: 'invited' }).run();
 
 		const token = signShareToken(tableId, partyId);
 		const url = `/t/${tableId}?party=${partyId}&token=${token}`;

@@ -33,10 +33,7 @@ export function createUncommitHandler(deps: UncommitDeps) {
 			.select()
 			.from(schema.tableParties)
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, partyId)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)
 			.get();
 		if (!link) return json({ error: 'Not found' }, { status: 404 });
@@ -61,10 +58,7 @@ export function createUncommitHandler(deps: UncommitDeps) {
 		db.update(schema.tableParties)
 			.set({ runStatus: 'pending' })
 			.where(
-				and(
-					eq(schema.tableParties.tableId, tableId),
-					eq(schema.tableParties.partyId, partyId)
-				)
+				and(eq(schema.tableParties.tableId, tableId), eq(schema.tableParties.partyId, partyId))
 			)
 			.run();
 

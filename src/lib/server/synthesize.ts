@@ -56,9 +56,7 @@ export function createSynthesizeHandler(deps: SynthesizeDeps) {
 			return json({ error: 'Not a member of this table' }, { status: 403 });
 		}
 
-		const allDone = links.every(
-			(l) => l.runStatus === 'completed' || l.runStatus === 'failed'
-		);
+		const allDone = links.every((l) => l.runStatus === 'completed' || l.runStatus === 'failed');
 		if (!allDone) {
 			return json({ error: 'Some parties have not finished yet' }, { status: 409 });
 		}
@@ -88,9 +86,7 @@ export function createSynthesizeHandler(deps: SynthesizeDeps) {
 		const deliberationBlock = links
 			.map((l) => {
 				const partyTurns = turns.filter((t) => t.partyId === l.partyId);
-				const transcript = partyTurns
-					.map((t) => `**${t.personaName}:** ${t.text}`)
-					.join('\n\n');
+				const transcript = partyTurns.map((t) => `**${t.personaName}:** ${t.text}`).join('\n\n');
 				return `### ${l.partyId}'s council\n\n${transcript}`;
 			})
 			.join('\n\n');
@@ -101,7 +97,10 @@ export function createSynthesizeHandler(deps: SynthesizeDeps) {
 			`\nDeliberations:\n\n${deliberationBlock}`
 		].join('\n');
 
-		const modelConfig = resolveCouncilModelConfig(table.councilId!, council.modelConfig ?? undefined);
+		const modelConfig = resolveCouncilModelConfig(
+			table.councilId!,
+			council.modelConfig ?? undefined
+		);
 		const resolved = resolveModelConfig(modelConfig);
 		const synthesisModel = process.env.AHWA_SYNTHESIS_MODEL || resolved.model;
 		const synthesisConfig = { ...resolved, model: synthesisModel };

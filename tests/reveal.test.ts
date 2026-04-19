@@ -14,7 +14,9 @@ describe('reveal handler', () => {
 
 	beforeEach(() => {
 		db = createTestDb();
-		db.insert(schema.parties).values([{ id: 'alice' }, { id: 'bob' }]).run();
+		db.insert(schema.parties)
+			.values([{ id: 'alice' }, { id: 'bob' }])
+			.run();
 		db.insert(schema.tables)
 			.values({ id: 'tbl', dilemma: 'd', councilId: 'c', status: 'running' })
 			.run();

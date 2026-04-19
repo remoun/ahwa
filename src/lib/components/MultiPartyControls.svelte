@@ -40,16 +40,12 @@
 	);
 	const tokenQuery = $derived(token ? `?token=${token}` : '');
 
-	let stanceText = $state('');
+	// Local editable copy of the viewer's stance. The parent reloads on
+	// successful save (onChange), which remounts and re-initializes
+	// from the new prop — no need for an effect-driven re-sync.
+	let stanceText = $state(viewer?.stance ?? '');
 	let saving = $state(false);
 	let saveError = $state('');
-
-	$effect(() => {
-		// Re-sync local state whenever the parties prop changes (e.g.,
-		// after a save round-trips a fresh load). Initial load also goes
-		// through here, so we don't need a separate $state initializer.
-		stanceText = viewer?.stance ?? '';
-	});
 
 	async function saveStance() {
 		saving = true;
@@ -162,8 +158,7 @@
 		<div class="flex items-baseline justify-between gap-3">
 			<h2 id="mp-heading" class="font-semibold text-fg">Your seat at the table</h2>
 			{#if isMultiParty}
-				<span class="text-xs text-fg-subtle uppercase tracking-wider"
-					>{parties.length} parties</span
+				<span class="text-xs text-fg-subtle uppercase tracking-wider">{parties.length} parties</span
 				>
 			{/if}
 		</div>
@@ -175,8 +170,8 @@
 					Your stance / framing
 				</label>
 				<p class="text-xs text-fg-subtle">
-					How you see this dilemma, in your own words. The council reads this so personas
-					deliberate from your standpoint.
+					How you see this dilemma, in your own words. The council reads this so personas deliberate
+					from your standpoint.
 				</p>
 				<textarea
 					id="stance"
@@ -233,7 +228,7 @@
 		<!-- Other parties at a glance (multi-party only) -->
 		{#if isMultiParty}
 			<ul class="text-sm space-y-1 border-t border-border pt-3">
-				{#each parties as p}
+				{#each parties as p (p.partyId)}
 					{#if p.partyId !== viewerPartyId}
 						<li class="flex items-center gap-2 text-fg-muted">
 							<span class="text-xs uppercase tracking-wider text-fg-subtle"
@@ -273,7 +268,9 @@
 						<p class="text-xs text-danger">{inviteError}</p>
 					{/if}
 				{:else}
-					<label for="invite-url" class="block text-xs font-medium text-fg-muted uppercase tracking-wider"
+					<label
+						for="invite-url"
+						class="block text-xs font-medium text-fg-muted uppercase tracking-wider"
 						>Share this link with the other party</label
 					>
 					<div class="flex items-center gap-2">

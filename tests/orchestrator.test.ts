@@ -706,11 +706,7 @@ describe('orchestrator', () => {
 			expect(synth).toBeUndefined();
 
 			// Table stays 'running' until synthesis trigger fires.
-			const table = db
-				.select()
-				.from(schema.tables)
-				.where(eq(schema.tables.id, 'tbl-mp2'))
-				.get();
+			const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-mp2')).get();
 			expect(table?.status).toBe('running');
 		});
 

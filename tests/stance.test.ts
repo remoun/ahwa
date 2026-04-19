@@ -20,11 +20,12 @@ describe('stance handler', () => {
 
 	let db: TestDb;
 	const alice: ResolvedParty = { id: 'alice', displayName: 'A', externalId: null };
-	const bob: ResolvedParty = { id: 'bob', displayName: 'B', externalId: null };
 
 	beforeEach(() => {
 		db = createTestDb();
-		db.insert(schema.parties).values([{ id: 'alice' }, { id: 'bob' }]).run();
+		db.insert(schema.parties)
+			.values([{ id: 'alice' }, { id: 'bob' }])
+			.run();
 		db.insert(schema.tables)
 			.values({ id: 'tbl', dilemma: 'd', councilId: 'c', status: 'pending' })
 			.run();

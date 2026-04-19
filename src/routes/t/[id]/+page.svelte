@@ -100,7 +100,7 @@
 		const status = data.table?.status;
 		const isMultiParty = (data.parties?.length ?? 0) > 1;
 		const viewer = data.parties?.find((p) => p.partyId === data.viewerPartyId);
-		const params = new URLSearchParams(window.location.search);
+		const params = new globalThis.URLSearchParams(window.location.search);
 		const explicitStart = params.get('start') === '1';
 		const composeMode = params.get('compose') === '1';
 

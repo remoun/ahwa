@@ -24,13 +24,21 @@ describe('uncommit handler', () => {
 
 	beforeEach(() => {
 		db = createTestDb();
-		db.insert(schema.parties).values([{ id: 'alice' }, { id: 'bob' }]).run();
+		db.insert(schema.parties)
+			.values([{ id: 'alice' }, { id: 'bob' }])
+			.run();
 		db.insert(schema.tables)
 			.values({ id: 'tbl', dilemma: 'd', councilId: 'c', status: 'running' })
 			.run();
 		db.insert(schema.tableParties)
 			.values([
-				{ tableId: 'tbl', partyId: 'alice', role: 'initiator', stance: 'a', runStatus: 'completed' },
+				{
+					tableId: 'tbl',
+					partyId: 'alice',
+					role: 'initiator',
+					stance: 'a',
+					runStatus: 'completed'
+				},
 				{ tableId: 'tbl', partyId: 'bob', role: 'invited', stance: 'b', runStatus: 'pending' }
 			])
 			.run();
@@ -58,12 +66,7 @@ describe('uncommit handler', () => {
 			.run();
 	});
 
-	function call(opts: {
-		tableId: string;
-		partyId: string;
-		party: ResolvedParty;
-		token?: string;
-	}) {
+	function call(opts: { tableId: string; partyId: string; party: ResolvedParty; token?: string }) {
 		const handler = createUncommitHandler({ getDb: () => db });
 		return handler(opts);
 	}
@@ -104,11 +107,7 @@ describe('uncommit handler', () => {
 			})
 			.run();
 		await call({ tableId: 'tbl', partyId: 'alice', party: alice });
-		const bobTurns = db
-			.select()
-			.from(schema.turns)
-			.where(eq(schema.turns.partyId, 'bob'))
-			.all();
+		const bobTurns = db.select().from(schema.turns).where(eq(schema.turns.partyId, 'bob')).all();
 		expect(bobTurns).toHaveLength(1);
 	});
 

@@ -16,7 +16,9 @@ describe('visibleTurns', () => {
 
 	beforeEach(() => {
 		db = createTestDb();
-		db.insert(schema.parties).values([{ id: 'A' }, { id: 'B' }, { id: 'C' }]).run();
+		db.insert(schema.parties)
+			.values([{ id: 'A' }, { id: 'B' }, { id: 'C' }])
+			.run();
 		db.insert(schema.tables)
 			.values({ id: 'tbl', dilemma: 'd', councilId: 'c', status: 'running' })
 			.run();
@@ -37,7 +39,9 @@ describe('visibleTurns', () => {
 	}
 
 	it('single-party table: returns all turns regardless of visible_to', () => {
-		db.insert(schema.tableParties).values({ tableId: 'tbl', partyId: 'A', role: 'initiator' }).run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'tbl', partyId: 'A', role: 'initiator' })
+			.run();
 		addTurn('t1', 'A', ['A']);
 		addTurn('t2', 'A', ['A']);
 
@@ -56,8 +60,12 @@ describe('visibleTurns', () => {
 		addTurn('b-private', 'B', ['B']);
 		addTurn('shared', 'A', ['A', 'B']);
 
-		const aSeen = visibleTurns(db, 'tbl', 'A').map((t) => t.id).sort();
-		const bSeen = visibleTurns(db, 'tbl', 'B').map((t) => t.id).sort();
+		const aSeen = visibleTurns(db, 'tbl', 'A')
+			.map((t) => t.id)
+			.sort();
+		const bSeen = visibleTurns(db, 'tbl', 'B')
+			.map((t) => t.id)
+			.sort();
 		expect(aSeen).toEqual(['a-private', 'shared']);
 		expect(bSeen).toEqual(['b-private', 'shared']);
 	});
@@ -75,12 +83,16 @@ describe('visibleTurns', () => {
 		addTurn('synth', 'synthesizer', [], 0);
 		addTurn('a-private', 'A', ['A']);
 
-		const bSeen = visibleTurns(db, 'tbl', 'B').map((t) => t.id).sort();
+		const bSeen = visibleTurns(db, 'tbl', 'B')
+			.map((t) => t.id)
+			.sort();
 		expect(bSeen).toContain('synth');
 	});
 
 	it('non-member viewer sees nothing', () => {
-		db.insert(schema.tableParties).values({ tableId: 'tbl', partyId: 'A', role: 'initiator' }).run();
+		db.insert(schema.tableParties)
+			.values({ tableId: 'tbl', partyId: 'A', role: 'initiator' })
+			.run();
 		addTurn('t1', 'A', ['A']);
 
 		expect(visibleTurns(db, 'tbl', 'C')).toEqual([]);

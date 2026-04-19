@@ -12,7 +12,6 @@ import { createTestDb, type TestDb } from './helpers';
 describe('synthesize handler', () => {
 	let db: TestDb;
 	const alice: ResolvedParty = { id: 'alice', displayName: 'A', externalId: null };
-	const bob: ResolvedParty = { id: 'bob', displayName: 'B', externalId: null };
 
 	const completeFn = async () => mockCompleteResult(['synthesis ', 'output']);
 
@@ -20,7 +19,9 @@ describe('synthesize handler', () => {
 		db = createTestDb();
 		seedMiniCouncil(db);
 		db.delete(schema.parties).where(eq(schema.parties.id, 'party-1')).run();
-		db.insert(schema.parties).values([{ id: 'alice' }, { id: 'bob' }]).run();
+		db.insert(schema.parties)
+			.values([{ id: 'alice' }, { id: 'bob' }])
+			.run();
 
 		db.insert(schema.tables)
 			.values({ id: 'tbl', dilemma: 'd', councilId: 'test-council', status: 'running' })
