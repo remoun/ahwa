@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { ModelConfig, RoundStructure } from '../schemas/council';
+import type { ConsensusCheck, ModelConfig, RoundStructure } from '../schemas/council';
 
 interface CouncilInputLike {
 	name: string;
@@ -11,6 +11,8 @@ interface CouncilInputLike {
 	round_structure?: RoundStructure;
 	modelConfig?: ModelConfig | null;
 	model_config?: ModelConfig | null;
+	consensusCheck?: ConsensusCheck | null;
+	consensus_check?: ConsensusCheck | null;
 }
 
 /**
@@ -35,6 +37,7 @@ export function councilRow(input: CouncilInputLike) {
 		personaIds: input.personaIds,
 		synthesisPrompt: input.synthesisPrompt ?? input.synthesis_prompt ?? '',
 		roundStructure,
-		modelConfig: input.modelConfig ?? input.model_config ?? null
+		modelConfig: input.modelConfig ?? input.model_config ?? null,
+		consensusCheck: input.consensusCheck ?? input.consensus_check ?? null
 	};
 }

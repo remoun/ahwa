@@ -4,11 +4,10 @@ import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { Events } from '../schemas/events';
-import type { DB } from './db';
 import * as schema from './db/schema';
+import type { HandlerDeps } from './deps';
 import type { ResolvedParty } from './identity';
 import { signShareToken } from './share';
-import { publish } from './table-bus';
 
 /**
  * Mints an "invited" placeholder party on a table and returns a share URL.
@@ -24,9 +23,7 @@ export interface InviteRequest {
 	party: ResolvedParty;
 }
 
-export interface InviteDeps {
-	getDb: () => DB;
-}
+export type InviteDeps = HandlerDeps;
 
 export function createInviteHandler(deps: InviteDeps) {
 	return async ({ tableId, party }: InviteRequest): Promise<Response> => {
@@ -66,7 +63,7 @@ export function createInviteHandler(deps: InviteDeps) {
 
 		// Publish AFTER the tx commits — subscribers shouldn't see the
 		// event for a write that rolled back.
-		publish(tableId, Events.partyJoined(partyId));
+		deps.bus.publish(tableId, Events.partyJoined(partyId));
 		return json({ partyId, token, url }, { status: 201 });
 	};
 }

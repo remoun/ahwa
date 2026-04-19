@@ -57,8 +57,23 @@ export default [
 			],
 			// Plain href strings are fine — we haven't opted into the
 			// new type-safe route resolver from SvelteKit 2.20+.
-			'svelte/no-navigation-without-resolve': 'off'
+			'svelte/no-navigation-without-resolve': 'off',
+			// Cap function size so state machines stay readable. Hitting
+			// this is a signal to extract a helper or split the method,
+			// not to suppress. Tests can be longer (table-driven cases
+			// add up); IIFEs and inline arrows count separately.
+			'max-lines-per-function': [
+				'error',
+				{ max: 100, skipBlankLines: true, skipComments: true, IIFEs: false }
+			]
 		}
+	},
+	{
+		// Test describe() callbacks are organizational wrappers around
+		// many it() cases; the 200-line cap on production functions
+		// would force splitting a coherent suite into arbitrary chunks.
+		files: ['tests/**/*.ts', 'e2e/**/*.ts'],
+		rules: { 'max-lines-per-function': 'off' }
 	},
 	{
 		files: ['**/*.svelte'],

@@ -35,6 +35,23 @@ export const ModelConfigSchema = z.object({
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
 
+/**
+ * Optional consensus-check config. When the table opts into consensus
+ * mode, the orchestrator runs this prompt as a small LLM call after
+ * each round (beyond the council's defined rounds) and asks for a
+ * 'consensus' or 'continue' verdict. max_rounds caps the loop so a
+ * stubborn council can't run forever. Council-scoped because the
+ * right "what counts as consensus" wording depends on the council's
+ * personas and tone.
+ */
+export const ConsensusCheckSchema = z.object({
+	enabled: z.boolean().default(false),
+	prompt: z.string(),
+	max_rounds: z.number().int().min(1).default(8)
+});
+
+export type ConsensusCheck = z.infer<typeof ConsensusCheckSchema>;
+
 export const CouncilSchema = z.object({
 	id: z.string(),
 	name: z.string(),
@@ -43,6 +60,7 @@ export const CouncilSchema = z.object({
 	round_structure: RoundStructureSchema,
 	synthesis_prompt: z.string(),
 	model_config: ModelConfigSchema.optional(),
+	consensus_check: ConsensusCheckSchema.optional(),
 	license: z.string().optional()
 });
 

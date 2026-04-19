@@ -53,6 +53,12 @@ const ErrorEvent = z.object({
 	message: z.string()
 });
 
+const ConsensusChecked = z.object({
+	type: z.literal('consensus_checked'),
+	verdict: z.enum(['consensus', 'continue']),
+	reason: z.string()
+});
+
 export const SseEventSchema = z.discriminatedUnion('type', [
 	TableOpened,
 	RoundStarted,
@@ -62,7 +68,8 @@ export const SseEventSchema = z.discriminatedUnion('type', [
 	SynthesisStarted,
 	SynthesisToken,
 	TableClosed,
-	ErrorEvent
+	ErrorEvent,
+	ConsensusChecked
 ]);
 
 export type SseEvent = z.infer<typeof SseEventSchema>;

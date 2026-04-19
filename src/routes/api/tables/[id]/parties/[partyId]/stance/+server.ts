@@ -3,10 +3,11 @@ import { json } from '@sveltejs/kit';
 
 import { getDb } from '$lib/server/db';
 import { createStanceHandler } from '$lib/server/stance';
+import { tableBus } from '$lib/server/table-bus';
 
 import type { RequestHandler } from './$types';
 
-const handle = createStanceHandler({ getDb });
+const handle = createStanceHandler({ getDb, bus: tableBus });
 
 export const PATCH: RequestHandler = async ({ params, url, request, locals }) => {
 	let body: { stance?: string };
