@@ -91,18 +91,24 @@ export async function* runDeliberation(
 			);
 		}
 
-		// Load party IDs at this table for visible_to. Invariant #8:
-		// in single-party tables, visible_to = [all parties]. When M3 adds
-		// two-party mode, this query still returns the right set — visibility
-		// filtering per-party happens at the read layer, not here.
+		// Invariant #8: in multi-party tables, each party's raw persona
+		// turns are private to that party (and the synthesizer) until an
+		// explicit reveal. In single-party tables, visible_to = [all
+		// parties] (which collapses to [partyId] in practice).
+		// Synthesis turns always go to every party (set further below).
 		const allPartyIds = db
 			.select({ partyId: schema.tableParties.partyId })
 			.from(schema.tableParties)
 			.where(eq(schema.tableParties.tableId, tableId))
 			.all()
 			.map((r) => r.partyId);
-		// Fallback for callers that haven't linked the party yet (shouldn't happen in prod)
-		const visibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
+		const isMultiParty = allPartyIds.length > 1;
+		const visibleTo = isMultiParty
+			? [partyId]
+			: allPartyIds.length > 0
+				? allPartyIds
+				: [partyId];
+		const synthVisibleTo = allPartyIds.length > 0 ? allPartyIds : [partyId];
 
 		// Set status to 'running' if it wasn't already (guard may have done it).
 		if (existing.status === 'pending') {
@@ -277,7 +283,7 @@ export async function* runDeliberation(
 					partyId: 'synthesizer',
 					personaName: 'Synthesizer',
 					text: synthesisText,
-					visibleTo,
+					visibleTo: synthVisibleTo,
 					truncated: synthTruncated ? 1 : 0
 				})
 				.run();

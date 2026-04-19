@@ -647,4 +647,90 @@ describe('orchestrator', () => {
 		expect(elderTurns.every((t) => t.truncated === 1)).toBe(true);
 		expect(mirrorTurns.every((t) => t.truncated === 0)).toBe(true);
 	});
+
+	describe('invariant #8: visible_to in multi-party tables', () => {
+		it('persona turns in a multi-party table are private to the running party', async () => {
+			// Two-party table: A is initiator, B is invited
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-mp',
+				dilemma: 'shared dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const personaTurns = db
+				.select()
+				.from(schema.turns)
+				.where(eq(schema.turns.tableId, 'tbl-mp'))
+				.all()
+				.filter((t) => t.partyId !== 'synthesizer');
+
+			expect(personaTurns.length).toBeGreaterThan(0);
+			for (const t of personaTurns) {
+				expect(t.visibleTo).toEqual(['party-1']);
+			}
+		});
+
+		it('synthesis turn in a multi-party table is visible to all parties', async () => {
+			db.insert(schema.parties).values({ id: 'party-B', displayName: 'B' }).run();
+			createTable(db, 'tbl-mp2', 'shared dilemma', 'test-council', 'party-1');
+			db.insert(schema.tableParties)
+				.values({ tableId: 'tbl-mp2', partyId: 'party-B', role: 'invited' })
+				.run();
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-mp2',
+				dilemma: 'shared dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const synth = db
+				.select()
+				.from(schema.turns)
+				.where(eq(schema.turns.tableId, 'tbl-mp2'))
+				.all()
+				.find((t) => t.partyId === 'synthesizer');
+
+			expect(synth).toBeDefined();
+			expect(synth!.visibleTo?.sort()).toEqual(['party-1', 'party-B'].sort());
+		});
+
+		it('single-party table keeps the existing visible_to = [all parties] shape', async () => {
+			createTable(db, 'tbl-sp', 'solo dilemma', 'test-council', 'party-1');
+
+			for await (const _ of runDeliberation(db, {
+				tableId: 'tbl-sp',
+				dilemma: 'solo dilemma',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: mockComplete
+			})) {
+				// consume
+			}
+
+			const personaTurns = db
+				.select()
+				.from(schema.turns)
+				.where(eq(schema.turns.tableId, 'tbl-sp'))
+				.all()
+				.filter((t) => t.partyId !== 'synthesizer');
+
+			for (const t of personaTurns) {
+				expect(t.visibleTo).toEqual(['party-1']);
+			}
+		});
+	});
 });
