@@ -43,11 +43,14 @@ jobs:
         id: target
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           set -euo pipefail
-          # For drafts, .tagName exists in the API response but the git
-          # tag itself doesn't exist yet, so we fetch targetCommitish.
+          # For drafts, the git tag doesn't exist yet, so we fetch the
+          # targetCommitish (the SHA the tag WILL point at on publish).
+          # GH_REPO lets gh work without a git repo on disk — this step
+          # runs before checkout.
           sha=$(gh release view "$TAG" --json targetCommitish --jq '.targetCommitish')
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
