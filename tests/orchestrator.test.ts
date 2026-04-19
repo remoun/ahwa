@@ -4,9 +4,8 @@ import { eq } from 'drizzle-orm';
 
 import type { SseEvent } from '../src/lib/schemas/events';
 import * as schema from '../src/lib/server/db/schema';
-import { runDeliberation } from '../src/lib/server/orchestrator';
 import { createTable, seedMiniCouncil } from './fixtures';
-import { createTestDb, mockComplete, type TestDb } from './helpers';
+import { createTestDb, mockComplete, runDeliberation, type TestDb } from './helpers';
 
 describe('orchestrator', () => {
 	let db: TestDb;
@@ -708,6 +707,164 @@ describe('orchestrator', () => {
 			// Table stays 'running' until synthesis trigger fires.
 			const table = db.select().from(schema.tables).where(eq(schema.tables.id, 'tbl-mp2')).get();
 			expect(table?.status).toBe('running');
+		});
+
+		it("consensus mode: stops early when check returns 'consensus'", async () => {
+			// Council with consensus_check + a table that opted in.
+			db.update(schema.councils)
+				.set({
+					consensusCheck: { enabled: true, prompt: 'judge consensus', max_rounds: 6 }
+				})
+				.where(eq(schema.councils.id, 'test-council'))
+				.run();
+			createTable(db, 'tbl-cons', 'd', 'test-council', 'party-1');
+			db.update(schema.tables)
+				.set({ consensusTarget: 'consensus' })
+				.where(eq(schema.tables.id, 'tbl-cons'))
+				.run();
+
+			// Mock: return "consensus: aligned" for the check call (system
+			// matches the council's check prompt), regular text for personas.
+			const consensusComplete = async (req: {
+				system?: string;
+				messages: { content: string }[];
+			}) => {
+				if (req.system === 'judge consensus') {
+					return {
+						textStream: (async function* () {
+							yield 'consensus: ';
+							yield 'all aligned on a';
+						})(),
+						finished: Promise.resolve({ truncated: false, totalTokens: 50 })
+					};
+				}
+				return mockComplete({
+					model: 'm',
+					system: req.system ?? '',
+					messages: req.messages as { role: 'user' | 'assistant'; content: string }[],
+					stream: true,
+					modelConfig: { provider: 'anthropic', model: 'm' }
+				});
+			};
+
+			const events: SseEvent[] = [];
+			for await (const e of runDeliberation(db, {
+				tableId: 'tbl-cons',
+				dilemma: 'd',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: consensusComplete as never
+			})) {
+				events.push(e);
+			}
+
+			// Defined rounds = 2, consensus check fires after round 2,
+			// returns 'consensus' → loop ends. No round 3.
+			const rounds = events.filter((e) => e.type === 'round_started');
+			expect(rounds).toHaveLength(2);
+			const checks = events.filter((e) => e.type === 'consensus_checked');
+			expect(checks).toHaveLength(1);
+			expect((checks[0] as { verdict: string }).verdict).toBe('consensus');
+		});
+
+		it('consensus mode: hits the hard cap when consensus never returns', async () => {
+			db.update(schema.councils)
+				.set({
+					consensusCheck: { enabled: true, prompt: 'judge', max_rounds: 4 }
+				})
+				.where(eq(schema.councils.id, 'test-council'))
+				.run();
+			createTable(db, 'tbl-cap', 'd', 'test-council', 'party-1');
+			db.update(schema.tables)
+				.set({ consensusTarget: 'consensus' })
+				.where(eq(schema.tables.id, 'tbl-cap'))
+				.run();
+
+			const stubbornComplete = async (req: { system?: string }) => {
+				if (req.system === 'judge') {
+					return {
+						textStream: (async function* () {
+							yield 'continue: still ';
+							yield 'disagreeing';
+						})(),
+						finished: Promise.resolve({ truncated: false, totalTokens: 50 })
+					};
+				}
+				return mockComplete({
+					model: 'm',
+					system: req.system ?? '',
+					messages: [],
+					stream: true,
+					modelConfig: { provider: 'anthropic', model: 'm' }
+				});
+			};
+
+			const events: SseEvent[] = [];
+			for await (const e of runDeliberation(db, {
+				tableId: 'tbl-cap',
+				dilemma: 'd',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: stubbornComplete as never
+			})) {
+				events.push(e);
+			}
+
+			// Defined = 2, max_rounds = 4 → 2 defined + 2 extra = 4 rounds total.
+			// Check fires after round 2 (continue), after round 3 (continue);
+			// after round 4 the cap stops the loop without another check.
+			const rounds = events.filter((e) => e.type === 'round_started');
+			expect(rounds).toHaveLength(4);
+			const checks = events.filter((e) => e.type === 'consensus_checked');
+			expect(checks).toHaveLength(2);
+			expect(checks.every((c) => (c as { verdict: string }).verdict === 'continue')).toBe(true);
+		});
+
+		it("consensus mode: check-call failure falls through to 'continue' (doesn't end deliberation)", async () => {
+			db.update(schema.councils)
+				.set({
+					consensusCheck: { enabled: true, prompt: 'judge', max_rounds: 3 }
+				})
+				.where(eq(schema.councils.id, 'test-council'))
+				.run();
+			createTable(db, 'tbl-flaky', 'd', 'test-council', 'party-1');
+			db.update(schema.tables)
+				.set({ consensusTarget: 'consensus' })
+				.where(eq(schema.tables.id, 'tbl-flaky'))
+				.run();
+
+			const flakyComplete = async (req: { system?: string }) => {
+				if (req.system === 'judge') {
+					throw new Error('check call exploded');
+				}
+				return mockComplete({
+					model: 'm',
+					system: req.system ?? '',
+					messages: [],
+					stream: true,
+					modelConfig: { provider: 'anthropic', model: 'm' }
+				});
+			};
+
+			const events: SseEvent[] = [];
+			for await (const e of runDeliberation(db, {
+				tableId: 'tbl-flaky',
+				dilemma: 'd',
+				councilId: 'test-council',
+				partyId: 'party-1',
+				completeFn: flakyComplete as never
+			})) {
+				events.push(e);
+			}
+
+			// Defined = 2, cap = 3. Check after round 2 throws → verdict
+			// 'continue' → run round 3 → cap → break. No round 4.
+			const rounds = events.filter((e) => e.type === 'round_started');
+			expect(rounds).toHaveLength(3);
+			const checks = events.filter((e) => e.type === 'consensus_checked');
+			expect(checks).toHaveLength(1);
+			expect((checks[0] as { verdict: string; reason: string }).verdict).toBe('continue');
+			expect((checks[0] as { reason: string }).reason).toMatch(/check failed/i);
 		});
 
 		it('respects tables.max_rounds: 4 rounds when council defines 2', async () => {

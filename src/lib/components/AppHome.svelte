@@ -15,6 +15,7 @@
 	let dilemma = $state('');
 	let councilId = $state('default');
 	let mediation = $state(false);
+	let untilConsensus = $state(false);
 	let loading = $state(false);
 
 	async function setTable() {
@@ -24,7 +25,11 @@
 		const res = await fetch('/api/tables', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ dilemma, councilId })
+			body: JSON.stringify({
+				dilemma,
+				councilId,
+				consensusTarget: untilConsensus ? 'consensus' : 'rounds'
+			})
 		});
 
 		const { tableId, partyId, token } = await res.json();
@@ -102,6 +107,18 @@
 					<span class="block text-xs text-fg-subtle">
 						You'll write your stance and (optionally) invite another party with their own stance.
 						The council deliberates with each side, then synthesizes.
+					</span>
+				</span>
+			</label>
+
+			<label class="mt-2 flex items-start gap-2 text-sm text-fg-muted cursor-pointer">
+				<input type="checkbox" bind:checked={untilConsensus} class="mt-0.5 accent-accent" />
+				<span>
+					<span class="font-medium text-fg">{Labels.untilConsensusCheckbox}</span>
+					<span class="block text-xs text-fg-subtle">
+						After the council's defined rounds, run a small consensus-check call after each round.
+						Stop early if the council clearly aligns; cap at the council's max so a stubborn debate
+						can't run forever.
 					</span>
 				</span>
 			</label>

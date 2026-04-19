@@ -27,6 +27,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const body = await request.json();
 	const dilemma = body.dilemma as string;
 	const councilId = (body.councilId as string) || 'default';
+	// 'consensus' opts the table into the per-round consensus-check
+	// loop (requires the council to ship a consensus_check config).
+	// Anything else falls back to the fixed-rounds default.
+	const consensusTarget = body.consensusTarget === 'consensus' ? 'consensus' : 'rounds';
 
 	if (!dilemma?.trim()) {
 		return json({ error: 'dilemma is required' }, { status: 400 });
@@ -48,7 +52,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			id: tableId,
 			dilemma,
 			councilId,
-			status: 'pending'
+			status: 'pending',
+			consensusTarget
 		})
 		.run();
 

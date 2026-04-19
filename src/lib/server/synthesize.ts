@@ -4,8 +4,8 @@ import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { Events } from '../schemas/events';
-import type { DB } from './db';
 import * as schema from './db/schema';
+import type { HandlerDeps } from './deps';
 import type { ResolvedParty } from './identity';
 import {
 	complete as defaultComplete,
@@ -14,7 +14,6 @@ import {
 	resolveCouncilModelConfig,
 	resolveModelConfig
 } from './llm';
-import { publish } from './table-bus';
 
 /**
  * Manual synthesis trigger for multi-party tables. Single-party tables
@@ -32,8 +31,7 @@ export interface SynthesizeRequest {
 	party: ResolvedParty;
 }
 
-export interface SynthesizeDeps {
-	getDb: () => DB;
+export interface SynthesizeDeps extends HandlerDeps {
 	completeFn?: (request: CompleteRequest) => Promise<CompleteResult>;
 }
 
@@ -144,7 +142,7 @@ export function createSynthesizeHandler(deps: SynthesizeDeps) {
 				.run();
 		});
 
-		publish(tableId, Events.tableSynthesized());
+		deps.bus.publish(tableId, Events.tableSynthesized());
 		return json({ ok: true, synthesis: synthesisText });
 	};
 }

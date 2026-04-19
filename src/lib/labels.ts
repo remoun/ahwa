@@ -14,6 +14,7 @@
 export const Labels = {
 	// AppHome (table creation form)
 	mediationCheckbox: 'Mediation mode',
+	untilConsensusCheckbox: 'Run until consensus',
 	setTableSolo: 'Set a table',
 	setTableMediation: 'Set the table',
 

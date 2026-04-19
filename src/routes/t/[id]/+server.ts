@@ -10,7 +10,7 @@ import { shutdownCoordinator } from '$lib/server/lifecycle';
 import { runDeliberation } from '$lib/server/orchestrator';
 import { verifyShareToken } from '$lib/server/share';
 import { toSseStream } from '$lib/server/sse';
-import { subscribe } from '$lib/server/table-bus';
+import { tableBus } from '$lib/server/table-bus';
 import { errorMessage } from '$lib/util';
 
 import type { RequestHandler } from './$types';
@@ -46,7 +46,7 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 					headers: { 'Content-Type': 'application/json' }
 				});
 			}
-			const events = subscribe({ tableId, signal: request.signal });
+			const events = tableBus.subscribe({ tableId, signal: request.signal });
 			const stream = toSseStream(filterForSubscriber(events, partyId!));
 			return sseResponse(stream);
 		}
@@ -83,6 +83,7 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 			dilemma: table.dilemma!,
 			councilId: table.councilId!,
 			partyId: partyId!,
+			bus: tableBus,
 			signal: combinedSignal
 		});
 		// Reconcile (actual - estimate) into today's demo bookkeeping

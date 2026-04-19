@@ -12,8 +12,7 @@ import * as schema from '../src/lib/server/db/schema';
 import { seedFromDisk } from '../src/lib/server/db/seed';
 import { generateMarkdown } from '../src/lib/server/export';
 import { filterPersonas } from '../src/lib/server/features';
-import { runDeliberation } from '../src/lib/server/orchestrator';
-import { createTestDb, mockComplete, type TestDb } from './helpers';
+import { createTestDb, mockComplete, runDeliberation, type TestDb } from './helpers';
 
 describe('e2e: full deliberation with real councils', () => {
 	let db: TestDb;

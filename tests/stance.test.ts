@@ -6,6 +6,7 @@ import * as schema from '../src/lib/server/db/schema';
 import type { ResolvedParty } from '../src/lib/server/identity';
 import { signShareToken } from '../src/lib/server/share';
 import { createStanceHandler } from '../src/lib/server/stance';
+import { TableBus } from '../src/lib/server/table-bus';
 import { createTestDb, type TestDb } from './helpers';
 
 describe('stance handler', () => {
@@ -44,7 +45,7 @@ describe('stance handler', () => {
 		party: ResolvedParty;
 		token?: string;
 	}) {
-		const handler = createStanceHandler({ getDb: () => db });
+		const handler = createStanceHandler({ getDb: () => db, bus: new TableBus() });
 		return handler(opts);
 	}
 
