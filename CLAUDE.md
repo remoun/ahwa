@@ -145,7 +145,7 @@ that change something a viewer would want to see live:
   sparse "something changed; refetch" signals; subscribers respond by
   invalidating their SvelteKit page data.
 - **Token streams stay party-private.** The subscribe-only branch in
-  `src/routes/t/[id]/+server.ts` filters out token / persona_turn_*
+  `src/routes/t/[id]/+server.ts` filters out token / persona*turn*\*
   events for non-runner viewers. If you add a new token-shaped event,
   add it to that filter or the runner's tokens leak to other viewers.
 
