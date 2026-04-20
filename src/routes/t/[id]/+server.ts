@@ -6,6 +6,7 @@ import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { withDemoReconcile } from '$lib/server/demo-reconcile';
 import { validateDeliberationRequest } from '$lib/server/guards';
+import { shutdownCoordinator } from '$lib/server/lifecycle';
 import { runDeliberation } from '$lib/server/orchestrator';
 import { verifyShareToken } from '$lib/server/share';
 import { toSseStream } from '$lib/server/sse';
@@ -50,6 +51,17 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 			return sseResponse(stream);
 		}
 
+		// Refuse new deliberations once the process has been told to
+		// shut down — the in-flight set is draining and a new run
+		// would either be aborted within seconds (wasting tokens) or
+		// hold the drain past its grace cap.
+		if (shutdownCoordinator.shouldRefuseNew()) {
+			return new Response(JSON.stringify({ error: 'Server is shutting down' }), {
+				status: 503,
+				headers: { 'Content-Type': 'application/json', 'Retry-After': '30' }
+			});
+		}
+
 		const guard = validateDeliberationRequest(db, tableId, partyId, token, locals.party.id);
 		if (!guard.ok) {
 			return new Response(JSON.stringify({ error: guard.message }), {
@@ -58,6 +70,13 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 			});
 		}
 
+		// Track this run so SIGTERM can wait for it. The combined signal
+		// aborts when either the client disconnects (request.signal)
+		// OR the shutdown grace period expires (the controller's own
+		// abort, fired by drain()).
+		const shutdownCtrl = shutdownCoordinator.track();
+		const combinedSignal = anySignal([request.signal, shutdownCtrl.signal]);
+
 		const { table } = guard;
 		const deliberation = runDeliberation(db, {
 			tableId,
@@ -65,17 +84,20 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 			councilId: table.councilId!,
 			partyId: partyId!,
 			bus: tableBus,
-			signal: request.signal
+			signal: combinedSignal
 		});
 		// Reconcile (actual - estimate) into today's demo bookkeeping
 		// once the table closes. Pass-through for non-demo tables.
 		const stream = toSseStream(
-			withDemoReconcile(deliberation, {
-				db,
-				isDemo: table.isDemo === 1,
-				estimateTokens: DEMO_ESTIMATE_TOKENS,
-				usdPerMillion: DEMO_USD_PER_MILLION
-			})
+			untrackOnFinish(
+				withDemoReconcile(deliberation, {
+					db,
+					isDemo: table.isDemo === 1,
+					estimateTokens: DEMO_ESTIMATE_TOKENS,
+					usdPerMillion: DEMO_USD_PER_MILLION
+				}),
+				() => shutdownCoordinator.untrack(shutdownCtrl)
+			)
 		);
 
 		return sseResponse(stream);
@@ -89,6 +111,40 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 		});
 	}
 };
+
+/**
+ * Combine multiple AbortSignals into one. The result aborts when any
+ * source aborts. Used to fold the request's own abort (client
+ * disconnect) together with the shutdown grace-cap abort so the
+ * orchestrator only needs to listen to one signal.
+ */
+function anySignal(signals: AbortSignal[]): AbortSignal {
+	const ctrl = new AbortController();
+	for (const s of signals) {
+		if (s.aborted) {
+			ctrl.abort();
+			return ctrl.signal;
+		}
+		s.addEventListener('abort', () => ctrl.abort(), { once: true });
+	}
+	return ctrl.signal;
+}
+
+/**
+ * Wrap an async iterable so a callback fires once when the iterable
+ * is exhausted (either normally or via an error/throw). Used to
+ * untrack the shutdown controller exactly once per run.
+ */
+async function* untrackOnFinish<T>(
+	source: AsyncGenerator<T>,
+	onFinish: () => void
+): AsyncGenerator<T> {
+	try {
+		yield* source;
+	} finally {
+		onFinish();
+	}
+}
 
 function sseResponse(stream: ReadableStream): Response {
 	return new Response(stream, {
