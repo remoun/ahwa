@@ -55,7 +55,7 @@ jobs:
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.target.outputs.sha }}
 
